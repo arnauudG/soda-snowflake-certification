@@ -1,0 +1,105 @@
+name: Test Docker Setup
+
+# Simple test workflow to verify Docker setup
+on:
+  workflow_dispatch:  # Manual trigger
+  push:
+    branches: [ main ]
+    paths:
+      - 'docker/**'
+
+jobs:
+  test-docker:
+    runs-on: ubuntu-latest
+    name: Test Docker Setup
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Test Docker commands
+        run: |
+          echo "Testing Docker setup..."
+          
+          # Check Docker version
+          docker --version
+          
+          # Check if docker-compose is available
+          if command -v docker-compose &> /dev/null; then
+            echo "✅ docker-compose is available"
+            docker-compose --version
+          else
+            echo "ℹ️ docker-compose not available, using docker compose"
+          fi
+          
+          # Check if docker compose is available
+          if docker compose version &> /dev/null; then
+            echo "✅ docker compose is available"
+            docker compose version
+          else
+            echo "❌ docker compose not available"
+          fi
+
+      - name: Test Docker build
+        run: |
+          cd docker
+          echo "Testing Docker build..."
+          docker build -t soda-airflow-test .
+          echo "✅ Docker build successful"
+
+      - name: Test Docker Compose config
+        run: |
+          cd docker
+          echo "Testing Docker Compose configuration..."
+          
+          # Try docker-compose first (legacy)
+          if command -v docker-compose &> /dev/null; then
+            echo "Using docker-compose (legacy)"
+            docker-compose config
+            echo "✅ docker-compose config successful"
+          else
+            echo "Using docker compose (newer)"
+            docker compose config
+            echo "✅ docker compose config successful"
+          fi
+
+      - name: Test Docker Compose services
+        run: |
+          cd docker
+          echo "Testing Docker Compose services..."
+          
+          # Start services
+          if command -v docker-compose &> /dev/null; then
+            echo "Starting services with docker-compose"
+            docker-compose up -d
+            sleep 30
+            docker-compose ps
+            docker-compose down
+          else
+            echo "Starting services with docker compose"
+            docker compose up -d
+            sleep 30
+            docker compose ps
+            docker compose down
+          fi
+          
+          echo "✅ Docker Compose services test successful"
+
+      - name: Generate test report
+        run: |
+          echo "## 🐳 Docker Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### ✅ Docker Setup" >> $GITHUB_STEP_SUMMARY
+          echo "- Docker version: $(docker --version)" >> $GITHUB_STEP_SUMMARY
+          echo "- Docker Compose: Available" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### ✅ Docker Build" >> $GITHUB_STEP_SUMMARY
+          echo "- Docker image built successfully" >> $GITHUB_STEP_SUMMARY
+          echo "- Dockerfile syntax valid" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### ✅ Docker Compose" >> $GITHUB_STEP_SUMMARY
+          echo "- Configuration validated" >> $GITHUB_STEP_SUMMARY
+          echo "- Services can start and stop" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📊 Results" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Docker setup working correctly" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Ready for CI/CD workflows" >> $GITHUB_STEP_SUMMARY

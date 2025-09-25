@@ -75,7 +75,13 @@ jobs:
       - name: Test Docker Compose
         run: |
           cd docker
-          docker-compose config
+          # Test docker-compose config (legacy)
+          if command -v docker-compose &> /dev/null; then
+            docker-compose config
+          else
+            # Test docker compose config (newer)
+            docker compose config
+          fi
 
   # Job 3: Test Airflow DAGs with Docker
   airflow-dag-test:
@@ -89,7 +95,12 @@ jobs:
       - name: Start Airflow services
         run: |
           cd docker
-          docker-compose up -d
+          # Start services with appropriate command
+          if command -v docker-compose &> /dev/null; then
+            docker-compose up -d
+          else
+            docker compose up -d
+          fi
           sleep 60
 
       - name: Test DAG loading
@@ -105,7 +116,11 @@ jobs:
         if: always()
         run: |
           cd docker
-          docker-compose down
+          if command -v docker-compose &> /dev/null; then
+            docker-compose down
+          else
+            docker compose down
+          fi
 
   # Job 4: Generate test report
   test-report:

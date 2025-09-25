@@ -31,7 +31,25 @@ This directory contains GitHub Actions workflows for automated testing, data qua
   - `airflow-integration-test`: Test Airflow integration
   - `comprehensive-report`: Generate comprehensive report
 
-### 4. **deploy.yml** - Production Deployment
+### 4. **docker-test.yml** - Docker Testing
+- **Trigger**: Changes to Docker files
+- **Purpose**: Test Docker build and Compose configuration
+- **Jobs**:
+  - `docker-build-test`: Test Docker build
+  - `docker-compose-test`: Test Docker Compose services
+  - `airflow-services-test`: Test Airflow services
+  - `docker-test-report`: Generate Docker test report
+
+### 5. **test-docker.yml** - Simple Docker Test
+- **Trigger**: Manual trigger or changes to Docker files
+- **Purpose**: Simple Docker setup verification
+- **Features**:
+  - Docker version check
+  - Docker Compose compatibility test
+  - Service startup test
+  - Configuration validation
+
+### 6. **deploy.yml** - Production Deployment
 - **Trigger**: Pushes to main branch
 - **Purpose**: Deploy to production environment
 - **Jobs**:
@@ -138,6 +156,8 @@ SODA_CLOUD_HOST=cloud.soda.io
 - Check Dockerfile syntax
 - Validate docker-compose configuration
 - Test Docker build locally
+- **Docker Compose Issue**: GitHub Actions uses `docker compose` (newer) instead of `docker-compose` (legacy)
+- **Solution**: Workflows now handle both `docker-compose` and `docker compose` automatically
 
 ### Debug Commands
 ```bash

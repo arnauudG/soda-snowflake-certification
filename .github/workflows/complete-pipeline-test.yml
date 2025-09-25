@@ -116,7 +116,13 @@ jobs:
       - name: Test Airflow DAGs
         run: |
           cd docker
-          docker-compose up -d
+          
+          # Start services with appropriate command
+          if command -v docker-compose &> /dev/null; then
+            docker-compose up -d
+          else
+            docker compose up -d
+          fi
           sleep 60
           
           # Test DAG loading
@@ -130,7 +136,11 @@ jobs:
           "
           
           # Cleanup
-          docker-compose down
+          if command -v docker-compose &> /dev/null; then
+            docker-compose down
+          else
+            docker compose down
+          fi
 
   # Job 4: Generate comprehensive report
   comprehensive-report:

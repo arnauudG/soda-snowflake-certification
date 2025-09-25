@@ -42,7 +42,13 @@ jobs:
           # Test Docker build
           cd docker
           docker build -t soda-airflow-test .
-          docker-compose config
+          
+          # Test Docker Compose configuration
+          if command -v docker-compose &> /dev/null; then
+            docker-compose config
+          else
+            docker compose config
+          fi
           
           echo "✅ Pre-deployment checks completed"
 

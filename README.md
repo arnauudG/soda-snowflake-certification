@@ -764,4 +764,4 @@ For issues and questions:
 
 ---
 
-**Happy Data Quality Monitoring with CI/CD!** 🎉✨
+**Happy Data Quality Monitoring with CI/CD!** 🎉✨# Trigger workflow

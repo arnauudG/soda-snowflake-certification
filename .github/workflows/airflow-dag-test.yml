@@ -1,6 +1,6 @@
 name: Airflow DAG Testing
 
-# Trigger on pull requests and pushes to main branch
+# Trigger on pull requests, pushes, and manual workflow dispatch
 on:
   pull_request:
     branches: [ main, develop ]
@@ -14,6 +14,7 @@ on:
       - 'airflow/**'
       - 'docker/**'
       - '.github/workflows/airflow-dag-test.yml'
+  workflow_dispatch:  # Manual trigger
 
 jobs:
   # Job 1: Test DAG syntax

@@ -1,0 +1,42 @@
+# STAGING Layer - Customers Table Quality Checks
+# Database: SODA_CERTIFICATION, Schema: STAGING
+# Table: stg_customers (10,000+ records)
+# Purpose: Data quality validation after initial transformation
+
+checks for STG_CUSTOMERS:
+  # Row count checks
+  - row_count between 8000 and 12000:
+      name: "Staging customer count within expected range"
+  
+  # Completeness checks (stricter than raw)
+  - missing_count(customer_id) = 0:
+      name: "No missing customer IDs in staging"
+  
+  - missing_count(first_name) < 50:
+      name: "Minimal missing first names in staging"
+  
+  - missing_count(email) < 1000:
+      name: "Email completeness in staging"
+  
+  # Data quality score checks
+  - avg(data_quality_score) > 80:
+      name: "Average data quality score above 80"
+  
+  # Uniqueness checks (stricter than raw)
+  - duplicate_count(customer_id) = 0:
+      name: "Customer IDs are unique in staging"
+  
+  - duplicate_count(email) < 100:
+      name: "Email duplicates reduced in staging"
+  
+  # Validity checks (stricter than raw)
+  - invalid_count(email) < 200:
+      name: "Invalid email formats reduced in staging"
+      valid regex: '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+  
+  # Freshness checks
+  - freshness(created_at) < 1d:
+      name: "Staging customer data is fresh"
+  
+  # Schema checks
+  # schema validation omitted for simplicity

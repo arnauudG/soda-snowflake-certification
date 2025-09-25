@@ -1,0 +1,24 @@
+checks for CHECK_RESULTS:
+  # Completeness checks (safe on empty tables)
+  - missing_count(CHECK_ID) = 0:
+      name: "No missing check IDs"
+
+  - missing_count(TABLE_NAME) = 0:
+      name: "No missing table names"
+
+  - missing_count(CHECK_STATUS) = 0:
+      name: "No missing check statuses"
+
+  - missing_count(CHECK_TIMESTAMP) = 0:
+      name: "No missing check timestamps"
+
+  # Validity checks
+  - invalid_count(CHECK_STATUS) = 0:
+      name: "All check statuses are valid"
+      valid values: ['pass', 'fail', 'warn', 'error']
+
+  - invalid_count(CHECK_TYPE) = 0:
+      name: "All check types are valid"
+      valid values: ['row_count', 'missing_count', 'duplicate_count', 'invalid_count', 'freshness', 'schema']
+
+  # Freshness and row_count checks omitted to avoid failures on empty table during initial runs

@@ -1,0 +1,10 @@
+python-dotenv==1.0.1
+pandas>=2.2.2
+pyarrow
+setuptools
+Faker
+soda-core==3.5.5
+soda-core-snowflake==3.5.5
+# dbt and adapter (match observed versions)
+dbt-core==1.10.11
+dbt-snowflake==1.10.2

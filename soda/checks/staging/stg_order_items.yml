@@ -1,0 +1,49 @@
+# STAGING Layer - Order Items Table Quality Checks
+# Database: SODA_CERTIFICATION, Schema: STAGING
+# Table: stg_order_items (50,000+ records)
+# Purpose: Data quality validation after initial transformation
+
+checks for STG_ORDER_ITEMS:
+  # Row count checks
+  - row_count between 40000 and 60000:
+      name: "Staging order items count within expected range"
+  
+  # Completeness checks (stricter than raw)
+  - missing_count(order_item_id) = 0:
+      name: "No missing order item IDs in staging"
+  
+  - missing_count(quantity) < 500:
+      name: "Quantity completeness in staging"
+  
+  # No negative quantities in staging
+  - min(quantity) >= 0:
+      name: "No negative quantities in staging"
+  
+  # Data quality score checks
+  - avg(data_quality_score) > 85:
+      name: "Average data quality score above 85"
+  
+  # Uniqueness checks (stricter than raw)
+  - duplicate_count(order_item_id) = 0:
+      name: "Order item IDs are unique in staging"
+  
+  # Validity checks (stricter than raw)
+  - min(quantity) > 0:
+      name: "All quantities are positive in staging"
+  
+  - min(unit_price) >= 0:
+      name: "All unit prices are non-negative in staging"
+  
+  - min(total_price) >= 0:
+      name: "All total prices are non-negative in staging"
+  
+  # Business logic checks
+  - avg(total_price) between 0 and 1000:
+      name: "Total prices are within reasonable range"
+  
+  # Freshness checks
+  - freshness(created_at) < 1d:
+      name: "Staging order items data is fresh"
+  
+  # Schema checks
+  # Schema validation omitted

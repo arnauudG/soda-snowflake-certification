@@ -1,0 +1,23 @@
+# Soda Configuration for RAW Layer
+# Database: SODA_CERTIFICATION, Schema: RAW
+# Purpose: Data quality monitoring for raw, unprocessed data
+
+data_source soda_certification_raw:
+  type: snowflake
+  connection:
+    account: ${SNOWFLAKE_ACCOUNT}
+    username: ${SNOWFLAKE_USER}
+    password: ${SNOWFLAKE_PASSWORD}
+    role: ${SNOWFLAKE_ROLE}
+    warehouse: ${SNOWFLAKE_WAREHOUSE}
+    database: ${SNOWFLAKE_DATABASE}
+    schema: RAW
+    insecure_mode: True
+    query_tag: 'soda_quality_check_raw'
+    network_timeout: 600
+
+# Soda Cloud Integration
+soda_cloud:
+  host: ${SODA_CLOUD_HOST}
+  api_key_id: ${SODA_CLOUD_API_KEY_ID}
+  api_key_secret: ${SODA_CLOUD_API_KEY_SECRET}

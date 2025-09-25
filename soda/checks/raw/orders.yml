@@ -1,0 +1,40 @@
+# RAW Layer - Orders Table Quality Checks
+# Database: SODA_CERTIFICATION, Schema: RAW
+# Table: orders (20,000+ records)
+# Purpose: Initial data quality assessment with relaxed thresholds
+
+checks for orders:
+  # Row count checks
+  - row_count between 15000 and 25000:
+      name: "Order count within expected range"
+  
+  # Completeness checks (relaxed for raw data)
+  - missing_count(order_id) = 0:
+      name: "No missing order IDs"
+  
+  - missing_count(customer_id) < 500:
+      name: "Minimal missing customer IDs"
+  
+  - missing_count(total_amount) < 1000:
+      name: "Total amount completeness check"
+  
+  # Uniqueness checks
+  - duplicate_count(order_id) = 0:
+      name: "Order IDs are unique"
+  
+  # Validity checks (allowing some negative amounts in raw)
+  - min(total_amount) > 0:
+      name: "All total amounts are positive (raw tolerance handled in staging)"
+  
+  - invalid_count(order_status) < 200:
+      name: "Invalid order statuses"
+      valid values: ['pending', 'processing', 'shipped', 'delivered', 'cancelled', 'returned']
+  
+  # Freshness checks
+  # Freshness omitted (created_at is numeric in RAW)
+  
+  # Schema checks
+  # Schema validation omitted
+  
+  # Data distribution checks
+  # Distribution checks omitted

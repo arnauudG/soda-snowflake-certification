@@ -1,0 +1,44 @@
+# RAW Layer - Products Table Quality Checks
+# Database: SODA_CERTIFICATION, Schema: RAW
+# Table: products (1,000+ records)
+# Purpose: Initial data quality assessment with relaxed thresholds
+
+checks for products:
+  # Row count checks
+  - row_count between 800 and 1200:
+      name: "Product count within expected range"
+  
+  # Completeness checks (relaxed for raw data)
+  - missing_count(PRODUCT_ID) = 0:
+      name: "No missing product IDs"
+  
+  - missing_count(PRODUCT_NAME) < 50:
+      name: "Minimal missing product names"
+  
+  - missing_count(PRICE) < 100:
+      name: "Price completeness check"
+  
+  # Uniqueness checks
+  - duplicate_count(PRODUCT_ID) = 0:
+      name: "Product IDs are unique"
+  
+  - duplicate_count(SKU) < 50:
+      name: "SKU duplicates within acceptable range"
+  
+  # Validity checks (allowing some negative prices in raw)
+  - invalid_count(PRICE) < 100:
+      name: "Negative prices within acceptable range"
+      valid min: 0
+  
+  - invalid_count(WEIGHT) < 200:
+      name: "Invalid weight values"
+      valid min: 0
+  
+  # Freshness checks
+  # Freshness omitted (created_at is numeric in RAW)
+  
+  # Schema checks
+  # Schema validation omitted
+  
+  # Data distribution checks
+  # Distribution checks omitted

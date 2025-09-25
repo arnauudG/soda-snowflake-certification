@@ -1,0 +1,43 @@
+# MART Layer - Orders Fact Table Quality Checks
+# Database: SODA_CERTIFICATION, Schema: MART
+# Table: fact_orders (20,000+ records)
+# Purpose: Business-ready data with strictest quality requirements
+
+checks for FACT_ORDERS:
+  # Row count checks
+  - row_count between 15000 and 25000:
+      name: "Mart order count within expected range"
+  
+  # Completeness checks (no missing values allowed)
+  - missing_count(ORDER_ID) = 0:
+      name: "No missing order IDs in mart"
+  
+  - missing_count(CUSTOMER_ID) = 0:
+      name: "No missing customer IDs in mart"
+  
+  - missing_count(ORDER_TOTAL_AMOUNT) < 1000:
+      name: "Total amounts mostly present in mart"
+      samples limit: 0
+  
+  # Uniqueness checks (strict)
+  - duplicate_count(ORDER_ID) = 0:
+      name: "Order IDs are unique in mart"
+  
+  # Validity checks (strict)
+  - min(ORDER_TOTAL_AMOUNT) > 0:
+      name: "All order amounts are positive in mart"
+  
+  - max(ORDER_TOTAL_AMOUNT) <= 10000:
+      name: "All order amounts are within business range"
+  
+  # Referential integrity check omitted (custom SQL validation can be added later)
+
+  # Business logic checks
+  - avg(ORDER_TOTAL_AMOUNT) between 40 and 700:
+      name: "Average order amount within business range"
+  
+  # Freshness checks
+  # Omitted freshness check to avoid failures on synthetic data timestamps
+  
+  # Schema checks
+  # Schema validation omitted

@@ -1,0 +1,123 @@
+version: 2
+
+sources:
+  - name: raw
+    description: "Raw data layer - Bronze layer containing unprocessed data"
+    database: SODA_CERTIFICATION
+    schema: RAW
+    tables:
+      - name: customers
+        description: "Raw customer data with potential data quality issues"
+        columns:
+          - name: customer_id
+            description: "Unique customer identifier"
+            tests:
+              - not_null
+              - unique
+          - name: first_name
+            description: "Customer first name"
+          - name: last_name
+            description: "Customer last name"
+          - name: email
+            description: "Customer email address"
+          - name: phone
+            description: "Customer phone number"
+          - name: address
+            description: "Customer street address"
+          - name: city
+            description: "Customer city"
+          - name: state
+            description: "Customer state/province"
+          - name: zip_code
+            description: "Customer postal code"
+          - name: country
+            description: "Customer country"
+          - name: created_at
+            description: "Record creation timestamp"
+          - name: updated_at
+            description: "Record last update timestamp"
+            
+      - name: products
+        description: "Raw product data with potential data quality issues"
+        columns:
+          - name: product_id
+            description: "Unique product identifier"
+            tests:
+              - not_null
+              - unique
+          - name: product_name
+            description: "Product name"
+          - name: category
+            description: "Product category"
+          - name: subcategory
+            description: "Product subcategory"
+          - name: price
+            description: "Product price"
+          - name: currency
+            description: "Price currency"
+          - name: description
+            description: "Product description"
+          - name: brand
+            description: "Product brand"
+          - name: sku
+            description: "Product SKU"
+          - name: weight
+            description: "Product weight"
+          - name: dimensions
+            description: "Product dimensions"
+          - name: created_at
+            description: "Record creation timestamp"
+          - name: updated_at
+            description: "Record last update timestamp"
+            
+      - name: orders
+        description: "Raw order data with potential data quality issues"
+        columns:
+          - name: order_id
+            description: "Unique order identifier"
+            tests:
+              - not_null
+              - unique
+          - name: customer_id
+            description: "Customer identifier (foreign key)"
+          - name: order_date
+            description: "Order date"
+          - name: order_status
+            description: "Order status"
+          - name: total_amount
+            description: "Order total amount"
+          - name: currency
+            description: "Order currency"
+          - name: shipping_address
+            description: "Shipping address"
+          - name: payment_method
+            description: "Payment method used"
+          - name: created_at
+            description: "Record creation timestamp"
+          - name: updated_at
+            description: "Record last update timestamp"
+            
+      - name: order_items
+        description: "Raw order item data with potential data quality issues"
+        columns:
+          - name: order_item_id
+            description: "Unique order item identifier"
+            tests:
+              - not_null
+              - unique
+          - name: order_id
+            description: "Order identifier (foreign key)"
+          - name: product_id
+            description: "Product identifier (foreign key)"
+          - name: quantity
+            description: "Item quantity"
+          - name: unit_price
+            description: "Unit price"
+          - name: total_price
+            description: "Total price for this item"
+          - name: discount_percent
+            description: "Discount percentage"
+          - name: created_at
+            description: "Record creation timestamp"
+          - name: updated_at
+            description: "Record last update timestamp"

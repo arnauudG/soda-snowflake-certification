@@ -1,0 +1,45 @@
+# STAGING Layer - Products Table Quality Checks
+# Database: SODA_CERTIFICATION, Schema: STAGING
+# Table: stg_products (1,000+ records)
+# Purpose: Data quality validation after initial transformation
+
+checks for STG_PRODUCTS:
+  # Row count checks
+  - row_count between 800 and 1200:
+      name: "Staging product count within expected range"
+  
+  # Completeness checks (stricter than raw)
+  - missing_count(product_id) = 0:
+      name: "No missing product IDs in staging"
+  
+  - missing_count(price) < 50:
+      name: "Price completeness in staging"
+  
+  # No negative prices in staging
+  - min(price) >= 0:
+      name: "No negative prices in staging"
+  
+  # Data quality score checks
+  - avg(data_quality_score) > 90:
+      name: "Average data quality score above 90"
+  
+  # Uniqueness checks (stricter than raw)
+  - duplicate_count(product_id) = 0:
+      name: "Product IDs are unique in staging"
+  
+  - duplicate_count(sku) < 25:
+      name: "SKU duplicates reduced in staging"
+  
+  # Validity checks (stricter than raw)
+  - min(price) > 0:
+      name: "All prices are positive in staging"
+  
+  - max(price) <= 10000:
+      name: "All prices are within business range"
+  
+  # Freshness checks
+  - freshness(created_at) < 1d:
+      name: "Staging product data is fresh"
+  
+  # Schema checks
+  # Schema validation omitted

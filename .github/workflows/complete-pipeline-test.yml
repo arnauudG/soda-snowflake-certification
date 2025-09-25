@@ -56,6 +56,21 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r scripts/setup/requirements.txt
 
+      - name: Create .env file
+        run: |
+          cat > .env << EOF
+          SNOWFLAKE_ACCOUNT=${{ secrets.SNOWFLAKE_ACCOUNT }}
+          SNOWFLAKE_USER=${{ secrets.SNOWFLAKE_USER }}
+          SNOWFLAKE_PASSWORD=${{ secrets.SNOWFLAKE_PASSWORD }}
+          SNOWFLAKE_ROLE=${{ secrets.SNOWFLAKE_ROLE }}
+          SNOWFLAKE_WAREHOUSE=${{ secrets.SNOWFLAKE_WAREHOUSE }}
+          SNOWFLAKE_DATABASE=${{ secrets.SNOWFLAKE_DATABASE }}
+          SNOWFLAKE_SCHEMA=${{ secrets.SNOWFLAKE_SCHEMA }}
+          SODA_CLOUD_API_KEY_ID=${{ secrets.SODA_CLOUD_API_KEY_ID }}
+          SODA_CLOUD_API_KEY_SECRET=${{ secrets.SODA_CLOUD_API_KEY_SECRET }}
+          SODA_CLOUD_HOST=${{ secrets.SODA_CLOUD_HOST }}
+          EOF
+
       - name: Test Snowflake setup
         env:
           SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
@@ -113,27 +128,28 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Create .env file
+        run: |
+          cat > .env << EOF
+          SNOWFLAKE_ACCOUNT=${{ secrets.SNOWFLAKE_ACCOUNT }}
+          SNOWFLAKE_USER=${{ secrets.SNOWFLAKE_USER }}
+          SNOWFLAKE_PASSWORD=${{ secrets.SNOWFLAKE_PASSWORD }}
+          SNOWFLAKE_ROLE=${{ secrets.SNOWFLAKE_ROLE }}
+          SNOWFLAKE_WAREHOUSE=${{ secrets.SNOWFLAKE_WAREHOUSE }}
+          SNOWFLAKE_DATABASE=${{ secrets.SNOWFLAKE_DATABASE }}
+          SNOWFLAKE_SCHEMA=${{ secrets.SNOWFLAKE_SCHEMA }}
+          SODA_CLOUD_API_KEY_ID=${{ secrets.SODA_CLOUD_API_KEY_ID }}
+          SODA_CLOUD_API_KEY_SECRET=${{ secrets.SODA_CLOUD_API_KEY_SECRET }}
+          SODA_CLOUD_HOST=${{ secrets.SODA_CLOUD_HOST }}
+          EOF
+
       - name: Test Airflow DAGs
-        env:
-          SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
-          SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
-          SNOWFLAKE_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}
-          SNOWFLAKE_ROLE: ${{ secrets.SNOWFLAKE_ROLE }}
-          SNOWFLAKE_WAREHOUSE: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
-          SNOWFLAKE_DATABASE: ${{ secrets.SNOWFLAKE_DATABASE }}
-          SNOWFLAKE_SCHEMA: ${{ secrets.SNOWFLAKE_SCHEMA }}
-          SODA_CLOUD_API_KEY_ID: ${{ secrets.SODA_CLOUD_API_KEY_ID }}
-          SODA_CLOUD_API_KEY_SECRET: ${{ secrets.SODA_CLOUD_API_KEY_SECRET }}
-          SODA_CLOUD_HOST: ${{ secrets.SODA_CLOUD_HOST }}
         run: |
           cd docker
-          
-          # Start services with appropriate command
-          if command -v docker-compose &> /dev/null; then
-            docker-compose up -d
-          else
-            docker compose up -d
-          fi
+          docker compose up -d
           sleep 60
           
           # Test DAG loading
@@ -141,17 +157,13 @@ jobs:
           
           # Test DAG syntax
           docker exec soda-airflow-webserver python -c "
-          exec(open('/opt/airflow/dags/soda_certification_dag.py').read())
-          exec(open('/opt/airflow/dags/soda_pipeline_only.py').read())
+          exec(open('/opt/airflow/dags/soda_initialization.py').read())
+          exec(open('/opt/airflow/dags/soda_pipeline_run.py').read())
           print('✅ DAGs loaded successfully')
           "
           
           # Cleanup
-          if command -v docker-compose &> /dev/null; then
-            docker-compose down
-          else
-            docker compose down
-          fi
+          docker compose down
 
   # Job 4: Generate comprehensive report
   comprehensive-report:

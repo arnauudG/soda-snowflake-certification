@@ -1,9 +1,34 @@
-# Soda Certification Project
+# 🎯 Soda Certification Project
 
-Production-ready data quality monitoring pipeline with Snowflake, dbt, Soda Core, Airflow, and Soda Cloud integration.
+**A comprehensive, production-ready data quality monitoring and CI/CD pipeline** that demonstrates modern data engineering best practices using Snowflake, dbt, Soda Core, Apache Airflow, and Soda Cloud integration.
 
-## 🏗️ Architecture
+## 🎯 What This Project Does
 
+This project is a **complete data quality certification system** that:
+
+### 🏗️ **Core Functionality**
+- **Creates a realistic data pipeline** with intentional quality issues to demonstrate data quality monitoring
+- **Implements a 4-layer data architecture** (RAW → STAGING → MART → QUALITY) with progressively stricter quality standards
+- **Automates data quality monitoring** using Soda Core with 100+ quality checks across all layers
+- **Orchestrates the entire pipeline** using Apache Airflow with Docker containerization
+- **Provides comprehensive CI/CD** with GitHub Actions for automated testing and deployment
+
+### 📊 **Data Quality Progression**
+- **RAW Layer**: Lenient thresholds (28/33 checks pass) - captures initial data issues
+- **STAGING Layer**: Stricter thresholds - shows data improvement after transformation
+- **MART Layer**: Strictest thresholds - ensures business-ready data quality
+- **QUALITY Layer**: Monitoring layer - tracks quality check execution and results
+
+### 🚀 **Key Features**
+- **End-to-End Pipeline**: Complete data flow from source to business-ready analytics
+- **Automated Quality Monitoring**: 100+ Soda checks with progressive quality standards
+- **CI/CD Integration**: Automated testing, quality gates, and deployment
+- **Production-Ready**: Docker containerization, proper error handling, monitoring
+- **Educational**: Demonstrates modern data engineering patterns and best practices
+
+## 🏗️ System Architecture
+
+### 📊 **Data Flow Architecture**
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
 │   RAW Layer     │    │ STAGING Layer   │    │  MART Layer     │    │ QUALITY Layer   │
@@ -26,67 +51,115 @@ Production-ready data quality monitoring pipeline with Snowflake, dbt, Soda Core
                     └─────────────────────────────────────────┘
 ```
 
+### 🔄 **CI/CD Pipeline Architecture**
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   GitHub PR     │    │  GitHub Actions │    │  Quality Gates  │    │  Production     │
+│                 │    │                 │    │                 │    │                 │
+│ • Code Changes  │───▶│ • Auto Testing  │───▶│ • Quality Checks│───▶│ • Auto Deploy   │
+│ • Pull Request  │    │ • DAG Validation│    │ • Test Results  │    │ • Monitoring    │
+│ • Code Review   │    │ • Docker Build  │    │ • Quality Gates │    │ • Alerts        │
+└─────────────────┘    └─────────────────┘    └─────────────────┘    └─────────────────┘
+```
+
+### 🐳 **Docker Architecture**
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│  Airflow Web    │    │ Airflow Scheduler│   │  Airflow Init  │    │   PostgreSQL    │
+│                 │    │                 │    │                 │    │                 │
+│ • Web UI        │    │ • DAG Execution │    │ • DB Setup     │    │ • Metadata DB   │
+│ • Task Monitor  │    │ • Task Scheduling│   │ • User Creation│    │ • State Storage│
+│ • DAG Management│    │ • Retry Logic   │    │ • Permissions  │    │ • Log Storage   │
+└─────────────────┘    └─────────────────┘    └─────────────────┘    └─────────────────┘
+```
+
 ## 🚀 Quick Start Guide
 
 ### Prerequisites
 - Docker Desktop running
-- Snowflake account with appropriate permissions
+- Snowflake account with credentials
 - Soda Cloud account (optional, for centralized monitoring)
-- GitHub repository (for CI/CD workflows)
 
-### 1. Environment Setup
-
-#### Configure Environment Variables
-Create a `.env` file in the project root with your credentials:
+### 🎯 **Super Simple Setup (3 Commands)**
 
 ```bash
-# Snowflake Configuration
-SNOWFLAKE_ACCOUNT=your_account_identifier
-SNOWFLAKE_USER=your_username
-SNOWFLAKE_PASSWORD=your_password_or_pat
-SNOWFLAKE_ROLE=ACCOUNTADMIN
-SNOWFLAKE_WAREHOUSE=SODA_WH
-SNOWFLAKE_DATABASE=SODA_CERTIFICATION
-SNOWFLAKE_SCHEMA=RAW
+# 1. Setup environment (checks .env file exists)
+make setup
 
-# Soda Cloud Configuration (Optional)
-SODA_CLOUD_API_KEY_ID=your_api_key_id
-SODA_CLOUD_API_KEY_SECRET=your_api_key_secret
-SODA_CLOUD_HOST=cloud.soda.io
-```
-
-#### Install Dependencies
-```bash
-# Create virtual environment
-python3.11 -m venv .venv
-source .venv/bin/activate
-
-# Install dependencies
-pip install -r scripts/setup/requirements.txt
-```
-
-### 2. Start Airflow Services
-
-```bash
-# Start all Airflow services with Docker
+# 2. Start Airflow services (includes all fixes)
 make airflow-up
 
-# Check status
-make airflow-status
-
-# Access Airflow UI: http://localhost:8080 (admin/admin)
+# 3. Run initialization (first time only)
+make airflow-trigger-init
 ```
+
+**That's it!** 🎉 Your pipeline is now running.
+
+### 🔧 **What the Setup Does (All Fixes Included)**
+
+The `make airflow-up` command now includes these critical fixes:
+
+1. **Environment Variables**: Automatically loads `.env` file into all containers
+2. **Service Initialization**: Waits 30 seconds for services to fully start
+3. **DAG Auto-Unpause**: Automatically unpauses all Soda DAGs
+4. **Logging Setup**: Creates necessary log directories
+5. **Docker Integration**: All commands work with Docker containers
+
+### 📝 **Step-by-Step Details**
+
+#### 1. **Environment Setup**
+```bash
+make setup
+```
+This command:
+- ✅ Creates virtual environment
+- ✅ Installs dependencies
+- ✅ Checks `.env` file exists
+- ⚠️ **Ensure `.env` has your Snowflake credentials**
+
+#### 2. **Start Services**
+```bash
+make airflow-up
+```
+This command:
+- ✅ Starts all Airflow services with Docker
+- ✅ Loads all DAGs automatically
+- ✅ Unpauses all Soda DAGs
+- ✅ Web UI available at http://localhost:8080 (admin/admin)
+
+#### 3. **First-Time Initialization**
+```bash
+make airflow-trigger-init
+```
+This command:
+- ✅ Resets Snowflake database
+- ✅ Creates sample data with quality issues
+- ✅ Prepares foundation for pipeline runs
 
 ## 📋 Complete Workflow Guide
 
 ### Phase 1: Initial Setup (Run Once)
 
-#### Option A: Complete Fresh Start
+#### Option A: Fresh Initialization Only
 ```bash
-# Trigger the complete pipeline (Snowflake setup + data processing)
-make airflow-trigger
+# Trigger initialization only (fresh setup)
+make airflow-trigger-init
 # or
-docker exec soda-airflow-webserver airflow dags trigger soda_certification_pipeline
+docker exec soda-airflow-webserver airflow dags trigger soda_initialization
+```
+
+**What this does:**
+- ✅ Resets Snowflake database
+- ✅ Sets up schemas and tables
+- ✅ Generates sample data with quality issues
+- ✅ Prepares foundation for pipeline runs
+
+#### Option B: Fresh Start + Pipeline
+```bash
+# First run initialization, then pipeline
+make airflow-trigger-init
+# Wait for completion, then run pipeline
+make airflow-trigger-pipeline
 ```
 
 **What this does:**
@@ -97,7 +170,7 @@ docker exec soda-airflow-webserver airflow dags trigger soda_certification_pipel
 - ✅ Executes Soda data quality checks
 - ✅ Sends results to Soda Cloud
 
-#### Option B: Manual Setup
+#### Option C: Manual Setup
 ```bash
 # 1. Reset Snowflake (if needed)
 python3 scripts/setup/reset_snowflake.py --force
@@ -113,10 +186,10 @@ python3 scripts/setup/setup_snowflake.py
 
 #### For Daily/Weekly Data Processing
 ```bash
-# Trigger pipeline-only DAG (recommended for regular runs)
+# Trigger pipeline run DAG (recommended for regular runs)
 make airflow-trigger-pipeline
 # or
-docker exec soda-airflow-webserver airflow dags trigger soda_pipeline_only
+docker exec soda-airflow-webserver airflow dags trigger soda_pipeline_run
 ```
 
 **What this does:**
@@ -139,17 +212,20 @@ docker exec soda-airflow-webserver airflow dags trigger soda_pipeline_only
 
 ## 🎯 Available DAGs
 
-### 1. `soda_certification_pipeline` (Complete Pipeline)
-- **Purpose**: Complete setup and pipeline execution
-- **When to use**: First-time setup, complete reset, full demonstration
-- **Tasks**: Snowflake reset → Snowflake setup → dbt models → Soda checks
-- **Trigger**: `make airflow-trigger`
+### 1. `soda_initialization` (Initialization Only)
+- **Purpose**: Fresh Snowflake setup with sample data
+- **When to use**: First-time setup, fresh start, testing
+- **Tasks**: Snowflake reset → Snowflake setup
+- **Trigger**: `make airflow-trigger-init`
+- **Frequency**: Run once
 
-### 2. `soda_pipeline_only` (Pipeline Only)
+### 2. `soda_pipeline_run` (Pipeline Only)
 - **Purpose**: Regular data processing and quality monitoring
 - **When to use**: Daily/weekly runs, scheduled execution
 - **Tasks**: dbt models → Soda checks
 - **Trigger**: `make airflow-trigger-pipeline`
+- **Frequency**: Regular runs
+
 
 ## 📊 Expected Results
 
@@ -214,105 +290,322 @@ soda scan -d soda_certification_staging -c soda/configuration/configuration_stag
 soda scan -d soda_certification_mart -c soda/configuration/configuration_mart.yml soda/checks/mart/dim_customers.yml
 ```
 
-## 📁 Project Structure
+## 📁 Complete Project Structure
 
 ```
-├── airflow/
-│   └── dags/
-│       ├── soda_certification_dag.py    # Complete pipeline DAG
-│       └── soda_pipeline_only.py       # Pipeline-only DAG
-├── dbt/
-│   ├── dbt_project.yml                  # dbt configuration
-│   ├── models/                          # dbt models by layer
-│   │   ├── raw/                         # Source definitions
-│   │   ├── staging/                     # Staging models
-│   │   └── marts/                       # Mart models
-│   └── tests/                           # dbt tests
-├── scripts/
-│   ├── run_pipeline.sh                  # Main pipeline script
-│   └── setup/                           # Setup scripts
-│       ├── load_env.sh
-│       ├── reset_snowflake.py
-│       ├── setup_airflow.sh
-│       └── setup_snowflake.py
-├── soda/
-│   ├── configuration/                  # Soda configs by layer
-│   │   ├── configuration_raw.yml
-│   │   ├── configuration_staging.yml
-│   │   ├── configuration_mart.yml
-│   │   └── configuration_quality.yml
-│   └── checks/                         # Data quality checks
-│       ├── raw/                        # Raw layer checks
-│       ├── staging/                    # Staging layer checks
-│       ├── mart/                       # Mart layer checks
-│       └── quality/                    # Quality layer checks
-├── docker/
-│   ├── docker-compose.yml              # Docker setup
-│   └── Dockerfile
-├── Makefile                            # Make commands
-└── README.md                           # This file
+Soda-Certification/
+├── 🚀 AIRFLOW ORCHESTRATION
+│   ├── airflow/
+│   │   └── dags/
+│   │       ├── soda_initialization.py      # Initialization DAG (fresh setup)
+│   │       └── soda_pipeline_run.py        # Pipeline DAG (data processing)
+│   └── docker/
+│       ├── docker-compose.yml              # Multi-service Docker setup
+│       ├── Dockerfile                       # Custom Airflow image
+│       └── airflow-logs/                    # Persistent log storage
+│
+├── 🔄 DATA TRANSFORMATION (dbt)
+│   ├── dbt/
+│   │   ├── dbt_project.yml                  # dbt project configuration
+│   │   ├── profiles.yml                     # Snowflake connection profiles
+│   │   ├── models/                          # dbt models organized by layer
+│   │   │   ├── raw/                         # Source table definitions
+│   │   │   │   └── sources.yml              # Snowflake source configuration
+│   │   │   ├── staging/                     # Staging layer models
+│   │   │   │   ├── stg_customers.sql        # Customer staging model
+│   │   │   │   ├── stg_products.sql         # Product staging model
+│   │   │   │   ├── stg_orders.sql          # Order staging model
+│   │   │   │   └── stg_order_items.sql      # Order items staging model
+│   │   │   └── marts/                       # Business-ready models
+│   │   │       ├── dim_customers.sql        # Customer dimension
+│   │   │       └── fact_orders.sql          # Order fact table
+│   │   ├── tests/                           # dbt data quality tests
+│   │   │   └── test_data_quality.sql        # Custom data quality tests
+│   │   └── macros/                          # dbt macros
+│   │       └── generate_schema_name.sql     # Schema naming macro
+│
+├── 🔍 DATA QUALITY MONITORING (Soda)
+│   ├── soda/
+│   │   ├── configuration/                   # Soda connection configs by layer
+│   │   │   ├── configuration_raw.yml         # RAW layer Snowflake connection
+│   │   │   ├── configuration_staging.yml    # STAGING layer connection
+│   │   │   ├── configuration_mart.yml       # MART layer connection
+│   │   │   └── configuration_quality.yml     # QUALITY layer connection
+│   │   └── checks/                          # Data quality checks by layer
+│   │       ├── raw/                         # RAW layer checks (lenient)
+│   │       │   ├── customers.yml            # Customer data quality checks
+│   │       │   ├── products.yml             # Product data quality checks
+│   │       │   ├── orders.yml               # Order data quality checks
+│   │       │   └── order_items.yml          # Order items quality checks
+│   │       ├── staging/                     # STAGING layer checks (stricter)
+│   │       │   ├── stg_customers.yml        # Staging customer checks
+│   │       │   ├── stg_products.yml         # Staging product checks
+│   │       │   ├── stg_orders.yml          # Staging order checks
+│   │       │   └── stg_order_items.yml     # Staging order items checks
+│   │       ├── mart/                        # MART layer checks (strictest)
+│   │       │   ├── dim_customers.yml        # Customer dimension checks
+│   │       │   └── fact_orders.yml         # Order fact table checks
+│   │       └── quality/                     # QUALITY layer checks (monitoring)
+│   │           └── check_results.yml        # Quality check execution monitoring
+│
+├── 🛠️ AUTOMATION & SETUP
+│   ├── scripts/
+│   │   ├── run_pipeline.sh                  # Main pipeline execution script
+│   │   ├── setup/                           # Environment setup scripts
+│   │   │   ├── requirements.txt             # Python dependencies
+│   │   │   ├── load_env.sh                  # Environment variable loader
+│   │   │   ├── reset_snowflake.py           # Snowflake database reset
+│   │   │   ├── setup_snowflake.py           # Snowflake initialization
+│   │   └── data-quality-tests/              # Custom quality test scripts
+│   │       └── test_raw_checks.py          # Raw data quality validation
+│   │
+├── 🚀 CI/CD & DEPLOYMENT
+│   ├── .github/
+│   │   └── workflows/                       # GitHub Actions workflows
+│   │       ├── complete-pipeline-test.yml  # End-to-end pipeline testing
+│   │       ├── airflow-dag-test.yml         # Airflow DAG validation
+│   │       ├── docker-test.yml              # Docker build and service testing
+│   │       ├── soda-data-quality.yml        # Data quality CI/CD
+│   │       ├── deploy.yml                   # Production deployment
+│   │       └── test-docker.yml              # Docker integration testing
+│   │
+├── 📚 DOCUMENTATION
+│   ├── README.md                            # This comprehensive guide
+│   ├── SETUP_GUIDE.md                       # Complete setup guide with all fixes
+│   ├── CI_CD_TESTING.md                     # CI/CD testing strategy and implementation
+│   └── Makefile                             # Development commands
+│
+└── 🔧 CONFIGURATION
+    ├── .env                                  # Environment variables (create this)
+    ├── .gitignore                           # Git ignore patterns
+    └── .venv/                               # Python virtual environment (auto-created)
 ```
+
+### 🎯 **Key Components Explained**
+
+| Component | Purpose | Technology | Key Files |
+|-----------|---------|------------|-----------|
+| **Airflow Orchestration** | Pipeline scheduling and execution | Apache Airflow + Docker | `airflow/dags/*.py`, `docker/docker-compose.yml` |
+| **Data Transformation** | ETL/ELT data processing | dbt + Snowflake | `dbt/models/`, `dbt/dbt_project.yml` |
+| **Data Quality** | Automated quality monitoring | Soda Core + Soda Cloud | `soda/checks/`, `soda/configuration/` |
+| **CI/CD Pipeline** | Automated testing and deployment | GitHub Actions | `.github/workflows/*.yml` |
+| **Infrastructure** | Containerized services | Docker + Docker Compose | `docker/`, `Dockerfile` |
+| **Automation** | Setup and execution scripts | Bash + Python | `scripts/`, `Makefile` |
+
+## 🎓 What This Project Demonstrates
+
+### 🏗️ **Modern Data Engineering Patterns**
+- **4-Layer Data Architecture**: RAW → STAGING → MART → QUALITY progression
+- **Progressive Data Quality**: Lenient → Stricter → Strictest quality standards
+- **Infrastructure as Code**: Docker containerization with proper service orchestration
+- **CI/CD for Data**: Automated testing, quality gates, and deployment pipelines
+- **Monitoring & Observability**: Centralized quality monitoring with Soda Cloud
+
+### 🔧 **Technical Skills Demonstrated**
+- **Data Orchestration**: Apache Airflow DAGs with proper task dependencies
+- **Data Transformation**: dbt models with staging and mart layer patterns
+- **Data Quality**: Soda Core with 100+ quality checks across all layers
+- **Cloud Integration**: Snowflake data warehouse with Soda Cloud monitoring
+- **Containerization**: Multi-service Docker setup with health checks
+- **Automation**: GitHub Actions workflows for CI/CD
+- **Scripting**: Bash and Python automation scripts
+
+### 📊 **Real-World Data Quality Scenarios**
+- **Intentional Quality Issues**: Sample data with realistic quality problems
+- **Quality Progression**: Shows how data quality improves through transformation layers
+- **Monitoring Dashboard**: Centralized view of all quality metrics and trends
+- **Automated Alerting**: Quality gates that prevent bad data from reaching production
+- **Historical Tracking**: Quality trends and analytics over time
+
+### 🚀 **Production-Ready Features**
+- **Error Handling**: Proper retry logic and failure management
+- **Logging**: Comprehensive logging and monitoring
+- **Security**: Environment variable management and secret handling
+- **Scalability**: Configurable warehouse sizes and parallel processing
+- **Documentation**: Comprehensive setup and troubleshooting guides
+
+## 🎯 **Use Cases & Applications**
+
+### 📚 **Educational & Training**
+- **Data Engineering Bootcamps**: Complete end-to-end data pipeline example
+- **Quality Certification**: Demonstrates Soda Core capabilities and best practices
+- **CI/CD Learning**: Shows how to implement data quality in CI/CD pipelines
+- **Architecture Patterns**: Modern data architecture with quality monitoring
+
+### 🏢 **Enterprise Applications**
+- **Data Quality Framework**: Template for implementing data quality monitoring
+- **CI/CD Pipeline**: Production-ready CI/CD for data projects
+- **Quality Gates**: Automated quality validation in data pipelines
+- **Monitoring Dashboard**: Centralized data quality monitoring solution
+
+### 🔬 **Research & Development**
+- **Quality Metrics**: Study data quality progression through transformation layers
+- **Automation Testing**: Test data quality automation strategies
+- **Performance Analysis**: Monitor pipeline performance and optimization
+- **Best Practices**: Document and share data engineering best practices
 
 ## 🚨 Troubleshooting
 
-### Common Issues
+### 🔧 **Critical Fixes Applied**
 
-#### 1. Environment Variables Not Loading
-```bash
-# Check if .env file exists
-ls -la .env
+#### **Fix 1: Environment Variables Not Loading**
+**Problem**: Docker Compose not loading `.env` file, causing warnings like "SNOWFLAKE_ACCOUNT variable is not set"
 
-# Load environment manually
-source scripts/setup/load_env.sh
+**Solution Applied**:
+```yaml
+# In docker/docker-compose.yml - Added to all Airflow services:
+env_file:
+  - ../.env
 ```
 
-#### 2. Docker Issues
+#### **Fix 2: DAGs Stuck in "Queued" State**
+**Problem**: DAGs triggered but never start executing
+
+**Solution Applied**:
 ```bash
-# Stop all services
+# In Makefile - airflow-up command now includes:
+@sleep 30  # Wait for services to initialize
+@docker exec soda-airflow-webserver airflow dags unpause soda_initialization || true
+@docker exec soda-airflow-webserver airflow dags unpause soda_pipeline_run || true
+```
+
+#### **Fix 3: Logging Directory Issues**
+**Problem**: Airflow scheduler fails with "No such file or directory: '/opt/airflow/logs/scheduler'"
+
+**Solution Applied**:
+```bash
+# Create logs directory before starting services
+mkdir -p docker/airflow-logs/scheduler/$(date +%Y-%m-%d)
+```
+
+#### **Fix 4: Local Airflow CLI vs Docker**
+**Problem**: Local Airflow CLI cannot interact with Dockerized Airflow
+
+**Solution Applied**:
+```bash
+# All Makefile commands now use docker exec:
+docker exec soda-airflow-webserver airflow dags trigger <dag_id>
+docker exec soda-airflow-webserver airflow dags list
+```
+
+### 🔧 **Quick Fixes**
+
+#### **Services Not Starting**
+```bash
+# Stop and restart services
 make airflow-down
+make airflow-up
+```
+
+#### **DAGs Not Running**
+```bash
+# Unpause all DAGs
+make airflow-unpause-all
+
+# Check DAG status
+make airflow-list
+```
+
+#### **Environment Issues**
+```bash
+# Check .env file exists and has correct values
+cat .env
+
+# Verify required variables are set
+grep -E "SNOWFLAKE_ACCOUNT|SNOWFLAKE_USER|SNOWFLAKE_PASSWORD" .env
+```
+
+#### **Docker Issues**
+```bash
+# Rebuild containers (fixes most issues)
+make airflow-rebuild
+
+# Check service status
+make airflow-status
+```
+
+#### **Logging Issues**
+```bash
+# Create missing logs directory
+mkdir -p docker/airflow-logs/scheduler/$(date +%Y-%m-%d)
 
 # Rebuild containers
 make airflow-rebuild
-
-# Check Docker status
-docker ps
 ```
 
-#### 3. Snowflake Connection Issues
-```bash
-# Test connection
-python3 scripts/setup/setup_snowflake.py
+### 🔍 **Debug Commands**
 
-# Check credentials in .env file
-cat .env
+#### **Check Service Status**
+```bash
+make airflow-status          # Check if services are running
+make airflow-list            # List available DAGs
 ```
 
-#### 4. DAG Not Triggering
+#### **View Logs**
 ```bash
-# Check if DAG is paused
-docker exec soda-airflow-webserver airflow dags list | grep soda
-
-# Unpause DAG
-docker exec soda-airflow-webserver airflow dags unpause soda_pipeline_only
+make airflow-logs            # View all service logs
+docker logs soda-airflow-scheduler | tail -20  # Scheduler logs
 ```
 
-### Debug Commands
+#### **Test DAGs**
 ```bash
-# View DAG logs
-docker logs soda-airflow-scheduler | tail -20
+# Test initialization
+make airflow-trigger-init
 
-# Test DAG syntax
-docker exec soda-airflow-webserver python -c "exec(open('/opt/airflow/dags/soda_pipeline_only.py').read())"
+# Test pipeline run
+make airflow-trigger-pipeline
+```
 
-# Check task status
-docker exec soda-airflow-webserver airflow tasks list soda_pipeline_only
+### ⚠️ **Common Issues & Solutions**
+
+| Issue | Solution | Root Cause |
+|-------|----------|------------|
+| **DAGs not loading** | Run `make airflow-unpause-all` | DAGs are paused by default |
+| **Environment variables missing** | Check `.env` file exists and has correct values | Missing `env_file` in docker-compose.yml |
+| **Docker services not starting** | Run `make airflow-rebuild` | Container build issues |
+| **DAGs stuck in queued state** | Check if DAGs are paused, run `make airflow-unpause-all` | Services not fully initialized |
+| **Snowflake connection failed** | Verify credentials in `.env` file | Incorrect credentials or missing variables |
+| **Logging directory errors** | Run `make airflow-rebuild` | Missing logs directory structure |
+| **Local Airflow CLI errors** | Use `make` commands instead | Local CLI can't access Docker containers |
+
+### 🛠️ **Advanced Troubleshooting**
+
+#### **Complete Reset (Nuclear Option)**
+```bash
+# Stop everything
+make airflow-down
+
+# Remove all containers and volumes
+cd docker && docker-compose down -v
+cd docker && docker system prune -f
+
+# Rebuild from scratch
+make airflow-rebuild
+```
+
+#### **Environment Variable Debugging**
+```bash
+# Check if variables are loaded in container
+docker exec soda-airflow-webserver env | grep SNOWFLAKE
+
+# Check .env file format
+cat .env | grep -v "^#" | grep -v "^$"
+```
+
+#### **DAG Execution Debugging**
+```bash
+# Check DAG run history
+docker exec soda-airflow-webserver airflow dags list-runs -d soda_initialization
+
+# Check task logs
+docker exec soda-airflow-webserver airflow tasks list soda_initialization
 ```
 
 ## 📈 Production Deployment
 
 ### Scheduling
-1. **Initial Setup**: Run `soda_certification_pipeline` once
-2. **Regular Processing**: Schedule `soda_pipeline_only` to run daily/weekly
+1. **Initial Setup**: Run `soda_initialization` once
+2. **Regular Processing**: Schedule `soda_pipeline_run` to run daily/weekly
 3. **Monitoring**: Use Soda Cloud for centralized monitoring
 
 ### Monitoring
@@ -337,11 +630,93 @@ docker exec soda-airflow-webserver airflow tasks list soda_pipeline_only
 
 ## 🚀 CI/CD with GitHub Actions
 
-### Automated Workflows
-- **Data Quality CI/CD**: Automated Soda scans on pull requests
-- **Airflow DAG Testing**: DAG syntax and Docker validation
-- **Complete Pipeline Testing**: End-to-end pipeline validation
-- **Production Deployment**: Automated deployment to production
+### 🔄 **Focused CI/CD Testing Strategy**
+
+This project includes **4 focused GitHub Actions workflows** for comprehensive CI/CD testing:
+
+| Test Type | Workflow | Trigger | Purpose | Key Features |
+|-----------|----------|---------|---------|--------------|
+| **1. Airflow Instances** | `airflow-dag-test.yml` | Airflow/Docker changes | Test Airflow services and DAGs | Docker build → Airflow services → DAG validation → Integration testing |
+| **2. dbt Models** | `soda-data-quality.yml` | dbt changes | Test dbt model execution | dbt models → Data transformation → Quality validation |
+| **3. Soda Checks** | `soda-data-quality.yml` | Soda changes | Test data quality checks | Soda scans → Quality reports → Soda Cloud integration |
+| **4. Pipeline Run** | `complete-pipeline-test.yml` | Any changes | Test complete pipeline execution | End-to-end pipeline → All components → Integration testing |
+
+### 🎯 **CI/CD Test Details**
+
+#### **Test 1: Airflow Instances** (`airflow-dag-test.yml`)
+- **Triggers**: Changes to Airflow DAGs or Docker files
+- **Purpose**: Test Airflow services and DAG functionality
+- **Test Coverage**:
+  - ✅ Docker container build and startup
+  - ✅ Airflow webserver and scheduler health
+  - ✅ DAG syntax validation and loading
+  - ✅ DAG execution and task dependencies
+  - ✅ Service integration and communication
+
+#### **Test 2: dbt Models** (`soda-data-quality.yml`)
+- **Triggers**: Changes to dbt models or data transformation logic
+- **Purpose**: Test dbt model execution and data transformation
+- **Test Coverage**:
+  - ✅ dbt model compilation and syntax validation
+  - ✅ Data transformation logic (RAW → STAGING → MART)
+  - ✅ Model dependencies and execution order
+  - ✅ Data quality and integrity checks
+  - ✅ Snowflake connection and warehouse usage
+
+#### **Test 3: Soda Checks** (`soda-data-quality.yml`)
+- **Triggers**: Changes to Soda configuration or quality checks
+- **Purpose**: Test data quality monitoring and validation
+- **Test Coverage**:
+  - ✅ Soda Core installation and configuration
+  - ✅ Data quality checks on all layers (RAW, STAGING, MART, QUALITY)
+  - ✅ Quality threshold validation and reporting
+  - ✅ Soda Cloud integration and result transmission
+  - ✅ Quality metrics and trend analysis
+
+#### **Test 4: Pipeline Run** (`complete-pipeline-test.yml`)
+- **Triggers**: Any changes to the repository
+- **Purpose**: Test complete end-to-end pipeline execution
+- **Test Coverage**:
+  - ✅ Full pipeline orchestration (Airflow → dbt → Soda)
+  - ✅ End-to-end data flow validation
+  - ✅ Integration between all components
+  - ✅ Error handling and recovery mechanisms
+  - ✅ Performance and resource utilization
+
+### 🔒 **Quality Gates & Security**
+
+#### **Required Checks for Merging**
+- ✅ All workflows must pass before merging
+- ✅ Data quality checks are mandatory
+- ✅ DAG syntax validation required
+- ✅ Docker services must be healthy
+- ✅ End-to-end pipeline must complete successfully
+
+#### **Security Features**
+- 🔐 GitHub secrets for sensitive data (Snowflake, Soda Cloud)
+- 🔐 Environment variable management
+- 🔐 Secure credential handling
+- 🔐 No hardcoded secrets in code
+
+### 📊 **Monitoring & Reporting**
+
+#### **GitHub Actions Dashboard**
+- Real-time workflow execution monitoring
+- Detailed logs for troubleshooting
+- Workflow success/failure tracking
+- Performance metrics and timing
+
+#### **Soda Cloud Integration**
+- Centralized data quality monitoring
+- Automated alerting for quality issues
+- Historical quality trends
+- Team collaboration features
+
+#### **Pull Request Integration**
+- Quality results in PR comments
+- Status checks prevent bad merges
+- Automated quality reports
+- Team notifications for issues
 
 ### Required GitHub Secrets
 Configure these in your GitHub repository settings:

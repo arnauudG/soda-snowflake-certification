@@ -33,13 +33,7 @@ jobs:
       - name: Test Docker Compose configuration
         run: |
           cd docker
-          # Test docker-compose config (legacy)
-          if command -v docker-compose &> /dev/null; then
-            docker-compose config
-          else
-            # Test docker compose config (newer)
-            docker compose config
-          fi
+          docker compose config
 
   # Job 2: Test Docker Compose services
   docker-compose-test:
@@ -50,35 +44,28 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Create .env file
+        run: |
+          cat > .env << EOF
+          SNOWFLAKE_ACCOUNT=${{ secrets.SNOWFLAKE_ACCOUNT }}
+          SNOWFLAKE_USER=${{ secrets.SNOWFLAKE_USER }}
+          SNOWFLAKE_PASSWORD=${{ secrets.SNOWFLAKE_PASSWORD }}
+          SNOWFLAKE_ROLE=${{ secrets.SNOWFLAKE_ROLE }}
+          SNOWFLAKE_WAREHOUSE=${{ secrets.SNOWFLAKE_WAREHOUSE }}
+          SNOWFLAKE_DATABASE=${{ secrets.SNOWFLAKE_DATABASE }}
+          SNOWFLAKE_SCHEMA=${{ secrets.SNOWFLAKE_SCHEMA }}
+          SODA_CLOUD_API_KEY_ID=${{ secrets.SODA_CLOUD_API_KEY_ID }}
+          SODA_CLOUD_API_KEY_SECRET=${{ secrets.SODA_CLOUD_API_KEY_SECRET }}
+          SODA_CLOUD_HOST=${{ secrets.SODA_CLOUD_HOST }}
+          EOF
+
       - name: Test Docker Compose services
-        env:
-          SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
-          SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
-          SNOWFLAKE_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}
-          SNOWFLAKE_ROLE: ${{ secrets.SNOWFLAKE_ROLE }}
-          SNOWFLAKE_WAREHOUSE: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
-          SNOWFLAKE_DATABASE: ${{ secrets.SNOWFLAKE_DATABASE }}
-          SNOWFLAKE_SCHEMA: ${{ secrets.SNOWFLAKE_SCHEMA }}
-          SODA_CLOUD_API_KEY_ID: ${{ secrets.SODA_CLOUD_API_KEY_ID }}
-          SODA_CLOUD_API_KEY_SECRET: ${{ secrets.SODA_CLOUD_API_KEY_SECRET }}
-          SODA_CLOUD_HOST: ${{ secrets.SODA_CLOUD_HOST }}
         run: |
           cd docker
-          
-          # Start services
-          if command -v docker-compose &> /dev/null; then
-            echo "Using docker-compose (legacy)"
-            docker-compose up -d
-            sleep 30
-            docker-compose ps
-            docker-compose down
-          else
-            echo "Using docker compose (newer)"
-            docker compose up -d
-            sleep 30
-            docker compose ps
-            docker compose down
-          fi
+          docker compose up -d
+          sleep 30
+          docker compose ps
+          docker compose down
 
   # Job 3: Test Airflow services
   airflow-services-test:
@@ -89,29 +76,25 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Create .env file
+        run: |
+          cat > .env << EOF
+          SNOWFLAKE_ACCOUNT=${{ secrets.SNOWFLAKE_ACCOUNT }}
+          SNOWFLAKE_USER=${{ secrets.SNOWFLAKE_USER }}
+          SNOWFLAKE_PASSWORD=${{ secrets.SNOWFLAKE_PASSWORD }}
+          SNOWFLAKE_ROLE=${{ secrets.SNOWFLAKE_ROLE }}
+          SNOWFLAKE_WAREHOUSE=${{ secrets.SNOWFLAKE_WAREHOUSE }}
+          SNOWFLAKE_DATABASE=${{ secrets.SNOWFLAKE_DATABASE }}
+          SNOWFLAKE_SCHEMA=${{ secrets.SNOWFLAKE_SCHEMA }}
+          SODA_CLOUD_API_KEY_ID=${{ secrets.SODA_CLOUD_API_KEY_ID }}
+          SODA_CLOUD_API_KEY_SECRET=${{ secrets.SODA_CLOUD_API_KEY_SECRET }}
+          SODA_CLOUD_HOST=${{ secrets.SODA_CLOUD_HOST }}
+          EOF
+
       - name: Start Airflow services
-        env:
-          SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
-          SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
-          SNOWFLAKE_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}
-          SNOWFLAKE_ROLE: ${{ secrets.SNOWFLAKE_ROLE }}
-          SNOWFLAKE_WAREHOUSE: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
-          SNOWFLAKE_DATABASE: ${{ secrets.SNOWFLAKE_DATABASE }}
-          SNOWFLAKE_SCHEMA: ${{ secrets.SNOWFLAKE_SCHEMA }}
-          SODA_CLOUD_API_KEY_ID: ${{ secrets.SODA_CLOUD_API_KEY_ID }}
-          SODA_CLOUD_API_KEY_SECRET: ${{ secrets.SODA_CLOUD_API_KEY_SECRET }}
-          SODA_CLOUD_HOST: ${{ secrets.SODA_CLOUD_HOST }}
         run: |
           cd docker
-          
-          # Start services with appropriate command
-          if command -v docker-compose &> /dev/null; then
-            docker-compose up -d
-          else
-            docker compose up -d
-          fi
-          
-          # Wait for services to be ready
+          docker compose up -d
           sleep 60
 
       - name: Test Airflow services
@@ -129,11 +112,7 @@ jobs:
         if: always()
         run: |
           cd docker
-          if command -v docker-compose &> /dev/null; then
-            docker-compose down
-          else
-            docker compose down
-          fi
+          docker compose down
 
   # Job 4: Generate Docker test report
   docker-test-report:

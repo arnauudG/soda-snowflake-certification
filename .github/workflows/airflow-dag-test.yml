@@ -42,20 +42,20 @@ jobs:
           import sys
           sys.path.append('airflow/dags')
           
-          # Test soda_certification_dag.py
+          # Test soda_initialization.py
           try:
-              exec(open('airflow/dags/soda_certification_dag.py').read())
-              print('✅ soda_certification_dag.py syntax is valid')
+              exec(open('airflow/dags/soda_initialization.py').read())
+              print('✅ soda_initialization.py syntax is valid')
           except Exception as e:
-              print(f'❌ soda_certification_dag.py syntax error: {e}')
+              print(f'❌ soda_initialization.py syntax error: {e}')
               sys.exit(1)
           
-          # Test soda_pipeline_only.py
+          # Test soda_pipeline_run.py
           try:
-              exec(open('airflow/dags/soda_pipeline_only.py').read())
-              print('✅ soda_pipeline_only.py syntax is valid')
+              exec(open('airflow/dags/soda_pipeline_run.py').read())
+              print('✅ soda_pipeline_run.py syntax is valid')
           except Exception as e:
-              print(f'❌ soda_pipeline_only.py syntax error: {e}')
+              print(f'❌ soda_pipeline_run.py syntax error: {e}')
               sys.exit(1)
           "
 
@@ -92,26 +92,28 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Create .env file
+        run: |
+          cat > .env << EOF
+          SNOWFLAKE_ACCOUNT=${{ secrets.SNOWFLAKE_ACCOUNT }}
+          SNOWFLAKE_USER=${{ secrets.SNOWFLAKE_USER }}
+          SNOWFLAKE_PASSWORD=${{ secrets.SNOWFLAKE_PASSWORD }}
+          SNOWFLAKE_ROLE=${{ secrets.SNOWFLAKE_ROLE }}
+          SNOWFLAKE_WAREHOUSE=${{ secrets.SNOWFLAKE_WAREHOUSE }}
+          SNOWFLAKE_DATABASE=${{ secrets.SNOWFLAKE_DATABASE }}
+          SNOWFLAKE_SCHEMA=${{ secrets.SNOWFLAKE_SCHEMA }}
+          SODA_CLOUD_API_KEY_ID=${{ secrets.SODA_CLOUD_API_KEY_ID }}
+          SODA_CLOUD_API_KEY_SECRET=${{ secrets.SODA_CLOUD_API_KEY_SECRET }}
+          SODA_CLOUD_HOST=${{ secrets.SODA_CLOUD_HOST }}
+          EOF
+
       - name: Start Airflow services
-        env:
-          SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
-          SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
-          SNOWFLAKE_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}
-          SNOWFLAKE_ROLE: ${{ secrets.SNOWFLAKE_ROLE }}
-          SNOWFLAKE_WAREHOUSE: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
-          SNOWFLAKE_DATABASE: ${{ secrets.SNOWFLAKE_DATABASE }}
-          SNOWFLAKE_SCHEMA: ${{ secrets.SNOWFLAKE_SCHEMA }}
-          SODA_CLOUD_API_KEY_ID: ${{ secrets.SODA_CLOUD_API_KEY_ID }}
-          SODA_CLOUD_API_KEY_SECRET: ${{ secrets.SODA_CLOUD_API_KEY_SECRET }}
-          SODA_CLOUD_HOST: ${{ secrets.SODA_CLOUD_HOST }}
         run: |
           cd docker
-          # Start services with appropriate command
-          if command -v docker-compose &> /dev/null; then
-            docker-compose up -d
-          else
-            docker compose up -d
-          fi
+          docker compose up -d
           sleep 60
 
       - name: Test DAG loading
@@ -120,18 +122,14 @@ jobs:
 
       - name: Test DAG syntax in Airflow
         run: |
-          docker exec soda-airflow-webserver airflow dags list-runs -d soda_certification_pipeline --limit 1 || true
-          docker exec soda-airflow-webserver airflow dags list-runs -d soda_pipeline_only --limit 1 || true
+          docker exec soda-airflow-webserver airflow dags list-runs -d soda_initialization || true
+          docker exec soda-airflow-webserver airflow dags list-runs -d soda_pipeline_run || true
 
       - name: Cleanup
         if: always()
         run: |
           cd docker
-          if command -v docker-compose &> /dev/null; then
-            docker-compose down
-          else
-            docker compose down
-          fi
+          docker compose down
 
   # Job 4: Generate test report
   test-report:
@@ -145,8 +143,8 @@ jobs:
           echo "## 🧪 Airflow DAG Test Report" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### ✅ DAG Syntax Tests" >> $GITHUB_STEP_SUMMARY
-          echo "- soda_certification_dag.py: Syntax validated" >> $GITHUB_STEP_SUMMARY
-          echo "- soda_pipeline_only.py: Syntax validated" >> $GITHUB_STEP_SUMMARY
+          echo "- soda_initialization.py: Syntax validated" >> $GITHUB_STEP_SUMMARY
+          echo "- soda_pipeline_run.py: Syntax validated" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### 🐳 Docker Tests" >> $GITHUB_STEP_SUMMARY
           echo "- Docker build: Successful" >> $GITHUB_STEP_SUMMARY

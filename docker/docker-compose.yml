@@ -3,8 +3,6 @@
 services:
   # Airflow services
   airflow-webserver:
-    env_file:
-      - .env
     build:
       context: .
       dockerfile: Dockerfile
@@ -55,8 +53,6 @@ services:
         condition: service_completed_successfully
 
   airflow-scheduler:
-    env_file:
-      - .env
     build:
       context: .
       dockerfile: Dockerfile
@@ -105,8 +101,6 @@ services:
         condition: service_completed_successfully
 
   airflow-init:
-    env_file:
-      - .env
     build:
       context: .
       dockerfile: Dockerfile

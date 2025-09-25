@@ -62,6 +62,8 @@ jobs:
       - name: Test Docker Compose services
         run: |
           cd docker
+          # Copy .env file to docker directory
+          cp ../.env .env
           docker compose up -d
           sleep 30
           docker compose ps
@@ -94,6 +96,8 @@ jobs:
       - name: Start Airflow services
         run: |
           cd docker
+          # Copy .env file to docker directory
+          cp ../.env .env
           docker compose up -d
           sleep 60
 

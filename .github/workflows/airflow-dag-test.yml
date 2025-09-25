@@ -113,6 +113,8 @@ jobs:
       - name: Start Airflow services
         run: |
           cd docker
+          # Copy .env file to docker directory
+          cp ../.env .env
           docker compose up -d
           sleep 60
 

@@ -73,16 +73,27 @@ jobs:
           cd docker
           docker build -t soda-airflow-test .
 
+      - name: Create .env file for Docker Compose test
+        run: |
+          cat > .env << EOF
+          SNOWFLAKE_ACCOUNT=${{ secrets.SNOWFLAKE_ACCOUNT }}
+          SNOWFLAKE_USER=${{ secrets.SNOWFLAKE_USER }}
+          SNOWFLAKE_PASSWORD=${{ secrets.SNOWFLAKE_PASSWORD }}
+          SNOWFLAKE_ROLE=${{ secrets.SNOWFLAKE_ROLE }}
+          SNOWFLAKE_WAREHOUSE=${{ secrets.SNOWFLAKE_WAREHOUSE }}
+          SNOWFLAKE_DATABASE=${{ secrets.SNOWFLAKE_DATABASE }}
+          SNOWFLAKE_SCHEMA=${{ secrets.SNOWFLAKE_SCHEMA }}
+          SODA_CLOUD_API_KEY_ID=${{ secrets.SODA_CLOUD_API_KEY_ID }}
+          SODA_CLOUD_API_KEY_SECRET=${{ secrets.SODA_CLOUD_API_KEY_SECRET }}
+          SODA_CLOUD_HOST=${{ secrets.SODA_CLOUD_HOST }}
+          EOF
+
       - name: Test Docker Compose
         run: |
           cd docker
-          # Test docker-compose config (legacy)
-          if command -v docker-compose &> /dev/null; then
-            docker-compose config
-          else
-            # Test docker compose config (newer)
-            docker compose config
-          fi
+          # Copy .env file to docker directory
+          cp ../.env .env
+          docker compose config
 
   # Job 3: Test Airflow DAGs with Docker
   airflow-dag-test:

@@ -51,22 +51,30 @@ jobs:
       - name: Capture Soda outputs
         id: capture
         run: |
-          echo '${{ steps.soda.outputs["scan-results"] }}' > soda_scan_results_raw.json
-          echo "cloud_link=${{ steps.soda.outputs['scan-cloud-link'] }}" >> $GITHUB_OUTPUT
-          echo "exit_code=${{ steps.soda.outputs['scan-exit-code'] }}" >> $GITHUB_OUTPUT
-          # compress to single line for safe PR comment embedding
-          (command -v jq >/dev/null && jq -c . soda_scan_results_raw.json || cat soda_scan_results_raw.json) > results_min.json
-          echo "results_json=$(cat results_min.json)" >> $GITHUB_OUTPUT
+          # Save JSON results to a file (robust against newlines)
+          printf '%s' "${{ steps.soda.outputs['scan-results'] }}" > soda_scan_results_raw.json
+
+          # Expose outputs to other jobs/steps
+          echo "cloud_link=${{ steps.soda.outputs['scan-cloud-link'] }}" >> "$GITHUB_OUTPUT"
+          echo "exit_code=${{ steps.soda.outputs['scan-exit-code'] }}" >> "$GITHUB_OUTPUT"
+
+          # Compress JSON to a single line for safe embedding in PR comments
+          if command -v jq >/dev/null 2>&1; then
+            jq -c . soda_scan_results_raw.json > results_min.json
+          else
+            tr -d '\n' < soda_scan_results_raw.json > results_min.json
+          fi
+          echo "results_json=$(cat results_min.json)" >> "$GITHUB_OUTPUT"
 
       - name: Job summary
         run: |
-          echo "## Soda RAW scan" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Cloud report: ${{ steps.capture.outputs.cloud_link }}" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo '```json' >> $GITHUB_STEP_SUMMARY
-          cat soda_scan_results_raw.json >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "## Soda RAW scan" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "Cloud report: ${{ steps.capture.outputs.cloud_link }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo '```json' >> "$GITHUB_STEP_SUMMARY"
+          cat soda_scan_results_raw.json >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload artifacts
         if: always()

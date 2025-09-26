@@ -33,9 +33,10 @@ permissions:
   pull-requests: write
 
 jobs:
-  soda_scan_raw:
-    name: Run Soda Scan on RAW
+  soda_scan_raw_push:
+    name: Run Soda Scan on RAW (Push)
     runs-on: ubuntu-latest
+    if: github.event_name == 'push'
 
     steps:
       - name: Checkout
@@ -49,7 +50,74 @@ jobs:
           echo "Checks:"
           ls -la soda/checks/raw || true
 
-      - name: Perform Soda Scan (RAW)
+      - name: Perform Soda Scan (RAW) - Push
+        id: soda
+        run: |
+          # Install Soda Library
+          pip install soda-library==1.0.4
+          
+          # Run Soda scan without PR commenting
+          soda scan -d soda_certification_raw -c ./soda/configuration/configuration_raw.yml ./soda/checks/raw/
+        env:
+          # ---- Soda Cloud (store in GitHub Secrets) ----
+          SODA_CLOUD_HOST: ${{ secrets.SODA_CLOUD_HOST }}
+          SODA_CLOUD_API_KEY_ID: ${{ secrets.SODA_CLOUD_API_KEY_ID }}
+          SODA_CLOUD_API_KEY_SECRET: ${{ secrets.SODA_CLOUD_API_KEY_SECRET }}
+
+          # ---- Snowflake (store in GitHub Secrets) ----
+          SNOWFLAKE_ACCOUNT:   ${{ secrets.SNOWFLAKE_ACCOUNT }}
+          SNOWFLAKE_USER:      ${{ secrets.SNOWFLAKE_USER }}
+          SNOWFLAKE_PASSWORD:  ${{ secrets.SNOWFLAKE_PASSWORD }}
+          SNOWFLAKE_ROLE:      ${{ secrets.SNOWFLAKE_ROLE }}
+          SNOWFLAKE_WAREHOUSE: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
+          SNOWFLAKE_DATABASE:  ${{ secrets.SNOWFLAKE_DATABASE }}
+
+      # Upload Soda run artifacts for debugging/traceability
+      - name: Upload Soda Artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: soda-raw-artifacts
+          path: |
+            .soda/**/*
+            soda/**/*
+          if-no-files-found: ignore
+
+      # Handle push event notifications
+      - name: Notify on push failure
+        if: failure()
+        run: |
+          echo "❌ Soda RAW checks failed on push to ${{ github.ref_name }}"
+          echo "Check the job logs and the uploaded artifacts (soda-raw-artifacts) for details."
+          echo "Commit: ${{ github.sha }}"
+          echo "Author: ${{ github.actor }}"
+
+      # Success notification for push events
+      - name: Notify on push success
+        if: success()
+        run: |
+          echo "✅ Soda RAW checks passed on push to ${{ github.ref_name }}"
+          echo "Commit: ${{ github.sha }}"
+          echo "Author: ${{ github.actor }}"
+
+  soda_scan_raw_pr:
+    name: Run Soda Scan on RAW (Pull Request)
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Optional but helpful to print which config & checks will be used
+      - name: List Soda files
+        run: |
+          echo "Configuration:"
+          ls -la soda/configuration/configuration_raw.yml || true
+          echo "Checks:"
+          ls -la soda/checks/raw || true
+
+      - name: Perform Soda Scan (RAW) - PR
         id: soda
         uses: sodadata/soda-github-action@main
         env:
@@ -77,9 +145,6 @@ jobs:
           # Paths relative to repo root
           configuration: ./soda/configuration/configuration_raw.yml
           checks: ./soda/checks/raw
-          
-          # Disable automatic PR commenting for push events
-          comment_pr: ${{ github.event_name == 'pull_request' }}
 
       # Upload Soda run artifacts for debugging/traceability
       - name: Upload Soda Artifacts
@@ -91,22 +156,3 @@ jobs:
             .soda/**/*
             soda/**/*
           if-no-files-found: ignore
-
-      # PR comments are handled automatically by the Soda action when comment_pr is true
-
-      # Handle push event notifications
-      - name: Notify on push failure
-        if: failure() && github.event_name == 'push'
-        run: |
-          echo "❌ Soda RAW checks failed on push to ${{ github.ref_name }}"
-          echo "Check the job logs and the uploaded artifacts (soda-raw-artifacts) for details."
-          echo "Commit: ${{ github.sha }}"
-          echo "Author: ${{ github.actor }}"
-
-      # Success notification for push events
-      - name: Notify on push success
-        if: success() && github.event_name == 'push'
-        run: |
-          echo "✅ Soda RAW checks passed on push to ${{ github.ref_name }}"
-          echo "Commit: ${{ github.sha }}"
-          echo "Author: ${{ github.actor }}"

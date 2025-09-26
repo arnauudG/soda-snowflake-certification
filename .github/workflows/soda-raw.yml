@@ -1,27 +1,10 @@
-name: Soda Scan (RAW) - Push & PR
+name: Soda Scan (RAW)
 
 on:
+  workflow_dispatch: {}
   push:
-    branches: [ main ]
-    paths:
-      - "soda/configuration/configuration_raw.yml"
-      - "soda/checks/raw/**"
-      - "dbt/**"
-      - "airflow/**"
-      - ".github/workflows/soda-raw.yml"
-      - "**/*.sql"
-      - "**/*.yml"
-      - "**/*.yaml"
-  pull_request:
-    paths:
-      - "soda/configuration/configuration_raw.yml"
-      - "soda/checks/raw/**"
-      - "dbt/**"
-      - "airflow/**"
-      - ".github/workflows/soda-raw.yml"
-      - "**/*.sql"
-      - "**/*.yml"
-      - "**/*.yaml"
+    branches: ['**']     # run on any branch push
+  pull_request:          # run on any PR
 
 concurrency:
   group: soda-raw-${{ github.ref }}
@@ -29,7 +12,7 @@ concurrency:
 
 permissions:
   contents: read
-  pull-requests: write
+  pull-requests: write   # needed for the PR comment step (internal PRs)
 
 jobs:
   scan:
@@ -45,25 +28,20 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: List Soda files
-        run: |
-          ls -la soda/configuration/configuration_raw.yml || true
-          ls -la soda/checks/raw || true
-
       - name: Perform Soda Scan (RAW)
         id: soda
         uses: sodadata/soda-github-action@main
         continue-on-error: true
         env:
-          SODA_CLOUD_HOST:         ${{ secrets.SODA_CLOUD_HOST }}
-          SODA_CLOUD_API_KEY_ID:   ${{ secrets.SODA_CLOUD_API_KEY_ID }}
+          SODA_CLOUD_HOST:           ${{ secrets.SODA_CLOUD_HOST }}
+          SODA_CLOUD_API_KEY_ID:     ${{ secrets.SODA_CLOUD_API_KEY_ID }}
           SODA_CLOUD_API_KEY_SECRET: ${{ secrets.SODA_CLOUD_API_KEY_SECRET }}
-          SNOWFLAKE_ACCOUNT:       ${{ secrets.SNOWFLAKE_ACCOUNT }}
-          SNOWFLAKE_USER:          ${{ secrets.SNOWFLAKE_USER }}
-          SNOWFLAKE_PASSWORD:      ${{ secrets.SNOWFLAKE_PASSWORD }}
-          SNOWFLAKE_ROLE:          ${{ secrets.SNOWFLAKE_ROLE }}
-          SNOWFLAKE_WAREHOUSE:     ${{ secrets.SNOWFLAKE_WAREHOUSE }}
-          SNOWFLAKE_DATABASE:      ${{ secrets.SNOWFLAKE_DATABASE }}
+          SNOWFLAKE_ACCOUNT:         ${{ secrets.SNOWFLAKE_ACCOUNT }}
+          SNOWFLAKE_USER:            ${{ secrets.SNOWFLAKE_USER }}
+          SNOWFLAKE_PASSWORD:        ${{ secrets.SNOWFLAKE_PASSWORD }}
+          SNOWFLAKE_ROLE:            ${{ secrets.SNOWFLAKE_ROLE }}
+          SNOWFLAKE_WAREHOUSE:       ${{ secrets.SNOWFLAKE_WAREHOUSE }}
+          SNOWFLAKE_DATABASE:        ${{ secrets.SNOWFLAKE_DATABASE }}
         with:
           soda_library_version: v1.0.4
           data_source: soda_certification_raw
@@ -73,12 +51,11 @@ jobs:
       - name: Capture Soda outputs
         id: capture
         run: |
-          # Persist outputs so other jobs can read them
           echo '${{ steps.soda.outputs["scan-results"] }}' > soda_scan_results_raw.json
           echo "cloud_link=${{ steps.soda.outputs['scan-cloud-link'] }}" >> $GITHUB_OUTPUT
           echo "exit_code=${{ steps.soda.outputs['scan-exit-code'] }}" >> $GITHUB_OUTPUT
-          # Pass the JSON as a single-line string output
-          jq -c . soda_scan_results_raw.json > results_min.json || cp soda_scan_results_raw.json results_min.json
+          # compress to single line for safe PR comment embedding
+          (command -v jq >/dev/null && jq -c . soda_scan_results_raw.json || cat soda_scan_results_raw.json) > results_min.json
           echo "results_json=$(cat results_min.json)" >> $GITHUB_OUTPUT
 
       - name: Job summary
@@ -102,13 +79,14 @@ jobs:
             soda_scan_results_raw.json
           if-no-files-found: ignore
 
+  # PR comment only for PRs from the same repo (forks often lack token perms)
   pr_comment:
     name: Comment results on PR
     needs: scan
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
     steps:
-      - name: Comment on PR (only on PRs)
+      - name: Comment on PR
         uses: thollander/actions-comment-pull-request@v2
         with:
           issue_number: ${{ github.event.pull_request.number }}
@@ -128,7 +106,7 @@ jobs:
     needs: scan
     runs-on: ubuntu-latest
     steps:
-      - name: Fail on Soda failures (both push & PR)
+      - name: Fail on Soda failures
         run: |
           code='${{ needs.scan.outputs.exit_code }}'
           echo "Soda exit code: $code"

@@ -56,30 +56,31 @@ jobs:
           # Install Soda Core (latest stable version)
           pip install soda-core==3.5.6
           
-          # Create a temporary configuration file with actual values
-          cat > temp_config.yml << EOF
-          data_source soda_certification_raw:
-            type: snowflake
-            connection:
-              account: $SNOWFLAKE_ACCOUNT
-              username: $SNOWFLAKE_USER
-              password: $SNOWFLAKE_PASSWORD
-              role: $SNOWFLAKE_ROLE
-              warehouse: $SNOWFLAKE_WAREHOUSE
-              database: $SNOWFLAKE_DATABASE
-              schema: RAW
-              insecure_mode: True
-              query_tag: 'soda_quality_check_raw'
-              network_timeout: 600
+          # Set environment variables for Soda to use
+          export SNOWFLAKE_ACCOUNT="$SNOWFLAKE_ACCOUNT"
+          export SNOWFLAKE_USER="$SNOWFLAKE_USER"
+          export SNOWFLAKE_PASSWORD="$SNOWFLAKE_PASSWORD"
+          export SNOWFLAKE_ROLE="$SNOWFLAKE_ROLE"
+          export SNOWFLAKE_WAREHOUSE="$SNOWFLAKE_WAREHOUSE"
+          export SNOWFLAKE_DATABASE="$SNOWFLAKE_DATABASE"
+          export SODA_CLOUD_HOST="$SODA_CLOUD_HOST"
+          export SODA_CLOUD_API_KEY_ID="$SODA_CLOUD_API_KEY_ID"
+          export SODA_CLOUD_API_KEY_SECRET="$SODA_CLOUD_API_KEY_SECRET"
           
-          soda_cloud:
-            host: $SODA_CLOUD_HOST
-            api_key_id: $SODA_CLOUD_API_KEY_ID
-            api_key_secret: $SODA_CLOUD_API_KEY_SECRET
-          EOF
+          # Debug: Check if environment variables are set (without showing values)
+          echo "Environment variables check:"
+          echo "SNOWFLAKE_ACCOUNT is set: $([ -n "$SNOWFLAKE_ACCOUNT" ] && echo "YES" || echo "NO")"
+          echo "SNOWFLAKE_USER is set: $([ -n "$SNOWFLAKE_USER" ] && echo "YES" || echo "NO")"
+          echo "SNOWFLAKE_PASSWORD is set: $([ -n "$SNOWFLAKE_PASSWORD" ] && echo "YES" || echo "NO")"
+          echo "SNOWFLAKE_ROLE is set: $([ -n "$SNOWFLAKE_ROLE" ] && echo "YES" || echo "NO")"
+          echo "SNOWFLAKE_WAREHOUSE is set: $([ -n "$SNOWFLAKE_WAREHOUSE" ] && echo "YES" || echo "NO")"
+          echo "SNOWFLAKE_DATABASE is set: $([ -n "$SNOWFLAKE_DATABASE" ] && echo "YES" || echo "NO")"
+          echo "SODA_CLOUD_HOST is set: $([ -n "$SODA_CLOUD_HOST" ] && echo "YES" || echo "NO")"
+          echo "SODA_CLOUD_API_KEY_ID is set: $([ -n "$SODA_CLOUD_API_KEY_ID" ] && echo "YES" || echo "NO")"
+          echo "SODA_CLOUD_API_KEY_SECRET is set: $([ -n "$SODA_CLOUD_API_KEY_SECRET" ] && echo "YES" || echo "NO")"
           
-          # Run Soda scan with the temporary config
-          soda scan -d soda_certification_raw -c temp_config.yml ./soda/checks/raw/
+          # Run Soda scan using the original configuration file
+          soda scan -d soda_certification_raw -c ./soda/configuration/configuration_raw.yml ./soda/checks/raw/
         env:
           # ---- Soda Cloud (store in GitHub Secrets) ----
           SODA_CLOUD_HOST: ${{ secrets.SODA_CLOUD_HOST }}

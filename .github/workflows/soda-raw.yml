@@ -52,6 +52,7 @@ jobs:
       - name: Perform Soda Scan (RAW)
         id: soda
         uses: sodadata/soda-github-action@main
+        continue-on-error: true
         env:
           # ---- Soda Cloud (store in GitHub Secrets) ----
           SODA_CLOUD_HOST: ${{ secrets.SODA_CLOUD_HOST }}
@@ -77,6 +78,26 @@ jobs:
           # Paths relative to repo root
           configuration: ./soda/configuration/configuration_raw.yml
           checks: ./soda/checks/raw
+
+      # Check if the scan actually succeeded (ignoring PR comment failures)
+      - name: Check Soda Scan Results
+        if: always()
+        run: |
+          if [ -f soda_scan_results_raw.json ]; then
+            echo "✅ Soda scan completed successfully"
+            echo "Results saved to soda_scan_results_raw.json"
+            # Check if there were any actual scan failures (not just PR comment failures)
+            if grep -q '"State": "Fail"' soda_scan_results_raw.json; then
+              echo "⚠️  Some data quality checks failed, but scan completed"
+              exit 1
+            else
+              echo "✅ All data quality checks passed"
+              exit 0
+            fi
+          else
+            echo "❌ Soda scan failed to complete"
+            exit 1
+          fi
 
       # Upload Soda run artifacts for debugging/traceability
       - name: Upload Soda Artifacts

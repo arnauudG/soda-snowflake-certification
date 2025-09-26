@@ -1,4 +1,4 @@
-name: Soda Scan (RAW)
+name: Soda Scan (RAW) - Push & PR
 
 on:
   push:
@@ -77,6 +77,9 @@ jobs:
           # Paths relative to repo root
           configuration: ./soda/configuration/configuration_raw.yml
           checks: ./soda/checks/raw
+          
+          # Disable automatic PR commenting for push events
+          comment_pr: ${{ github.event_name == 'pull_request' }}
 
       # Upload Soda run artifacts for debugging/traceability
       - name: Upload Soda Artifacts
@@ -89,11 +92,21 @@ jobs:
             soda/**/*
           if-no-files-found: ignore
 
-      # Optionally, post a PR comment if checks fail (keeps the failure visible in PR)
-      - name: Comment on PR when checks fail
-        if: failure() && github.event_name == 'pull_request'
-        uses: thollander/actions-comment-pull-request@v2
-        with:
-          message: |
-            ❌ **Soda RAW checks failed.**
-            Check the job logs and the uploaded artifacts (`soda-raw-artifacts`) for details.
+      # PR comments are handled automatically by the Soda action when comment_pr is true
+
+      # Handle push event notifications
+      - name: Notify on push failure
+        if: failure() && github.event_name == 'push'
+        run: |
+          echo "❌ Soda RAW checks failed on push to ${{ github.ref_name }}"
+          echo "Check the job logs and the uploaded artifacts (soda-raw-artifacts) for details."
+          echo "Commit: ${{ github.sha }}"
+          echo "Author: ${{ github.actor }}"
+
+      # Success notification for push events
+      - name: Notify on push success
+        if: success() && github.event_name == 'push'
+        run: |
+          echo "✅ Soda RAW checks passed on push to ${{ github.ref_name }}"
+          echo "Commit: ${{ github.sha }}"
+          echo "Author: ${{ github.actor }}"

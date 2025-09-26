@@ -1,6 +1,18 @@
 name: Soda Scan (RAW)
 
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - "soda/configuration/configuration_raw.yml"
+      - "soda/checks/raw/**"
+      - "dbt/**"
+      - "airflow/**"
+      - ".github/workflows/soda-raw.yml"
+      - "**/*.sql"
+      - "**/*.yml"
+      - "**/*.yaml"
   pull_request:
     paths:
       - "soda/configuration/configuration_raw.yml"

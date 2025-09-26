@@ -2,8 +2,7 @@ name: Soda Scan (RAW) - Push & PR
 
 on:
   push:
-    branches:
-      - main
+    branches: [ main ]
     paths:
       - "soda/configuration/configuration_raw.yml"
       - "soda/checks/raw/**"
@@ -41,7 +40,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # Optional but helpful to print which config & checks will be used
       - name: List Soda files
         run: |
           echo "Configuration:"
@@ -68,38 +66,48 @@ jobs:
           SNOWFLAKE_DATABASE:  ${{ secrets.SNOWFLAKE_DATABASE }}
 
         with:
-          # Pin the Soda Library version (adjust if you need a different one)
           soda_library_version: v1.0.4
-
-          # Match the data source name defined in your configuration file:
-          #   data_source soda_certification_raw:
           data_source: soda_certification_raw
-
-          # Paths relative to repo root
           configuration: ./soda/configuration/configuration_raw.yml
           checks: ./soda/checks/raw
 
-      # Check if the scan actually succeeded (ignoring PR comment failures)
-      - name: Check Soda Scan Results
-        if: always()
+      # Persist outputs to files so later steps can read them reliably
+      - name: Capture Soda outputs
+        id: capture
         run: |
-          if [ -f soda_scan_results_raw.json ]; then
-            echo "✅ Soda scan completed successfully"
-            echo "Results saved to soda_scan_results_raw.json"
-            # Check if there were any actual scan failures (not just PR comment failures)
-            if grep -q '"State": "Fail"' soda_scan_results_raw.json; then
-              echo "⚠️  Some data quality checks failed, but scan completed"
-              exit 1
-            else
-              echo "✅ All data quality checks passed"
-              exit 0
-            fi
-          else
-            echo "❌ Soda scan failed to complete"
-            exit 1
-          fi
+          echo '${{ steps.soda.outputs.scan-results }}' > soda_scan_results_raw.json
+          echo "cloud_link=${{ steps.soda.outputs.scan-cloud-link }}" >> $GITHUB_OUTPUT
+          echo "exit_code=${{ steps.soda.outputs.scan-exit-code }}" >> $GITHUB_OUTPUT
 
-      # Upload Soda run artifacts for debugging/traceability
+      # Human-friendly summary in the job summary (works for push & PR)
+      - name: Write summary
+        run: |
+          echo "## Soda RAW scan" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Cloud report: ${{ steps.capture.outputs.cloud_link }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo '```json' >> $GITHUB_STEP_SUMMARY
+          cat soda_scan_results_raw.json >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+      # Comment on the PR only when we are in a PR context
+      - name: Comment results on PR (only on PRs)
+        if: github.event_name == 'pull_request'
+        uses: thollander/actions-comment-pull-request@v2
+        with:
+          issue_number: ${{ github.event.pull_request.number }}
+          mode: upsert
+          create_if_not_exists: true
+          message: |
+            ${{ steps.capture.outputs.exit_code != '0' && '🔴' || '🟢' }} Soda scan completed with the following results:
+
+            ```json
+            ${{ steps.soda.outputs.scan-results }}
+            ```
+
+            [View the full scan results](${{ steps.capture.outputs.cloud_link }})
+
+      # Upload artifacts for debugging/traceability
       - name: Upload Soda Artifacts
         if: always()
         uses: actions/upload-artifact@v4
@@ -108,21 +116,16 @@ jobs:
           path: |
             .soda/**/*
             soda/**/*
+            soda_scan_results_raw.json
           if-no-files-found: ignore
 
-      # Handle push event notifications
-      - name: Notify on push failure
-        if: failure() && github.event_name == 'push'
+      # Fail the job based on Soda's exit code:
+      # 0 = success, 1/2 = failures (2 in your log since 5 checks failed)
+      - name: Fail if Soda reported failures
         run: |
-          echo "❌ Soda RAW checks failed on push to ${{ github.ref_name }}"
-          echo "Check the job logs and the uploaded artifacts (soda-raw-artifacts) for details."
-          echo "Commit: ${{ github.sha }}"
-          echo "Author: ${{ github.actor }}"
-
-      # Success notification for push events
-      - name: Notify on push success
-        if: success() && github.event_name == 'push'
-        run: |
-          echo "✅ Soda RAW checks passed on push to ${{ github.ref_name }}"
-          echo "Commit: ${{ github.sha }}"
-          echo "Author: ${{ github.actor }}"
+          code='${{ steps.capture.outputs.exit_code }}'
+          echo "Soda exit code: $code"
+          if [ "$code" != "0" ]; then
+            echo "Soda reported failing checks."
+            exit "$code"
+          fi

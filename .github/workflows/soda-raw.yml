@@ -32,9 +32,14 @@ permissions:
   pull-requests: write
 
 jobs:
-  soda_scan_raw:
+  scan:
     name: Run Soda Scan on RAW
     runs-on: ubuntu-latest
+
+    outputs:
+      exit_code: ${{ steps.capture.outputs.exit_code }}
+      cloud_link: ${{ steps.capture.outputs.cloud_link }}
+      results_json: ${{ steps.capture.outputs.results_json }}
 
     steps:
       - name: Checkout
@@ -42,9 +47,7 @@ jobs:
 
       - name: List Soda files
         run: |
-          echo "Configuration:"
           ls -la soda/configuration/configuration_raw.yml || true
-          echo "Checks:"
           ls -la soda/checks/raw || true
 
       - name: Perform Soda Scan (RAW)
@@ -52,35 +55,33 @@ jobs:
         uses: sodadata/soda-github-action@main
         continue-on-error: true
         env:
-          # ---- Soda Cloud (store in GitHub Secrets) ----
-          SODA_CLOUD_HOST: ${{ secrets.SODA_CLOUD_HOST }}
-          SODA_CLOUD_API_KEY_ID: ${{ secrets.SODA_CLOUD_API_KEY_ID }}
+          SODA_CLOUD_HOST:         ${{ secrets.SODA_CLOUD_HOST }}
+          SODA_CLOUD_API_KEY_ID:   ${{ secrets.SODA_CLOUD_API_KEY_ID }}
           SODA_CLOUD_API_KEY_SECRET: ${{ secrets.SODA_CLOUD_API_KEY_SECRET }}
-
-          # ---- Snowflake (store in GitHub Secrets) ----
-          SNOWFLAKE_ACCOUNT:   ${{ secrets.SNOWFLAKE_ACCOUNT }}
-          SNOWFLAKE_USER:      ${{ secrets.SNOWFLAKE_USER }}
-          SNOWFLAKE_PASSWORD:  ${{ secrets.SNOWFLAKE_PASSWORD }}
-          SNOWFLAKE_ROLE:      ${{ secrets.SNOWFLAKE_ROLE }}
-          SNOWFLAKE_WAREHOUSE: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
-          SNOWFLAKE_DATABASE:  ${{ secrets.SNOWFLAKE_DATABASE }}
-
+          SNOWFLAKE_ACCOUNT:       ${{ secrets.SNOWFLAKE_ACCOUNT }}
+          SNOWFLAKE_USER:          ${{ secrets.SNOWFLAKE_USER }}
+          SNOWFLAKE_PASSWORD:      ${{ secrets.SNOWFLAKE_PASSWORD }}
+          SNOWFLAKE_ROLE:          ${{ secrets.SNOWFLAKE_ROLE }}
+          SNOWFLAKE_WAREHOUSE:     ${{ secrets.SNOWFLAKE_WAREHOUSE }}
+          SNOWFLAKE_DATABASE:      ${{ secrets.SNOWFLAKE_DATABASE }}
         with:
           soda_library_version: v1.0.4
           data_source: soda_certification_raw
           configuration: ./soda/configuration/configuration_raw.yml
           checks: ./soda/checks/raw
 
-      # Persist outputs to files so later steps can read them reliably
       - name: Capture Soda outputs
         id: capture
         run: |
-          echo '${{ steps.soda.outputs.scan-results }}' > soda_scan_results_raw.json
-          echo "cloud_link=${{ steps.soda.outputs.scan-cloud-link }}" >> $GITHUB_OUTPUT
-          echo "exit_code=${{ steps.soda.outputs.scan-exit-code }}" >> $GITHUB_OUTPUT
+          # Persist outputs so other jobs can read them
+          echo '${{ steps.soda.outputs["scan-results"] }}' > soda_scan_results_raw.json
+          echo "cloud_link=${{ steps.soda.outputs['scan-cloud-link'] }}" >> $GITHUB_OUTPUT
+          echo "exit_code=${{ steps.soda.outputs['scan-exit-code'] }}" >> $GITHUB_OUTPUT
+          # Pass the JSON as a single-line string output
+          jq -c . soda_scan_results_raw.json > results_min.json || cp soda_scan_results_raw.json results_min.json
+          echo "results_json=$(cat results_min.json)" >> $GITHUB_OUTPUT
 
-      # Human-friendly summary in the job summary (works for push & PR)
-      - name: Write summary
+      - name: Job summary
         run: |
           echo "## Soda RAW scan" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
@@ -90,25 +91,7 @@ jobs:
           cat soda_scan_results_raw.json >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
 
-      # Comment on the PR only when we are in a PR context
-      - name: Comment results on PR (only on PRs)
-        if: github.event_name == 'pull_request'
-        uses: thollander/actions-comment-pull-request@v2
-        with:
-          issue_number: ${{ github.event.pull_request.number }}
-          mode: upsert
-          create_if_not_exists: true
-          message: |
-            ${{ steps.capture.outputs.exit_code != '0' && '🔴' || '🟢' }} Soda scan completed with the following results:
-
-            ```json
-            ${{ steps.soda.outputs.scan-results }}
-            ```
-
-            [View the full scan results](${{ steps.capture.outputs.cloud_link }})
-
-      # Upload artifacts for debugging/traceability
-      - name: Upload Soda Artifacts
+      - name: Upload artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -119,13 +102,36 @@ jobs:
             soda_scan_results_raw.json
           if-no-files-found: ignore
 
-      # Fail the job based on Soda's exit code:
-      # 0 = success, 1/2 = failures (2 in your log since 5 checks failed)
-      - name: Fail if Soda reported failures
+  pr_comment:
+    name: Comment results on PR
+    needs: scan
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Comment on PR (only on PRs)
+        uses: thollander/actions-comment-pull-request@v2
+        with:
+          issue_number: ${{ github.event.pull_request.number }}
+          mode: upsert
+          create_if_not_exists: true
+          message: |
+            ${{ needs.scan.outputs.exit_code != '0' && '🔴' || '🟢' }} **Soda RAW scan**
+
+            ```json
+            ${{ needs.scan.outputs.results_json }}
+            ```
+
+            [View the full scan results](${{ needs.scan.outputs.cloud_link }})
+
+  gate:
+    name: Enforce CI status
+    needs: scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fail on Soda failures (both push & PR)
         run: |
-          code='${{ steps.capture.outputs.exit_code }}'
+          code='${{ needs.scan.outputs.exit_code }}'
           echo "Soda exit code: $code"
           if [ "$code" != "0" ]; then
-            echo "Soda reported failing checks."
             exit "$code"
           fi

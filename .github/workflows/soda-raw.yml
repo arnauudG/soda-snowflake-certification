@@ -53,8 +53,8 @@ jobs:
       - name: Perform Soda Scan (RAW) - Push
         id: soda
         run: |
-          # Install Soda Core
-          pip install soda-core==1.0.4
+          # Install Soda Core (latest stable version)
+          pip install soda-core==3.5.6
           
           # Run Soda scan without PR commenting
           soda scan -d soda_certification_raw -c ./soda/configuration/configuration_raw.yml ./soda/checks/raw/

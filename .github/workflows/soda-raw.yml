@@ -56,31 +56,15 @@ jobs:
           # Install Soda Core (latest stable version)
           pip install soda-core==3.5.6
           
-          # Set environment variables for Soda to use
-          export SNOWFLAKE_ACCOUNT="$SNOWFLAKE_ACCOUNT"
-          export SNOWFLAKE_USER="$SNOWFLAKE_USER"
-          export SNOWFLAKE_PASSWORD="$SNOWFLAKE_PASSWORD"
-          export SNOWFLAKE_ROLE="$SNOWFLAKE_ROLE"
-          export SNOWFLAKE_WAREHOUSE="$SNOWFLAKE_WAREHOUSE"
-          export SNOWFLAKE_DATABASE="$SNOWFLAKE_DATABASE"
-          export SODA_CLOUD_HOST="$SODA_CLOUD_HOST"
-          export SODA_CLOUD_API_KEY_ID="$SODA_CLOUD_API_KEY_ID"
-          export SODA_CLOUD_API_KEY_SECRET="$SODA_CLOUD_API_KEY_SECRET"
+          # Create a processed configuration file with environment variables substituted
+          envsubst < ./soda/configuration/configuration_raw.yml > temp_config_processed.yml
           
-          # Debug: Check if environment variables are set (without showing values)
-          echo "Environment variables check:"
-          echo "SNOWFLAKE_ACCOUNT is set: $([ -n "$SNOWFLAKE_ACCOUNT" ] && echo "YES" || echo "NO")"
-          echo "SNOWFLAKE_USER is set: $([ -n "$SNOWFLAKE_USER" ] && echo "YES" || echo "NO")"
-          echo "SNOWFLAKE_PASSWORD is set: $([ -n "$SNOWFLAKE_PASSWORD" ] && echo "YES" || echo "NO")"
-          echo "SNOWFLAKE_ROLE is set: $([ -n "$SNOWFLAKE_ROLE" ] && echo "YES" || echo "NO")"
-          echo "SNOWFLAKE_WAREHOUSE is set: $([ -n "$SNOWFLAKE_WAREHOUSE" ] && echo "YES" || echo "NO")"
-          echo "SNOWFLAKE_DATABASE is set: $([ -n "$SNOWFLAKE_DATABASE" ] && echo "YES" || echo "NO")"
-          echo "SODA_CLOUD_HOST is set: $([ -n "$SODA_CLOUD_HOST" ] && echo "YES" || echo "NO")"
-          echo "SODA_CLOUD_API_KEY_ID is set: $([ -n "$SODA_CLOUD_API_KEY_ID" ] && echo "YES" || echo "NO")"
-          echo "SODA_CLOUD_API_KEY_SECRET is set: $([ -n "$SODA_CLOUD_API_KEY_SECRET" ] && echo "YES" || echo "NO")"
+          # Debug: Show the processed config (without sensitive values)
+          echo "Processed configuration file created successfully"
+          echo "Configuration file size: $(wc -l < temp_config_processed.yml) lines"
           
-          # Run Soda scan using the original configuration file
-          soda scan -d soda_certification_raw -c ./soda/configuration/configuration_raw.yml ./soda/checks/raw/
+          # Run Soda scan using the processed configuration file
+          soda scan -d soda_certification_raw -c temp_config_processed.yml ./soda/checks/raw/
         env:
           # ---- Soda Cloud (store in GitHub Secrets) ----
           SODA_CLOUD_HOST: ${{ secrets.SODA_CLOUD_HOST }}

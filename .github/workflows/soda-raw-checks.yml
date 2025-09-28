@@ -1,16 +1,17 @@
 name: Scan for data quality
 
 on: push
+
 jobs:
   soda_scan:
     runs-on: ubuntu-latest
-    name: Run Soda Scan
+    name: Run Soda Scan (raw)
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Soda Library Action
-        uses: sodadata/soda-github-action@v1.0.2
+        uses: sodadata/soda-github-action@v1
         env:
           SODA_CLOUD_API_KEY: ${{ secrets.SODA_CLOUD_API_KEY_ID }}
           SODA_CLOUD_API_SECRET: ${{ secrets.SODA_CLOUD_API_KEY_SECRET }}
@@ -19,5 +20,5 @@ jobs:
         with:
           soda_library_version: v1.0.4
           data_source: soda_certification_raw
-          configuration: ./configuration_raw.yaml
-          checks: ./raw/*.yml
+          configuration: soda/configuration/configuration_raw.yml
+          checks: soda/checks/raw/*.yml

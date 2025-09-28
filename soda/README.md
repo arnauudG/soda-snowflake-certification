@@ -1,6 +1,6 @@
-# Soda Data Quality Monitoring
+# Soda Data Quality Monitoring - Layered Approach
 
-This directory contains the Soda data quality monitoring configuration for the Soda Certification project.
+This directory contains the Soda data quality monitoring configuration for the Soda Certification project, implementing a **layered orchestration approach** where each data layer is processed sequentially with its corresponding quality checks.
 
 ## 📁 Directory Structure
 
@@ -19,31 +19,49 @@ soda/
 └── README.md              # This file
 ```
 
-## 🎯 Layer-Based Quality Strategy
+## 🎯 Layered Orchestration Strategy
 
-### RAW Layer (Lenient)
+### **Layer 1: RAW + RAW Checks**
 - **Purpose**: Initial data quality assessment
 - **Database**: `SODA_CERTIFICATION.RAW`
 - **Focus**: Data completeness, basic validity
+- **Execution**: RAW data quality checks only
 
-### STAGING Layer (Stricter)
+### **Layer 2: Staging Models + Staging Checks**
 - **Purpose**: Data quality after transformation
 - **Database**: `SODA_CERTIFICATION.STAGING`
 - **Focus**: Data consistency, business rules
+- **Execution**: dbt staging models → staging quality checks
 
-### MART Layer (Strictest)
+### **Layer 3: Mart Models + Mart Checks**
 - **Purpose**: Business-ready data validation
 - **Database**: `SODA_CERTIFICATION.MART`
 - **Focus**: Perfect data quality, referential integrity
+- **Execution**: dbt mart models → mart quality checks
 
-### QUALITY Layer (Monitoring)
-- **Purpose**: Monitor data quality check execution
+### **Layer 4: Quality Monitoring + dbt Tests**
+- **Purpose**: Final validation and monitoring
 - **Database**: `SODA_CERTIFICATION.QUALITY`
-- **Focus**: Check execution, result tracking
+- **Focus**: Check execution, result tracking, final tests
+- **Execution**: Quality monitoring checks + dbt tests
 
 ## 🚀 Usage
 
-### Run Specific Layer Checks
+### **Layered Orchestration (Recommended)**
+The pipeline now runs in a **layered sequence** where each layer is processed with its corresponding quality checks:
+
+```bash
+# Trigger the complete layered pipeline
+make airflow-trigger-pipeline
+```
+
+**This executes:**
+1. **Layer 1**: RAW data + RAW quality checks
+2. **Layer 2**: dbt staging models + staging quality checks  
+3. **Layer 3**: dbt mart models + mart quality checks
+4. **Layer 4**: Quality monitoring + dbt tests
+
+### Run Individual Layer Checks
 ```bash
 # RAW layer
 soda scan -d soda_certification_raw -c soda/configuration/configuration_raw.yml soda/checks/raw/

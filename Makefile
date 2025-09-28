@@ -78,10 +78,10 @@ airflow-trigger-init: ## Trigger initialization DAG (fresh setup only)
 	@docker exec soda-airflow-webserver airflow dags trigger soda_initialization
 	@echo "[OK] Initialization DAG triggered"
 
-airflow-trigger-pipeline: ## Trigger pipeline run DAG (regular data processing)
-	@echo "🔄 Triggering pipeline run DAG..."
+airflow-trigger-pipeline: ## Trigger layered pipeline DAG (layer-by-layer processing)
+	@echo "🔄 Triggering layered pipeline DAG..."
 	@docker exec soda-airflow-webserver airflow dags trigger soda_pipeline_run
-	@echo "[OK] Pipeline run DAG triggered"
+	@echo "[OK] Layered pipeline DAG triggered"
 
 
 airflow-list: ## List available DAGs
@@ -102,7 +102,7 @@ docs: ## Open documentation
 	@echo "  make help - Show all available commands"
 	@echo "  make airflow-up - Start Airflow services"
 	@echo "  make airflow-trigger-init - Fresh initialization (first time)"
-	@echo "  make airflow-trigger-pipeline - Regular pipeline runs"
+	@echo "  make airflow-trigger-pipeline - Layered pipeline runs"
 
 setup: venv deps ## Complete environment setup
 	@echo "🔧 Setting up environment..."

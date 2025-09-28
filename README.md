@@ -166,8 +166,10 @@ make airflow-trigger-pipeline
 - ✅ Resets Snowflake database
 - ✅ Sets up schemas and tables
 - ✅ Generates sample data with quality issues
-- ✅ Runs dbt models (RAW → STAGING → MART)
-- ✅ Executes Soda data quality checks
+- ✅ **Layer 1**: RAW data quality checks
+- ✅ **Layer 2**: dbt staging models + staging quality checks
+- ✅ **Layer 3**: dbt mart models + mart quality checks
+- ✅ **Layer 4**: Quality monitoring + dbt tests
 - ✅ Sends results to Soda Cloud
 
 #### Option C: Manual Setup
@@ -193,8 +195,10 @@ docker exec soda-airflow-webserver airflow dags trigger soda_pipeline_run
 ```
 
 **What this does:**
-- ✅ Runs dbt models (RAW → STAGING → MART)
-- ✅ Executes Soda data quality checks on all layers
+- ✅ **Layer 1**: RAW data quality checks
+- ✅ **Layer 2**: dbt staging models + staging quality checks
+- ✅ **Layer 3**: dbt mart models + mart quality checks  
+- ✅ **Layer 4**: Quality monitoring + dbt tests
 - ✅ Sends results to Soda Cloud
 - ✅ Cleans up temporary artifacts
 
@@ -219,10 +223,14 @@ docker exec soda-airflow-webserver airflow dags trigger soda_pipeline_run
 - **Trigger**: `make airflow-trigger-init`
 - **Frequency**: Run once
 
-### 2. `soda_pipeline_run` (Pipeline Only)
-- **Purpose**: Regular data processing and quality monitoring
+### 2. `soda_pipeline_run` (Layered Pipeline)
+- **Purpose**: Layered data processing with quality checks at each stage
 - **When to use**: Daily/weekly runs, scheduled execution
-- **Tasks**: dbt models → Soda checks
+- **Layered Tasks**: 
+  - **Layer 1**: RAW data + RAW quality checks
+  - **Layer 2**: dbt staging models + staging quality checks  
+  - **Layer 3**: dbt mart models + mart quality checks
+  - **Layer 4**: Quality monitoring + dbt tests
 - **Trigger**: `make airflow-trigger-pipeline`
 - **Frequency**: Regular runs
 
@@ -298,7 +306,7 @@ Soda-Certification/
 │   ├── airflow/
 │   │   └── dags/
 │   │       ├── soda_initialization.py      # Initialization DAG (fresh setup)
-│   │       └── soda_pipeline_run.py        # Pipeline DAG (data processing)
+│   │       └── soda_pipeline_run.py        # Layered Pipeline DAG (layer-by-layer processing)
 │   └── docker/
 │       ├── docker-compose.yml              # Multi-service Docker setup
 │       ├── Dockerfile                       # Custom Airflow image

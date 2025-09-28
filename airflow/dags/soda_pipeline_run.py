@@ -30,16 +30,24 @@ with DAG(
     catchup=False,
     tags=["soda", "dbt", "data-quality", "pipeline", "regular"],
     doc_md="""
-    # Soda Pipeline Run DAG
+    # Soda Pipeline Run DAG - Layered Approach
     
-    This DAG handles **regular data processing** and quality monitoring.
+    This DAG handles **layered data processing** with quality checks at each stage.
     Use this DAG for daily/weekly pipeline runs after initialization is complete.
     
     ## What This DAG Does
-    - **Runs dbt models** (RAW → STAGING → MART transformations)
-    - **Executes Soda quality checks** on all layers
+    - **Layer 1**: RAW data quality checks
+    - **Layer 2**: dbt staging models + staging quality checks
+    - **Layer 3**: dbt mart models + mart quality checks  
+    - **Layer 4**: Quality monitoring + dbt tests
     - **Sends results to Soda Cloud** for monitoring
     - **Cleans up artifacts** and temporary files
+    
+    ## Layered Processing Flow
+    1. **RAW Layer**: Quality checks on source data
+    2. **STAGING Layer**: Transform data + quality checks
+    3. **MART Layer**: Business logic + quality checks
+    4. **QUALITY Layer**: Final validation + dbt tests
     
     ## When to Use
     - ✅ **Daily/weekly pipeline runs**
@@ -52,39 +60,34 @@ with DAG(
     - ⚠️ **Snowflake must be initialized** with sample data
     - ⚠️ **Environment variables must be configured**
     
-    ## Tasks
-    - **dbt_run**: Execute dbt models for all layers
-    - **soda_scan_raw**: Data quality checks on RAW layer
-    - **soda_scan_staging**: Data quality checks on STAGING layer  
-    - **soda_scan_mart**: Data quality checks on MART layer
-    - **soda_scan_quality**: Data quality checks on QUALITY layer
+    ## Layer Tasks
+    - **Layer 1**: `soda_scan_raw` - RAW data quality checks
+    - **Layer 2**: `dbt_run_staging` + `soda_scan_staging` - Staging models + checks
+    - **Layer 3**: `dbt_run_mart` + `soda_scan_mart` - Mart models + checks
+    - **Layer 4**: `soda_scan_quality` + `dbt_test` - Quality monitoring + tests
     - **cleanup**: Clean up temporary artifacts
     """,
 ):
 
     # =============================================================================
-    # PIPELINE TASKS
+    # PIPELINE TASKS - LAYERED APPROACH
     # =============================================================================
     
     pipeline_start = DummyOperator(
         task_id="pipeline_start",
-        doc_md="🔄 Starting regular pipeline execution"
+        doc_md="🔄 Starting layered pipeline execution"
     )
 
-    dbt_run = BashOperator(
-        task_id="dbt_run",
-        bash_command=BASH_PREFIX + "cd dbt && dbt run --profiles-dir . && dbt test --profiles-dir . || true",
-        doc_md="""
-        **Execute dbt Models**
-        
-        - Runs dbt models for all layers (RAW → STAGING → MART)
-        - Executes dbt tests to validate data quality
-        - Transforms raw data into business-ready analytics
-        """,
+    # =============================================================================
+    # LAYER 1: RAW DATA + RAW CHECKS
+    # =============================================================================
+    
+    raw_layer_start = DummyOperator(
+        task_id="raw_layer_start",
+        doc_md="📊 Starting RAW layer processing"
     )
 
-    # Soda scans for each layer
-    soda_raw = BashOperator(
+    soda_scan_raw = BashOperator(
         task_id="soda_scan_raw",
         bash_command=BASH_PREFIX + "soda scan -d soda_certification_raw -c soda/configuration/configuration_raw.yml soda/checks/raw || true",
         doc_md="""
@@ -96,19 +99,71 @@ with DAG(
         """,
     )
 
-    soda_staging = BashOperator(
+    raw_layer_end = DummyOperator(
+        task_id="raw_layer_end",
+        doc_md="✅ RAW layer processing completed"
+    )
+
+    # =============================================================================
+    # LAYER 2: STAGING MODELS + STAGING CHECKS
+    # =============================================================================
+    
+    staging_layer_start = DummyOperator(
+        task_id="staging_layer_start",
+        doc_md="🔄 Starting STAGING layer processing"
+    )
+
+    dbt_run_staging = BashOperator(
+        task_id="dbt_run_staging",
+        bash_command=BASH_PREFIX + "cd dbt && dbt run --models staging --profiles-dir . || true",
+        doc_md="""
+        **Execute dbt Staging Models**
+        
+        - Runs dbt staging models (stg_customers, stg_orders, stg_products, stg_order_items)
+        - Transforms raw data into cleaned, standardized format
+        - Applies data quality improvements
+        """,
+    )
+
+    soda_scan_staging = BashOperator(
         task_id="soda_scan_staging",
         bash_command=BASH_PREFIX + "soda scan -d soda_certification_staging -c soda/configuration/configuration_staging.yml soda/checks/staging || true",
         doc_md="""
         **STAGING Layer Quality Checks**
         
-        - Stricter quality thresholds
+        - Stricter quality thresholds than RAW
         - Shows data improvement after transformation
         - Expected: Fewer failures than RAW layer
         """,
     )
 
-    soda_mart = BashOperator(
+    staging_layer_end = DummyOperator(
+        task_id="staging_layer_end",
+        doc_md="✅ STAGING layer processing completed"
+    )
+
+    # =============================================================================
+    # LAYER 3: MART MODELS + MART CHECKS
+    # =============================================================================
+    
+    mart_layer_start = DummyOperator(
+        task_id="mart_layer_start",
+        doc_md="🏆 Starting MART layer processing"
+    )
+
+    dbt_run_mart = BashOperator(
+        task_id="dbt_run_mart",
+        bash_command=BASH_PREFIX + "cd dbt && dbt run --models marts --profiles-dir . || true",
+        doc_md="""
+        **Execute dbt Mart Models**
+        
+        - Runs dbt mart models (dim_customers, fact_orders)
+        - Creates business-ready analytics tables
+        - Applies business logic and aggregations
+        """,
+    )
+
+    soda_scan_mart = BashOperator(
         task_id="soda_scan_mart",
         bash_command=BASH_PREFIX + "soda scan -d soda_certification_mart -c soda/configuration/configuration_mart.yml soda/checks/mart || true",
         doc_md="""
@@ -120,7 +175,21 @@ with DAG(
         """,
     )
 
-    soda_quality = BashOperator(
+    mart_layer_end = DummyOperator(
+        task_id="mart_layer_end",
+        doc_md="✅ MART layer processing completed"
+    )
+
+    # =============================================================================
+    # LAYER 4: QUALITY CHECKS + DBT TESTS
+    # =============================================================================
+    
+    quality_layer_start = DummyOperator(
+        task_id="quality_layer_start",
+        doc_md="🔍 Starting QUALITY layer processing"
+    )
+
+    soda_scan_quality = BashOperator(
         task_id="soda_scan_quality",
         bash_command=BASH_PREFIX + "soda scan -d soda_certification_quality -c soda/configuration/configuration_quality.yml soda/checks/quality || true",
         doc_md="""
@@ -132,6 +201,27 @@ with DAG(
         """,
     )
 
+    dbt_test = BashOperator(
+        task_id="dbt_test",
+        bash_command=BASH_PREFIX + "cd dbt && dbt test --profiles-dir . || true",
+        doc_md="""
+        **Execute dbt Tests**
+        
+        - Runs all dbt tests to validate data quality
+        - Tests referential integrity, uniqueness, and business rules
+        - Ensures data consistency across all layers
+        """,
+    )
+
+    quality_layer_end = DummyOperator(
+        task_id="quality_layer_end",
+        doc_md="✅ QUALITY layer processing completed"
+    )
+
+    # =============================================================================
+    # CLEANUP
+    # =============================================================================
+    
     cleanup = BashOperator(
         task_id="cleanup_artifacts",
         bash_command=BASH_PREFIX + "rm -rf dbt/target dbt/logs snowflake_connection_test.log && true",
@@ -146,12 +236,24 @@ with DAG(
     
     pipeline_end = DummyOperator(
         task_id="pipeline_end",
-        doc_md="✅ Pipeline execution completed successfully!"
+        doc_md="✅ Layered pipeline execution completed successfully!"
     )
 
     # =============================================================================
-    # TASK DEPENDENCIES
+    # TASK DEPENDENCIES - LAYERED APPROACH
     # =============================================================================
     
-    # Pipeline flow
-    pipeline_start >> dbt_run >> [soda_raw, soda_staging, soda_mart, soda_quality] >> cleanup >> pipeline_end
+    # Layer 1: RAW
+    pipeline_start >> raw_layer_start >> soda_scan_raw >> raw_layer_end
+    
+    # Layer 2: STAGING (depends on RAW completion)
+    raw_layer_end >> staging_layer_start >> dbt_run_staging >> soda_scan_staging >> staging_layer_end
+    
+    # Layer 3: MART (depends on STAGING completion)
+    staging_layer_end >> mart_layer_start >> dbt_run_mart >> soda_scan_mart >> mart_layer_end
+    
+    # Layer 4: QUALITY (depends on MART completion)
+    mart_layer_end >> quality_layer_start >> [soda_scan_quality, dbt_test] >> quality_layer_end
+    
+    # Final cleanup
+    quality_layer_end >> cleanup >> pipeline_end

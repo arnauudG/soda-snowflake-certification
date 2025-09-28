@@ -1,10 +1,17 @@
-name: Soda Scan (RAW)
+name: Soda Scan (RAW) – PR
 
 on:
-  workflow_dispatch: {}
-  push:
-    branches: ['**']     # run on any branch push
-  pull_request:          # run on any PR
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    # Optional: limit to relevant changes
+    paths:
+      - "soda/configuration/configuration_raw.yml"
+      - "soda/checks/raw/**"
+      - "dbt/**"
+      - "airflow/**"
+      - "**/*.sql"
+      - "**/*.yml"
+      - "**/*.yaml"
 
 concurrency:
   group: soda-raw-${{ github.ref }}
@@ -12,7 +19,7 @@ concurrency:
 
 permissions:
   contents: read
-  pull-requests: write   # needed for the PR comment step (internal PRs)
+  pull-requests: write   # needed to post the PR comment
 
 jobs:
   scan:
@@ -51,14 +58,12 @@ jobs:
       - name: Capture Soda outputs
         id: capture
         run: |
-          # Save JSON results to a file (robust against newlines)
+          # Save JSON results to a file
           printf '%s' "${{ steps.soda.outputs['scan-results'] }}" > soda_scan_results_raw.json
-
-          # Expose outputs to other jobs/steps
+          # Expose outputs for other jobs
           echo "cloud_link=${{ steps.soda.outputs['scan-cloud-link'] }}" >> "$GITHUB_OUTPUT"
           echo "exit_code=${{ steps.soda.outputs['scan-exit-code'] }}" >> "$GITHUB_OUTPUT"
-
-          # Compress JSON to a single line for safe embedding in PR comments
+          # One-line JSON for embedding
           if command -v jq >/dev/null 2>&1; then
             jq -c . soda_scan_results_raw.json > results_min.json
           else
@@ -87,12 +92,11 @@ jobs:
             soda_scan_results_raw.json
           if-no-files-found: ignore
 
-  # PR comment only for PRs from the same repo (forks often lack token perms)
   pr_comment:
     name: Comment results on PR
     needs: scan
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+    # PR-only workflow, so context is guaranteed
     steps:
       - name: Comment on PR
         uses: thollander/actions-comment-pull-request@v2

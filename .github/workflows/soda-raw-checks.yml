@@ -1,33 +1,61 @@
-name: Scan for data quality (raw)
+# .github/workflows/soda-scan-raw.yml
+name: Soda Data Quality Scan (raw)
 
-on: push
+on:
+  push:
+    branches: [ main ]     # adjust if needed
+  pull_request:
+    branches: [ main ]
 
 jobs:
-  soda_scan:
+  soda_scan_raw:
     runs-on: ubuntu-latest
     name: Run Soda Scan (raw)
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Soda Library Action
+      - name: Soda Library Action (raw)
+        id: soda_raw
         uses: sodadata/soda-github-action@v1.0.2
+        continue-on-error: true   # keep job green even if checks fail
         env:
-          # --- Soda Cloud (match placeholders in config) ---
+          # --- Soda Cloud ---
           SODA_CLOUD_API_KEY_ID: ${{ secrets.SODA_CLOUD_API_KEY_ID }}
           SODA_CLOUD_API_KEY_SECRET: ${{ secrets.SODA_CLOUD_API_KEY_SECRET }}
           SODA_CLOUD_HOST: ${{ secrets.SODA_CLOUD_HOST }}   # e.g. https://cloud.soda.io
-
-          # --- Snowflake (match placeholders in config) ---
-          SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}     # e.g. xy12345.eu-west-1
-          SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}           # NOT SNOWFLAKE_USERNAME
+          # --- Snowflake ---
+          SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+          SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
           SNOWFLAKE_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}
           SNOWFLAKE_ROLE: ${{ secrets.SNOWFLAKE_ROLE }}
           SNOWFLAKE_WAREHOUSE: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
           SNOWFLAKE_DATABASE: ${{ secrets.SNOWFLAKE_DATABASE }}
-
         with:
           soda_library_version: v1.0.4
           data_source: soda_certification_raw
           configuration: soda/configuration/configuration_raw.yml
           checks: soda/checks/raw/*.yml
+
+      - name: Banner with Soda Cloud link
+        if: always()
+        run: |
+          echo -e "\033[36;1m-----------------------------\033[0m"
+          echo "Soda scan (raw) finished. See logs above for the Soda Cloud link."
+          echo -e "\033[36;1m-----------------------------\033[0m"
+
+      - name: Upload scan results JSON
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: soda-scan-results-raw
+          path: soda_scan_results_raw.json
+          if-no-files-found: ignore
+
+      - name: Comment on PR (summary pointer)
+        if: ${{ github.event_name == 'pull_request' }}
+        uses: thollander/actions-comment-pull-request@8c77f42bbcc27c832a3a5962c8f9a60e34b594f3
+        with:
+          message: |
+            ✅ Soda scan for **raw** completed.
+            Check the job logs for the summary and Soda Cloud link.

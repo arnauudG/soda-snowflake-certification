@@ -1,0 +1,314 @@
+name: dbt Model Execution (staging → marts)
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:  # Allow manual triggering
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: dbt-run-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  dbt-setup:
+    runs-on: ubuntu-latest
+    name: Setup dbt Environment
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Install dbt
+        run: |
+          pip install dbt-snowflake==1.7.0
+          dbt --version
+
+      - name: Create dbt profiles.yml
+        run: |
+          mkdir -p ~/.dbt
+          cat > ~/.dbt/profiles.yml << EOF
+          soda_certification:
+            target: dev
+            outputs:
+              dev:
+                type: snowflake
+                account: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+                user: ${{ secrets.SNOWFLAKE_USER }}
+                password: ${{ secrets.SNOWFLAKE_PASSWORD }}
+                role: ${{ secrets.SNOWFLAKE_ROLE }}
+                warehouse: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
+                database: ${{ secrets.SNOWFLAKE_DATABASE }}
+                schema: STAGING
+                threads: 4
+                client_session_keep_alive: False
+                query_tag: dbt_github_actions
+          EOF
+
+      - name: Test dbt connection
+        run: |
+          cd dbt
+          dbt debug
+
+      - name: dbt deps
+        run: |
+          cd dbt
+          dbt deps
+
+  dbt-staging:
+    runs-on: ubuntu-latest
+    name: Run dbt Staging Models
+    needs: dbt-setup
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Install dbt
+        run: |
+          pip install dbt-snowflake==1.7.0
+
+      - name: Create dbt profiles.yml
+        run: |
+          mkdir -p ~/.dbt
+          cat > ~/.dbt/profiles.yml << EOF
+          soda_certification:
+            target: dev
+            outputs:
+              dev:
+                type: snowflake
+                account: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+                user: ${{ secrets.SNOWFLAKE_USER }}
+                password: ${{ secrets.SNOWFLAKE_PASSWORD }}
+                role: ${{ secrets.SNOWFLAKE_ROLE }}
+                warehouse: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
+                database: ${{ secrets.SNOWFLAKE_DATABASE }}
+                schema: STAGING
+                threads: 4
+                client_session_keep_alive: False
+                query_tag: dbt_github_actions
+          EOF
+
+      - name: Run dbt staging models
+        run: |
+          cd dbt
+          dbt run --models staging --target dev
+
+      - name: Test dbt staging models
+        run: |
+          cd dbt
+          dbt test --models staging --target dev
+
+      - name: Generate dbt docs for staging
+        run: |
+          cd dbt
+          dbt docs generate --target dev
+
+      - name: Upload staging artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dbt-staging-results
+          path: |
+            dbt/target/
+            dbt/logs/
+          if-no-files-found: ignore
+
+      - name: Comment on PR (staging)
+        if: ${{ github.event_name == 'pull_request' }}
+        uses: thollander/actions-comment-pull-request@8c77f42bbcc27c832a3a5962c8f9a60e34b594f3
+        continue-on-error: true
+        with:
+          message: |
+            **dbt Staging Models Completed** ✅
+            
+            **Models Run:**
+            - `stg_customers` - Customer data cleaning and standardization
+            - `stg_orders` - Order data cleaning and validation
+            - `stg_products` - Product data cleaning and enrichment
+            - `stg_order_items` - Order item data cleaning and calculations
+            
+            **Schema:** `STAGING`
+            **Materialization:** Table
+            
+            _Artifacts_: **dbt-staging-results** (logs + compiled SQL)
+
+  dbt-marts:
+    runs-on: ubuntu-latest
+    name: Run dbt Mart Models
+    needs: dbt-staging
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Install dbt
+        run: |
+          pip install dbt-snowflake==1.7.0
+
+      - name: Create dbt profiles.yml
+        run: |
+          mkdir -p ~/.dbt
+          cat > ~/.dbt/profiles.yml << EOF
+          soda_certification:
+            target: dev
+            outputs:
+              dev:
+                type: snowflake
+                account: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+                user: ${{ secrets.SNOWFLAKE_USER }}
+                password: ${{ secrets.SNOWFLAKE_PASSWORD }}
+                role: ${{ secrets.SNOWFLAKE_ROLE }}
+                warehouse: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
+                database: ${{ secrets.SNOWFLAKE_DATABASE }}
+                schema: MART
+                threads: 4
+                client_session_keep_alive: False
+                query_tag: dbt_github_actions
+          EOF
+
+      - name: Run dbt mart models
+        run: |
+          cd dbt
+          dbt run --models marts --target dev
+
+      - name: Test dbt mart models
+        run: |
+          cd dbt
+          dbt test --models marts --target dev
+
+      - name: Generate dbt docs for marts
+        run: |
+          cd dbt
+          dbt docs generate --target dev
+
+      - name: Upload mart artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dbt-mart-results
+          path: |
+            dbt/target/
+            dbt/logs/
+          if-no-files-found: ignore
+
+      - name: Comment on PR (marts)
+        if: ${{ github.event_name == 'pull_request' }}
+        uses: thollander/actions-comment-pull-request@8c77f42bbcc27c832a3a5962c8f9a60e34b594f3
+        continue-on-error: true
+        with:
+          message: |
+            **dbt Mart Models Completed** ✅
+            
+            **Models Run:**
+            - `dim_customers` - Customer dimension with segmentation and RFM analysis
+            - `fact_orders` - Orders fact table with enriched business metrics
+            
+            **Schema:** `MART`
+            **Materialization:** Table
+            
+            _Artifacts_: **dbt-mart-results** (logs + compiled SQL)
+
+  dbt-complete:
+    runs-on: ubuntu-latest
+    name: Complete dbt Pipeline
+    needs: [dbt-staging, dbt-marts]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Install dbt
+        run: |
+          pip install dbt-snowflake==1.7.0
+
+      - name: Create dbt profiles.yml
+        run: |
+          mkdir -p ~/.dbt
+          cat > ~/.dbt/profiles.yml << EOF
+          soda_certification:
+            target: dev
+            outputs:
+              dev:
+                type: snowflake
+                account: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+                user: ${{ secrets.SNOWFLAKE_USER }}
+                password: ${{ secrets.SNOWFLAKE_PASSWORD }}
+                role: ${{ secrets.SNOWFLAKE_ROLE }}
+                warehouse: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
+                database: ${{ secrets.SNOWFLAKE_DATABASE }}
+                schema: MART
+                threads: 4
+                client_session_keep_alive: False
+                query_tag: dbt_github_actions
+          EOF
+
+      - name: Run complete dbt pipeline
+        run: |
+          cd dbt
+          dbt run --target dev
+
+      - name: Run all dbt tests
+        run: |
+          cd dbt
+          dbt test --target dev
+
+      - name: Generate complete dbt docs
+        run: |
+          cd dbt
+          dbt docs generate --target dev
+
+      - name: Upload complete artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dbt-complete-results
+          path: |
+            dbt/target/
+            dbt/logs/
+          if-no-files-found: ignore
+
+      - name: Comment on PR (complete)
+        if: ${{ github.event_name == 'pull_request' }}
+        uses: thollander/actions-comment-pull-request@8c77f42bbcc27c832a3a5962c8f9a60e34b594f3
+        continue-on-error: true
+        with:
+          message: |
+            **dbt Complete Pipeline Executed** ✅
+            
+            **Pipeline Summary:**
+            - **Staging Layer**: 4 models (customers, orders, products, order_items)
+            - **Mart Layer**: 2 models (dim_customers, fact_orders)
+            - **Tests**: All data quality tests passed
+            - **Documentation**: Generated for all models
+            
+            **Schemas Created:**
+            - `STAGING` - Cleaned and standardized data
+            - `MART` - Business-ready analytics tables
+            
+            _Artifacts_: **dbt-complete-results** (logs + compiled SQL + docs)

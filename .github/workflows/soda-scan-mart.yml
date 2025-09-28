@@ -1,41 +1,38 @@
-name: Soda Data Quality Scan (raw)
+name: Soda Data Quality Scan (mart)
 
 on:
   push:
-    branches: [ main ]        # adjust as needed
+    branches: [ main ]
   pull_request:
     branches: [ main ]
 
-# Needed so the workflow can post PR comments
 permissions:
   contents: read
   pull-requests: write
 
-# Avoid overlapping runs per branch/PR
 concurrency:
-  group: soda-scan-raw-${{ github.workflow }}-${{ github.ref }}
+  group: soda-scan-mart-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
-  soda_scan_raw:
+  soda_scan_mart:
     runs-on: ubuntu-latest
-    name: Run Soda Scan (raw)
+    name: Run Soda Scan (mart)
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Soda Library Action (raw)
-        id: soda_raw
+      - name: Soda Library Action (mart)
+        id: soda_mart
         uses: sodadata/soda-github-action@v1.0.2
-        # Let us post-process regardless of container exit (we decide pass/fail later)
         continue-on-error: true
         env:
-          # --- Soda Cloud ---
+          # Soda Cloud
           SODA_CLOUD_API_KEY_ID: ${{ secrets.SODA_CLOUD_API_KEY_ID }}
           SODA_CLOUD_API_KEY_SECRET: ${{ secrets.SODA_CLOUD_API_KEY_SECRET }}
-          SODA_CLOUD_HOST: ${{ secrets.SODA_CLOUD_HOST }}   # e.g. https://cloud.soda.io
-          # --- Snowflake (match your config placeholders) ---
+          SODA_CLOUD_HOST: ${{ secrets.SODA_CLOUD_HOST }}
+          # Snowflake (match placeholders in your config)
           SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
           SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
           SNOWFLAKE_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}
@@ -44,19 +41,17 @@ jobs:
           SNOWFLAKE_DATABASE: ${{ secrets.SNOWFLAKE_DATABASE }}
         with:
           soda_library_version: v1.0.4
-          data_source: soda_certification_raw
-          configuration: soda/configuration/configuration_raw.yml
-          checks: soda/checks/raw/*.yml
+          data_source: soda_certification_mart
+          configuration: soda/configuration/configuration_mart.yml
+          checks: soda/checks/mart/*.yml
 
-      # Persist the envs the action exposes so artifacts always exist
       - name: Persist Soda results
         if: always()
         shell: bash
         run: |
-          printf '%s\n' "${SCAN_RESULTS:-[]}" > soda_scan_results_raw.json
-          printf '%s\n' "${SCAN_CLOUD_LINK:-}" > soda_scan_results_raw.link.txt
+          printf '%s\n' "${SCAN_RESULTS:-[]}" > soda_scan_results_mart.json
+          printf '%s\n' "${SCAN_CLOUD_LINK:-}" > soda_scan_results_mart.link.txt
 
-      # Gate: fail only on execution/config errors, not on data failures
       - name: Decide job outcome (fail only on execution errors)
         if: always()
         shell: bash
@@ -65,21 +60,14 @@ jobs:
           echo "SCAN_EXIT_CODE=${code}"
           echo "SCAN_CLOUD_LINK=${SCAN_CLOUD_LINK:-}"
           echo "SCAN_RESULTS=${SCAN_RESULTS:-}"
-
-          # If Soda step didn't expose an exit code → treat as execution error
           if [[ -z "$code" ]]; then
-            echo "Soda did not expose SCAN_EXIT_CODE. Treating as an execution/config error."
+            echo "Missing SCAN_EXIT_CODE → execution/config error."
             exit 1
           fi
-
-          # Soda convention:
-          # 0 = success, 2 = checks failed, 1 = execution error
           if [[ "$code" -eq 1 ]]; then
-            echo "Soda execution error (config/connectivity/runtime). Failing the job."
+            echo "Soda execution error (config/connectivity/runtime)."
             exit 1
           fi
-
-          # 0 or 2 → checks executed. Keep job green.
           echo "Checks executed (exit ${code}). Keeping the workflow green."
           exit 0
 
@@ -87,21 +75,11 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: soda-scan-results-raw
+          name: soda-scan-results-mart
           path: |
-            soda_scan_results_raw.json
-            soda_scan_results_raw.link.txt
+            soda_scan_results_mart.json
+            soda_scan_results_mart.link.txt
           if-no-files-found: ignore
-
-      # Optional extras (PR-only and non-fatal)
-      - name: Build tiny table for PR
-        if: ${{ github.event_name == 'pull_request' }}
-        uses: buildingcash/json-to-markdown-table-action@ce128b72e0c93612c8f02b85e0672bcb16fd9bf9
-        continue-on-error: true
-        with:
-          json: ${{ env.SCAN_RESULTS }}
-        env:
-          SCAN_RESULTS: ${{ env.SCAN_RESULTS }}
 
       - name: Comment on PR with link + summary
         if: ${{ github.event_name == 'pull_request' }}
@@ -109,7 +87,7 @@ jobs:
         continue-on-error: true
         with:
           message: |
-            **Soda scan (raw) completed**
+            **Soda scan (mart) completed**
             **Soda Cloud:** ${SCAN_CLOUD_LINK}
 
             **Summary (Pass/Warn/Fail counts):**
@@ -117,7 +95,7 @@ jobs:
             ${SCAN_RESULTS}
             ```
 
-            _Artifacts_: **soda-scan-results-raw** (JSON + link)
+            _Artifacts_: **soda-scan-results-mart** (JSON + link)
         env:
           SCAN_CLOUD_LINK: ${{ env.SCAN_CLOUD_LINK }}
           SCAN_RESULTS: ${{ env.SCAN_RESULTS }}

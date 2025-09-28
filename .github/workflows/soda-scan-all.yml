@@ -1,4 +1,4 @@
-name: Soda Data Quality Scans (raw → staging → mart)
+name: Soda Data Quality Scans (raw → staging → mart → quality)
 
 on:
   push:
@@ -105,11 +105,9 @@ jobs:
         uses: sodadata/soda-github-action@v1.0.2
         continue-on-error: true
         env:
-          # --- Soda Cloud ---
           SODA_CLOUD_API_KEY_ID: ${{ secrets.SODA_CLOUD_API_KEY_ID }}
           SODA_CLOUD_API_KEY_SECRET: ${{ secrets.SODA_CLOUD_API_KEY_SECRET }}
           SODA_CLOUD_HOST: ${{ secrets.SODA_CLOUD_HOST }}
-          # --- Snowflake ---
           SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
           SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
           SNOWFLAKE_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}
@@ -182,11 +180,9 @@ jobs:
         uses: sodadata/soda-github-action@v1.0.2
         continue-on-error: true
         env:
-          # --- Soda Cloud ---
           SODA_CLOUD_API_KEY_ID: ${{ secrets.SODA_CLOUD_API_KEY_ID }}
           SODA_CLOUD_API_KEY_SECRET: ${{ secrets.SODA_CLOUD_API_KEY_SECRET }}
           SODA_CLOUD_HOST: ${{ secrets.SODA_CLOUD_HOST }}
-          # --- Snowflake ---
           SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
           SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
           SNOWFLAKE_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}
@@ -244,3 +240,78 @@ jobs:
             ```
 
             _Artifacts_: **soda-scan-results-mart** (JSON + link)
+
+  quality:
+    runs-on: ubuntu-latest
+    name: Run Soda Scan (quality/results)
+    needs: mart   # enforce ordering (runs last)
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Soda Library Action (quality)
+        id: soda_quality
+        uses: sodadata/soda-github-action@v1.0.2
+        continue-on-error: true
+        env:
+          SODA_CLOUD_API_KEY_ID: ${{ secrets.SODA_CLOUD_API_KEY_ID }}
+          SODA_CLOUD_API_KEY_SECRET: ${{ secrets.SODA_CLOUD_API_KEY_SECRET }}
+          SODA_CLOUD_HOST: ${{ secrets.SODA_CLOUD_HOST }}
+          SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+          SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
+          SNOWFLAKE_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}
+          SNOWFLAKE_ROLE: ${{ secrets.SNOWFLAKE_ROLE }}
+          SNOWFLAKE_WAREHOUSE: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
+          SNOWFLAKE_DATABASE: ${{ secrets.SNOWFLAKE_DATABASE }}
+        with:
+          soda_library_version: v1.0.4
+          data_source: soda_certification_quality
+          configuration: soda/configuration/configuration_quality.yml
+          checks: soda/checks/quality/*.yml
+
+      - name: Persist Soda results (quality)
+        if: always()
+        shell: bash
+        run: |
+          printf '%s\n' "${SCAN_RESULTS:-[]}" > soda_scan_results_quality.json
+          printf '%s\n' "${SCAN_CLOUD_LINK:-}" > soda_scan_results_quality.link.txt
+
+      - name: Decide job outcome (quality) — fail only on execution errors
+        if: always()
+        shell: bash
+        run: |
+          code="${SCAN_EXIT_CODE:-}"
+          echo "QUALITY_SCN_EXIT_CODE=${code}"
+          if [[ -z "$code" || "$code" -eq 1 ]]; then
+            echo "Quality: execution/config error → failing job."
+            exit 1
+          fi
+          echo "Quality: checks executed (exit ${code}) → keep green."
+          exit 0
+
+      - name: Upload scan results artifact (quality)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: soda-scan-results-quality
+          path: |
+            soda_scan_results_quality.json
+            soda_scan_results_quality.link.txt
+          if-no-files-found: ignore
+
+      - name: Comment on PR (quality)
+        if: ${{ github.event_name == 'pull_request' }}
+        uses: thollander/actions-comment-pull-request@8c77f42bbcc27c832a3a5962c8f9a60e34b594f3
+        continue-on-error: true
+        with:
+          message: |
+            **Soda scan (quality/results) completed**
+            **Soda Cloud:** ${SCAN_CLOUD_LINK}
+
+            **Summary (Pass/Warn/Fail counts):**
+            ```
+            ${SCAN_RESULTS}
+            ```
+
+            _Artifacts_: **soda-scan-results-quality** (JSON + link)

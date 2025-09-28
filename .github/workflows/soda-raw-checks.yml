@@ -3,7 +3,7 @@ name: Soda Data Quality Scan (raw)
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main ]        # adjust as needed
   pull_request:
     branches: [ main ]
 
@@ -18,14 +18,14 @@ jobs:
       - name: Soda Library Action (raw)
         id: soda_raw
         uses: sodadata/soda-github-action@v1.0.2
-        # Let the job continue for post-processing (we'll decide pass/fail ourselves)
+        # Allow post-processing even if the container exits non-zero
         continue-on-error: true
         env:
           # --- Soda Cloud ---
           SODA_CLOUD_API_KEY_ID: ${{ secrets.SODA_CLOUD_API_KEY_ID }}
           SODA_CLOUD_API_KEY_SECRET: ${{ secrets.SODA_CLOUD_API_KEY_SECRET }}
           SODA_CLOUD_HOST: ${{ secrets.SODA_CLOUD_HOST }}   # e.g. https://cloud.soda.io
-          # --- Snowflake (must match placeholders in your config) ---
+          # --- Snowflake (must match your config placeholders) ---
           SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
           SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
           SNOWFLAKE_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}
@@ -38,16 +38,15 @@ jobs:
           configuration: soda/configuration/configuration_raw.yml
           checks: soda/checks/raw/*.yml
 
-      # Persist results from env exported by the action
+      # Persist the envs the action exposes so artifacts always exist
       - name: Persist Soda results
         if: always()
         shell: bash
         run: |
-          # Save summary JSON and cloud link if present
           printf '%s\n' "${SCAN_RESULTS:-[]}" > soda_scan_results_raw.json
           printf '%s\n' "${SCAN_CLOUD_LINK:-}" > soda_scan_results_raw.link.txt
 
-      # Decide pass/fail: fail only on execution errors, not on data check failures
+      # Gate: fail only on execution/config errors, not on data failures
       - name: Decide job outcome (fail only on execution errors)
         if: always()
         shell: bash
@@ -57,20 +56,20 @@ jobs:
           echo "SCAN_CLOUD_LINK=${SCAN_CLOUD_LINK:-}"
           echo "SCAN_RESULTS=${SCAN_RESULTS:-}"
 
-          # If the Soda step didn't even expose an exit code, treat as an execution error
+          # If Soda step didn't expose an exit code → treat as execution error
           if [[ -z "$code" ]]; then
             echo "Soda did not expose SCAN_EXIT_CODE. Treating as an execution/config error."
             exit 1
           fi
 
-          # Convention used by the Soda action:
+          # By convention from the Soda action:
           # 0 = success, 2 = checks failed, 1 = execution error
           if [[ "$code" -eq 1 ]]; then
             echo "Soda execution error (config/connectivity/runtime). Failing the job."
             exit 1
           fi
 
-          # If we got here, code is 0 or 2 → checks executed. Keep job green.
+          # If here, checks executed (0 or 2) → keep job green
           echo "Checks executed (exit ${code}). Keeping the workflow green."
           exit 0
 
@@ -84,9 +83,20 @@ jobs:
             soda_scan_results_raw.link.txt
           if-no-files-found: ignore
 
+      # Optional extras (guarded to PR only and won't fail the job)
+      - name: Build tiny table for PR
+        if: ${{ github.event_name == 'pull_request' }}
+        uses: buildingcash/json-to-markdown-table-action@ce128b72e0c93612c8f02b85e0672bcb16fd9bf9
+        continue-on-error: true
+        with:
+          json: ${{ env.SCAN_RESULTS }}
+        env:
+          SCAN_RESULTS: ${{ env.SCAN_RESULTS }}
+
       - name: Comment on PR with link + summary
-        if: always()
+        if: ${{ github.event_name == 'pull_request' }}
         uses: thollander/actions-comment-pull-request@8c77f42bbcc27c832a3a5962c8f9a60e34b594f3
+        continue-on-error: true
         with:
           message: |
             ✅ **Soda scan (raw) completed**
@@ -98,3 +108,6 @@ jobs:
             ```
 
             _Artifacts_: **soda-scan-results-raw** (JSON + link)
+        env:
+          SCAN_CLOUD_LINK: ${{ env.SCAN_CLOUD_LINK }}
+          SCAN_RESULTS: ${{ env.SCAN_RESULTS }}

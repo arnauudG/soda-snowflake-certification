@@ -3,7 +3,7 @@ name: Soda Data Quality Scan (raw)
 
 on:
   push:
-    branches: [ main ]     # adjust if needed
+    branches: [ main ]
   pull_request:
     branches: [ main ]
 
@@ -18,13 +18,14 @@ jobs:
       - name: Soda Library Action (raw)
         id: soda_raw
         uses: sodadata/soda-github-action@v1.0.2
-        continue-on-error: true   # keep job green even if checks fail
+        # Let the job continue for post-processing (we'll decide pass/fail ourselves)
+        continue-on-error: true
         env:
           # --- Soda Cloud ---
           SODA_CLOUD_API_KEY_ID: ${{ secrets.SODA_CLOUD_API_KEY_ID }}
           SODA_CLOUD_API_KEY_SECRET: ${{ secrets.SODA_CLOUD_API_KEY_SECRET }}
           SODA_CLOUD_HOST: ${{ secrets.SODA_CLOUD_HOST }}   # e.g. https://cloud.soda.io
-          # --- Snowflake ---
+          # --- Snowflake (must match placeholders in your config) ---
           SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
           SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
           SNOWFLAKE_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}
@@ -37,25 +38,63 @@ jobs:
           configuration: soda/configuration/configuration_raw.yml
           checks: soda/checks/raw/*.yml
 
-      - name: Banner with Soda Cloud link
+      # Persist results from env exported by the action
+      - name: Persist Soda results
         if: always()
+        shell: bash
         run: |
-          echo -e "\033[36;1m-----------------------------\033[0m"
-          echo "Soda scan (raw) finished. See logs above for the Soda Cloud link."
-          echo -e "\033[36;1m-----------------------------\033[0m"
+          # Save summary JSON and cloud link if present
+          printf '%s\n' "${SCAN_RESULTS:-[]}" > soda_scan_results_raw.json
+          printf '%s\n' "${SCAN_CLOUD_LINK:-}" > soda_scan_results_raw.link.txt
 
-      - name: Upload scan results JSON
+      # Decide pass/fail: fail only on execution errors, not on data check failures
+      - name: Decide job outcome (fail only on execution errors)
+        if: always()
+        shell: bash
+        run: |
+          code="${SCAN_EXIT_CODE:-}"
+          echo "SCAN_EXIT_CODE=${code}"
+          echo "SCAN_CLOUD_LINK=${SCAN_CLOUD_LINK:-}"
+          echo "SCAN_RESULTS=${SCAN_RESULTS:-}"
+
+          # If the Soda step didn't even expose an exit code, treat as an execution error
+          if [[ -z "$code" ]]; then
+            echo "Soda did not expose SCAN_EXIT_CODE. Treating as an execution/config error."
+            exit 1
+          fi
+
+          # Convention used by the Soda action:
+          # 0 = success, 2 = checks failed, 1 = execution error
+          if [[ "$code" -eq 1 ]]; then
+            echo "Soda execution error (config/connectivity/runtime). Failing the job."
+            exit 1
+          fi
+
+          # If we got here, code is 0 or 2 → checks executed. Keep job green.
+          echo "Checks executed (exit ${code}). Keeping the workflow green."
+          exit 0
+
+      - name: Upload scan results artifact
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: soda-scan-results-raw
-          path: soda_scan_results_raw.json
+          path: |
+            soda_scan_results_raw.json
+            soda_scan_results_raw.link.txt
           if-no-files-found: ignore
 
-      - name: Comment on PR (summary pointer)
-        if: ${{ github.event_name == 'pull_request' }}
+      - name: Comment on PR with link + summary
+        if: always()
         uses: thollander/actions-comment-pull-request@8c77f42bbcc27c832a3a5962c8f9a60e34b594f3
         with:
           message: |
-            ✅ Soda scan for **raw** completed.
-            Check the job logs for the summary and Soda Cloud link.
+            ✅ **Soda scan (raw) completed**
+            **Soda Cloud:** ${SCAN_CLOUD_LINK}
+
+            **Summary (Pass/Warn/Fail counts):**
+            ```
+            ${SCAN_RESULTS}
+            ```
+
+            _Artifacts_: **soda-scan-results-raw** (JSON + link)

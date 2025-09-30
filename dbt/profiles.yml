@@ -5,7 +5,8 @@ soda_certification:
       type: snowflake
       account: "{{ env_var('SNOWFLAKE_ACCOUNT') }}"
       user: "{{ env_var('SNOWFLAKE_USER') }}"
-      password: "{{ env_var('SNOWFLAKE_PASSWORD') }}"
+      authenticator: oauth
+      token: "{{ env_var('SNOWFLAKE_PASSWORD') }}"
       role: "{{ env_var('SNOWFLAKE_ROLE', 'ACCOUNTADMIN') }}"
       database: "SODA_CERTIFICATION"
       warehouse: "SODA_WH"
@@ -18,7 +19,8 @@ soda_certification:
       type: snowflake
       account: "{{ env_var('SNOWFLAKE_ACCOUNT') }}"
       user: "{{ env_var('SNOWFLAKE_USER') }}"
-      password: "{{ env_var('SNOWFLAKE_PASSWORD') }}"
+      authenticator: oauth
+      token: "{{ env_var('SNOWFLAKE_PASSWORD') }}"
       role: "{{ env_var('SNOWFLAKE_ROLE', 'ACCOUNTADMIN') }}"
       database: "SODA_CERTIFICATION"
       warehouse: "SODA_WH"

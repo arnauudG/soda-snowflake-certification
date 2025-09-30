@@ -34,26 +34,10 @@ jobs:
           pip install dbt-snowflake==1.7.0
           dbt --version
 
-      - name: Create dbt profiles.yml
+      - name: Copy dbt profiles.yml
         run: |
           mkdir -p ~/.dbt
-          cat > ~/.dbt/profiles.yml << EOF
-          soda_certification:
-            target: dev
-            outputs:
-              dev:
-                type: snowflake
-                account: ${{ secrets.SNOWFLAKE_ACCOUNT }}
-                user: ${{ secrets.SNOWFLAKE_USER }}
-                password: ${{ secrets.SNOWFLAKE_PASSWORD }}
-                role: ${{ secrets.SNOWFLAKE_ROLE }}
-                warehouse: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
-                database: ${{ secrets.SNOWFLAKE_DATABASE }}
-                schema: STAGING
-                threads: 4
-                client_session_keep_alive: False
-                query_tag: dbt_github_actions
-          EOF
+          cp dbt/profiles.yml ~/.dbt/profiles.yml
 
       - name: Test dbt connection
         env:
@@ -65,7 +49,7 @@ jobs:
           SNOWFLAKE_DATABASE: ${{ secrets.SNOWFLAKE_DATABASE }}
         run: |
           cd dbt
-          dbt debug
+          dbt debug --target prod
 
       - name: dbt deps
         env:
@@ -114,26 +98,10 @@ jobs:
         run: |
           pip install dbt-snowflake==1.7.0
 
-      - name: Create dbt profiles.yml
+      - name: Copy dbt profiles.yml
         run: |
           mkdir -p ~/.dbt
-          cat > ~/.dbt/profiles.yml << EOF
-          soda_certification:
-            target: dev
-            outputs:
-              dev:
-                type: snowflake
-                account: ${{ secrets.SNOWFLAKE_ACCOUNT }}
-                user: ${{ secrets.SNOWFLAKE_USER }}
-                password: ${{ secrets.SNOWFLAKE_PASSWORD }}
-                role: ${{ secrets.SNOWFLAKE_ROLE }}
-                warehouse: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
-                database: ${{ secrets.SNOWFLAKE_DATABASE }}
-                schema: STAGING
-                threads: 4
-                client_session_keep_alive: False
-                query_tag: dbt_github_actions
-          EOF
+          cp dbt/profiles.yml ~/.dbt/profiles.yml
 
       - name: Run dbt staging models
         id: dbt_staging_run
@@ -147,7 +115,7 @@ jobs:
           SNOWFLAKE_DATABASE: ${{ secrets.SNOWFLAKE_DATABASE }}
         run: |
           cd dbt
-          dbt run --models staging --target dev
+          dbt run --models staging --target prod
 
       - name: Test dbt staging models
         id: dbt_staging_test
@@ -161,7 +129,7 @@ jobs:
           SNOWFLAKE_DATABASE: ${{ secrets.SNOWFLAKE_DATABASE }}
         run: |
           cd dbt
-          dbt test --models staging --target dev
+          dbt test --models staging --target prod
 
       - name: Generate dbt docs for staging
         continue-on-error: true
@@ -174,7 +142,7 @@ jobs:
           SNOWFLAKE_DATABASE: ${{ secrets.SNOWFLAKE_DATABASE }}
         run: |
           cd dbt
-          dbt docs generate --target dev
+          dbt docs generate --target prod
 
       - name: Persist staging results
         if: always()
@@ -284,7 +252,7 @@ jobs:
           SNOWFLAKE_DATABASE: ${{ secrets.SNOWFLAKE_DATABASE }}
         run: |
           cd dbt
-          dbt run --models marts --target dev
+          dbt run --models marts --target prod
 
       - name: Test dbt mart models
         id: dbt_mart_test
@@ -298,7 +266,7 @@ jobs:
           SNOWFLAKE_DATABASE: ${{ secrets.SNOWFLAKE_DATABASE }}
         run: |
           cd dbt
-          dbt test --models marts --target dev
+          dbt test --models marts --target prod
 
       - name: Generate dbt docs for marts
         continue-on-error: true
@@ -311,7 +279,7 @@ jobs:
           SNOWFLAKE_DATABASE: ${{ secrets.SNOWFLAKE_DATABASE }}
         run: |
           cd dbt
-          dbt docs generate --target dev
+          dbt docs generate --target prod
 
       - name: Persist mart results
         if: always()
@@ -419,7 +387,7 @@ jobs:
           SNOWFLAKE_DATABASE: ${{ secrets.SNOWFLAKE_DATABASE }}
         run: |
           cd dbt
-          dbt run --target dev
+          dbt run --target prod
 
       - name: Run all dbt tests
         id: dbt_complete_test
@@ -433,7 +401,7 @@ jobs:
           SNOWFLAKE_DATABASE: ${{ secrets.SNOWFLAKE_DATABASE }}
         run: |
           cd dbt
-          dbt test --target dev
+          dbt test --target prod
 
       - name: Generate complete dbt docs
         continue-on-error: true
@@ -446,7 +414,7 @@ jobs:
           SNOWFLAKE_DATABASE: ${{ secrets.SNOWFLAKE_DATABASE }}
         run: |
           cd dbt
-          dbt docs generate --target dev
+          dbt docs generate --target prod
 
       - name: Persist complete results
         if: always()

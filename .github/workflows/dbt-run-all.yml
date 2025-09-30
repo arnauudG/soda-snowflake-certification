@@ -12,7 +12,7 @@ permissions:
   pull-requests: write
 
 concurrency:
-  group: dbt-run-${{ github.workflow }}-${{ github.ref }}
+  group: dbt-run-seq-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
@@ -56,14 +56,45 @@ jobs:
           EOF
 
       - name: Test dbt connection
+        env:
+          SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+          SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
+          SNOWFLAKE_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}
+          SNOWFLAKE_ROLE: ${{ secrets.SNOWFLAKE_ROLE }}
+          SNOWFLAKE_WAREHOUSE: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
+          SNOWFLAKE_DATABASE: ${{ secrets.SNOWFLAKE_DATABASE }}
         run: |
           cd dbt
           dbt debug
 
       - name: dbt deps
+        env:
+          SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+          SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
+          SNOWFLAKE_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}
+          SNOWFLAKE_ROLE: ${{ secrets.SNOWFLAKE_ROLE }}
+          SNOWFLAKE_WAREHOUSE: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
+          SNOWFLAKE_DATABASE: ${{ secrets.SNOWFLAKE_DATABASE }}
         run: |
           cd dbt
           dbt deps
+
+      - name: Persist setup results
+        if: always()
+        shell: bash
+        run: |
+          echo "DBT_SETUP_COMPLETED=true" >> dbt_setup_results.env
+          echo "DBT_VERSION=$(dbt --version | head -1)" >> dbt_setup_results.env
+
+      - name: Upload setup artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dbt-setup-results
+          path: |
+            dbt_setup_results.env
+            dbt/logs/
+          if-no-files-found: ignore
 
   dbt-staging:
     runs-on: ubuntu-latest
@@ -105,19 +136,70 @@ jobs:
           EOF
 
       - name: Run dbt staging models
+        id: dbt_staging_run
+        continue-on-error: true
+        env:
+          SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+          SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
+          SNOWFLAKE_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}
+          SNOWFLAKE_ROLE: ${{ secrets.SNOWFLAKE_ROLE }}
+          SNOWFLAKE_WAREHOUSE: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
+          SNOWFLAKE_DATABASE: ${{ secrets.SNOWFLAKE_DATABASE }}
         run: |
           cd dbt
           dbt run --models staging --target dev
 
       - name: Test dbt staging models
+        id: dbt_staging_test
+        continue-on-error: true
+        env:
+          SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+          SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
+          SNOWFLAKE_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}
+          SNOWFLAKE_ROLE: ${{ secrets.SNOWFLAKE_ROLE }}
+          SNOWFLAKE_WAREHOUSE: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
+          SNOWFLAKE_DATABASE: ${{ secrets.SNOWFLAKE_DATABASE }}
         run: |
           cd dbt
           dbt test --models staging --target dev
 
       - name: Generate dbt docs for staging
+        continue-on-error: true
+        env:
+          SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+          SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
+          SNOWFLAKE_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}
+          SNOWFLAKE_ROLE: ${{ secrets.SNOWFLAKE_ROLE }}
+          SNOWFLAKE_WAREHOUSE: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
+          SNOWFLAKE_DATABASE: ${{ secrets.SNOWFLAKE_DATABASE }}
         run: |
           cd dbt
           dbt docs generate --target dev
+
+      - name: Persist staging results
+        if: always()
+        shell: bash
+        run: |
+          run_exit_code="${{ steps.dbt_staging_run.outcome }}"
+          test_exit_code="${{ steps.dbt_staging_test.outcome }}"
+          echo "DBT_STAGING_RUN_EXIT_CODE=${run_exit_code}" >> dbt_staging_results.env
+          echo "DBT_STAGING_TEST_EXIT_CODE=${test_exit_code}" >> dbt_staging_results.env
+          echo "DBT_STAGING_MODELS=stg_customers,stg_orders,stg_products,stg_order_items" >> dbt_staging_results.env
+
+      - name: Decide job outcome (staging) — fail only on execution errors
+        if: always()
+        shell: bash
+        run: |
+          run_code="${{ steps.dbt_staging_run.outcome }}"
+          test_code="${{ steps.dbt_staging_test.outcome }}"
+          echo "STAGING_RUN_OUTCOME=${run_code}"
+          echo "STAGING_TEST_OUTCOME=${test_code}"
+          if [[ "$run_code" == "failure" || "$test_code" == "failure" ]]; then
+            echo "Staging: execution error → failing job."
+            exit 1
+          fi
+          echo "Staging: models executed successfully → keep green."
+          exit 0
 
       - name: Upload staging artifacts
         if: always()
@@ -127,6 +209,7 @@ jobs:
           path: |
             dbt/target/
             dbt/logs/
+            dbt_staging_results.env
           if-no-files-found: ignore
 
       - name: Comment on PR (staging)
@@ -145,8 +228,10 @@ jobs:
             
             **Schema:** `STAGING`
             **Materialization:** Table
+            **Run Status:** ${{ steps.dbt_staging_run.outcome }}
+            **Test Status:** ${{ steps.dbt_staging_test.outcome }}
             
-            _Artifacts_: **dbt-staging-results** (logs + compiled SQL)
+            _Artifacts_: **dbt-staging-results** (logs + compiled SQL + results)
 
   dbt-marts:
     runs-on: ubuntu-latest
@@ -188,19 +273,70 @@ jobs:
           EOF
 
       - name: Run dbt mart models
+        id: dbt_mart_run
+        continue-on-error: true
+        env:
+          SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+          SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
+          SNOWFLAKE_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}
+          SNOWFLAKE_ROLE: ${{ secrets.SNOWFLAKE_ROLE }}
+          SNOWFLAKE_WAREHOUSE: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
+          SNOWFLAKE_DATABASE: ${{ secrets.SNOWFLAKE_DATABASE }}
         run: |
           cd dbt
           dbt run --models marts --target dev
 
       - name: Test dbt mart models
+        id: dbt_mart_test
+        continue-on-error: true
+        env:
+          SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+          SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
+          SNOWFLAKE_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}
+          SNOWFLAKE_ROLE: ${{ secrets.SNOWFLAKE_ROLE }}
+          SNOWFLAKE_WAREHOUSE: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
+          SNOWFLAKE_DATABASE: ${{ secrets.SNOWFLAKE_DATABASE }}
         run: |
           cd dbt
           dbt test --models marts --target dev
 
       - name: Generate dbt docs for marts
+        continue-on-error: true
+        env:
+          SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+          SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
+          SNOWFLAKE_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}
+          SNOWFLAKE_ROLE: ${{ secrets.SNOWFLAKE_ROLE }}
+          SNOWFLAKE_WAREHOUSE: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
+          SNOWFLAKE_DATABASE: ${{ secrets.SNOWFLAKE_DATABASE }}
         run: |
           cd dbt
           dbt docs generate --target dev
+
+      - name: Persist mart results
+        if: always()
+        shell: bash
+        run: |
+          run_exit_code="${{ steps.dbt_mart_run.outcome }}"
+          test_exit_code="${{ steps.dbt_mart_test.outcome }}"
+          echo "DBT_MART_RUN_EXIT_CODE=${run_exit_code}" >> dbt_mart_results.env
+          echo "DBT_MART_TEST_EXIT_CODE=${test_exit_code}" >> dbt_mart_results.env
+          echo "DBT_MART_MODELS=dim_customers,fact_orders" >> dbt_mart_results.env
+
+      - name: Decide job outcome (marts) — fail only on execution errors
+        if: always()
+        shell: bash
+        run: |
+          run_code="${{ steps.dbt_mart_run.outcome }}"
+          test_code="${{ steps.dbt_mart_test.outcome }}"
+          echo "MART_RUN_OUTCOME=${run_code}"
+          echo "MART_TEST_OUTCOME=${test_code}"
+          if [[ "$run_code" == "failure" || "$test_code" == "failure" ]]; then
+            echo "Mart: execution error → failing job."
+            exit 1
+          fi
+          echo "Mart: models executed successfully → keep green."
+          exit 0
 
       - name: Upload mart artifacts
         if: always()
@@ -210,6 +346,7 @@ jobs:
           path: |
             dbt/target/
             dbt/logs/
+            dbt_mart_results.env
           if-no-files-found: ignore
 
       - name: Comment on PR (marts)
@@ -226,8 +363,10 @@ jobs:
             
             **Schema:** `MART`
             **Materialization:** Table
+            **Run Status:** ${{ steps.dbt_mart_run.outcome }}
+            **Test Status:** ${{ steps.dbt_mart_test.outcome }}
             
-            _Artifacts_: **dbt-mart-results** (logs + compiled SQL)
+            _Artifacts_: **dbt-mart-results** (logs + compiled SQL + results)
 
   dbt-complete:
     runs-on: ubuntu-latest
@@ -269,19 +408,70 @@ jobs:
           EOF
 
       - name: Run complete dbt pipeline
+        id: dbt_complete_run
+        continue-on-error: true
+        env:
+          SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+          SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
+          SNOWFLAKE_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}
+          SNOWFLAKE_ROLE: ${{ secrets.SNOWFLAKE_ROLE }}
+          SNOWFLAKE_WAREHOUSE: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
+          SNOWFLAKE_DATABASE: ${{ secrets.SNOWFLAKE_DATABASE }}
         run: |
           cd dbt
           dbt run --target dev
 
       - name: Run all dbt tests
+        id: dbt_complete_test
+        continue-on-error: true
+        env:
+          SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+          SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
+          SNOWFLAKE_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}
+          SNOWFLAKE_ROLE: ${{ secrets.SNOWFLAKE_ROLE }}
+          SNOWFLAKE_WAREHOUSE: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
+          SNOWFLAKE_DATABASE: ${{ secrets.SNOWFLAKE_DATABASE }}
         run: |
           cd dbt
           dbt test --target dev
 
       - name: Generate complete dbt docs
+        continue-on-error: true
+        env:
+          SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+          SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
+          SNOWFLAKE_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}
+          SNOWFLAKE_ROLE: ${{ secrets.SNOWFLAKE_ROLE }}
+          SNOWFLAKE_WAREHOUSE: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
+          SNOWFLAKE_DATABASE: ${{ secrets.SNOWFLAKE_DATABASE }}
         run: |
           cd dbt
           dbt docs generate --target dev
+
+      - name: Persist complete results
+        if: always()
+        shell: bash
+        run: |
+          run_exit_code="${{ steps.dbt_complete_run.outcome }}"
+          test_exit_code="${{ steps.dbt_complete_test.outcome }}"
+          echo "DBT_COMPLETE_RUN_EXIT_CODE=${run_exit_code}" >> dbt_complete_results.env
+          echo "DBT_COMPLETE_TEST_EXIT_CODE=${test_exit_code}" >> dbt_complete_results.env
+          echo "DBT_COMPLETE_MODELS=staging:4,marts:2" >> dbt_complete_results.env
+
+      - name: Decide job outcome (complete) — fail only on execution errors
+        if: always()
+        shell: bash
+        run: |
+          run_code="${{ steps.dbt_complete_run.outcome }}"
+          test_code="${{ steps.dbt_complete_test.outcome }}"
+          echo "COMPLETE_RUN_OUTCOME=${run_code}"
+          echo "COMPLETE_TEST_OUTCOME=${test_code}"
+          if [[ "$run_code" == "failure" || "$test_code" == "failure" ]]; then
+            echo "Complete: execution error → failing job."
+            exit 1
+          fi
+          echo "Complete: pipeline executed successfully → keep green."
+          exit 0
 
       - name: Upload complete artifacts
         if: always()
@@ -291,6 +481,7 @@ jobs:
           path: |
             dbt/target/
             dbt/logs/
+            dbt_complete_results.env
           if-no-files-found: ignore
 
       - name: Comment on PR (complete)
@@ -311,4 +502,8 @@ jobs:
             - `STAGING` - Cleaned and standardized data
             - `MART` - Business-ready analytics tables
             
-            _Artifacts_: **dbt-complete-results** (logs + compiled SQL + docs)
+            **Final Status:**
+            - **Run Status:** ${{ steps.dbt_complete_run.outcome }}
+            - **Test Status:** ${{ steps.dbt_complete_test.outcome }}
+            
+            _Artifacts_: **dbt-complete-results** (logs + compiled SQL + docs + results)

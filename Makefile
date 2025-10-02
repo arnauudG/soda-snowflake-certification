@@ -9,7 +9,7 @@ help: ## Show this help message
 	@echo ""
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2}'
 
-all: venv deps pipeline ## Setup environment and run pipeline
+all: venv deps ## Setup environment
 
 venv: ## Create virtual environment
 	@if [ ! -d "$(VENV)" ]; then \
@@ -22,14 +22,10 @@ venv: ## Create virtual environment
 deps: venv ## Install dependencies
 	@. $(VENV)/bin/activate && pip install -q --upgrade pip && pip install -q -r scripts/setup/requirements.txt && echo "[OK] Dependencies installed"
 
-pipeline: venv ## Run standard pipeline
-	@. $(VENV)/bin/activate && ./scripts/run_pipeline.sh && echo "[OK] Pipeline completed"
-
-fresh: venv ## Run fresh pipeline (reset Snowflake first)
-	@. $(VENV)/bin/activate && ./scripts/run_pipeline.sh --fresh && echo "[OK] Fresh pipeline completed"
-
-smooth: venv ## Run smooth pipeline (layer-by-layer processing)
-	@. $(VENV)/bin/activate && ./scripts/run_pipeline.sh --smooth && echo "[OK] Smooth pipeline completed"
+pipeline: venv ## Run standard pipeline (via Airflow)
+	@echo "Use Airflow DAGs for pipeline execution:"
+	@echo "  make airflow-trigger-init    # First-time setup"
+	@echo "  make airflow-trigger-pipeline # Regular runs"
 
 airflow-up: ## Start Airflow services with Docker
 	@echo "🚀 Starting Airflow services..."
@@ -123,12 +119,12 @@ clean: ## Clean up artifacts and temporary files
 	@echo "🧹 Cleaning up artifacts..."
 	@rm -rf dbt/target dbt/logs snowflake_connection_test.log
 	@find . -name "__pycache__" -type d -exec rm -rf {} + 2>/dev/null || true
+	@rm -rf docker/airflow-logs 2>/dev/null || true
 	@echo "[OK] Artifacts cleaned"
 
-clean-logs: ## Clean up old Airflow logs (keep last 7 days)
+clean-logs: ## Clean up old Airflow logs
 	@echo "🧹 Cleaning up old logs..."
-	@find docker/airflow-logs -name "*.log" -mtime +7 -delete 2>/dev/null || true
-	@cd docker/airflow-logs && find . -name "run_id=*" -type d | sort -r | tail -n +4 | xargs rm -rf 2>/dev/null || true
+	@rm -rf docker/airflow-logs 2>/dev/null || true
 	@echo "[OK] Old logs cleaned"
 
 clean-all: clean clean-logs ## Deep clean: artifacts, logs, and cache

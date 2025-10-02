@@ -31,10 +31,10 @@ checks for ORDER_ITEMS:
           ORDER_ITEM_ID: varchar
           ORDER_ID: varchar
           PRODUCT_ID: varchar
-          QUANTITY: integer
-          UNIT_PRICE: decimal
-          TOTAL_PRICE: decimal
-          DISCOUNT_PERCENT: decimal
+          QUANTITY: number
+          UNIT_PRICE: number
+          TOTAL_PRICE: number
+          DISCOUNT_PERCENT: number
           CREATED_AT: timestamp
           UPDATED_AT: timestamp
   # Row count checks

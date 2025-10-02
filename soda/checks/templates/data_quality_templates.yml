@@ -1,0 +1,10 @@
+# Soda Data Quality Templates
+# Reusable templates for common data quality checks
+
+templates:
+  - name: template_counter
+    description: Reusable SQL for writing checks
+    author: Arnaud Gueulette
+    metric: counter
+    query: |
+      SELECT count(*) as counter FROM ${table}

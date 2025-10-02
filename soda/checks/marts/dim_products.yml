@@ -1,0 +1,114 @@
+# MART Layer - Products Dimension Table Quality Checks
+# Database: SODA_CERTIFICATION, Schema: MART
+# Table: DIM_PRODUCTS (1,000+ records)
+# Purpose: High-quality product dimension with strict validation
+
+# Dataset discovery configuration for Soda Cloud
+discover datasets:
+  datasets:
+    - include DIM_PRODUCTS
+
+# Column profiling configuration for Soda Cloud
+profile columns:
+  columns:
+    - DIM_PRODUCTS.%
+    - exclude DIM_PRODUCTS.CREATED_AT
+    - exclude DIM_PRODUCTS.UPDATED_AT
+
+# Sample datasets configuration for Soda Cloud
+sample datasets:
+  datasets:
+    - include DIM_PRODUCTS
+
+checks for DIM_PRODUCTS:
+  # Schema validation
+  - schema:
+      name: "Product dimension schema validation"
+      fail:
+        when required column missing: [PRODUCT_ID, PRODUCT_NAME, CATEGORY, SUBCATEGORY, PRICE, CURRENCY, DESCRIPTION, BRAND, SKU, WEIGHT, DIMENSIONS, CREATED_AT, UPDATED_AT]
+        when forbidden column present: []
+        when wrong column type:
+          PRODUCT_ID: varchar
+          PRODUCT_NAME: varchar
+          CATEGORY: varchar
+          SUBCATEGORY: varchar
+          PRICE: decimal
+          CURRENCY: varchar
+          DESCRIPTION: varchar
+          BRAND: varchar
+          SKU: varchar
+          WEIGHT: decimal
+          DIMENSIONS: varchar
+          CREATED_AT: timestamp
+          UPDATED_AT: timestamp
+  # Row count checks
+  - row_count between 800 and 1200:
+      name: "Product dimension count within expected range"
+  
+  # Completeness checks (strict for mart layer)
+  - missing_count(PRODUCT_ID) = 0:
+      name: "No missing product IDs in mart"
+  
+  - missing_count(PRODUCT_NAME) = 0:
+      name: "No missing product names in mart"
+  
+  - missing_count(PRICE) = 0:
+      name: "No missing prices in mart"
+  
+  - missing_count(CATEGORY) = 0:
+      name: "No missing categories in mart"
+  
+  - missing_count(BRAND) = 0:
+      name: "No missing brands in mart"
+  
+  # Uniqueness checks
+  - duplicate_count(PRODUCT_ID) = 0:
+      name: "Product IDs are unique in mart"
+  
+  - duplicate_count(SKU) = 0:
+      name: "SKUs are unique in mart"
+  
+  # Validity checks (strict for mart layer)
+  - invalid_count(PRICE) = 0:
+      name: "No invalid prices in mart"
+      valid min: 0
+      valid max: 10000
+  
+  - invalid_count(CATEGORY) = 0:
+      name: "No invalid categories in mart"
+      valid values: ['Electronics', 'Clothing', 'Books', 'Home & Garden', 'Sports', 'Toys', 'Health', 'Automotive']
+  
+  - invalid_count(BRAND) = 0:
+      name: "No invalid brands in mart"
+      valid regex: '^.{2,50}$'
+  
+  # Range checks (strict for mart layer)
+  - min(PRICE) >= 0:
+      name: "All prices are non-negative in mart"
+  
+  - max(PRICE) <= 10000:
+      name: "All prices are within business limits in mart"
+  
+  # Data quality score checks
+  - row_count > 0:
+      name: "Product dimension has data"
+  
+  # Freshness checks
+  - freshness(CREATED_AT) < 30:
+      name: "Product dimension data is fresh"
+  
+  # Failed row samples for detailed analysis
+  - failed rows:
+      name: "Sample failed product dimension records for analysis"
+      samples limit: 50
+      fail query: |
+        SELECT PRODUCT_ID, PRODUCT_NAME, PRICE, CATEGORY, BRAND, SKU
+        FROM DIM_PRODUCTS
+        WHERE PRODUCT_ID IS NULL 
+           OR PRODUCT_NAME IS NULL 
+           OR PRICE IS NULL
+           OR PRICE < 0
+           OR CATEGORY IS NULL
+           OR BRAND IS NULL
+           OR SKU IS NULL
+      fail: when > 0

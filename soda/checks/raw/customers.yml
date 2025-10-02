@@ -73,6 +73,14 @@ checks for CUSTOMERS:
       name: "Invalid phone formats"
       valid regex: '^[0-9\-\+\(\)\s]+$'
   
+  # Additional business logic checks
+  - freshness(CREATED_AT) < 30:
+      name: "Customer data is recent"
+  
+  - freshness(UPDATED_AT) < 7:
+      name: "Customer data is actively updated"
+      filter: UPDATED_AT IS NOT NULL
+  
   # Failed row samples for detailed analysis
   - failed rows:
       name: "Sample failed customer records for analysis"

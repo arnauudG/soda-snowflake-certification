@@ -47,16 +47,15 @@ Soda Quality Checks    Soda Quality Checks    Soda Quality Checks
 │   ├── docker-compose.yml           # Multi-container setup
 │   └── Dockerfile                   # Custom Airflow image
 ├── scripts/                          # Utility scripts
-│   ├── setup/                       # Environment setup
-│   │   ├── requirements.txt         # Python dependencies
-│   │   ├── setup_snowflake.py       # Snowflake table creation
-│   │   └── reset_snowflake.py       # Snowflake cleanup
-│   └── run_pipeline.sh              # Pipeline execution script
+│   └── setup/                       # Environment setup
+│       ├── requirements.txt         # Python dependencies
+│       ├── setup_snowflake.py       # Snowflake table creation
+│       └── reset_snowflake.py       # Snowflake cleanup
 ├── soda/                             # Soda data quality configuration
 │   ├── checks/                      # SodaCL check definitions
 │   │   ├── raw/                     # RAW layer quality checks
 │   │   ├── staging/                 # STAGING layer quality checks
-│   │   └── mart/                    # MARTS layer quality checks
+│   │   └── marts/                   # MARTS layer quality checks
 │   └── configuration/               # Soda connection configurations
 └── Makefile                          # Project automation commands
 ```

@@ -13,10 +13,13 @@ RUN apt-get update && apt-get install -y \
 USER airflow
 
 # Copy requirements file
-COPY scripts/setup/requirements.txt /tmp/requirements.txt
+COPY requirements.txt /tmp/requirements.txt
 
 # Install Python dependencies from requirements file
-RUN pip install --no-cache-dir -r /tmp/requirements.txt
+# Install soda-snowflake from Soda Cloud PyPI index
+RUN pip install --no-cache-dir -i https://pypi.cloud.soda.io soda-snowflake
+# Install other dependencies from standard PyPI
+RUN pip install --no-cache-dir python-dotenv==1.0.1 pandas>=2.2.2 pyarrow setuptools Faker dbt-core==1.10.11 dbt-snowflake==1.10.2
 
 # Set working directory
 WORKDIR /opt/airflow

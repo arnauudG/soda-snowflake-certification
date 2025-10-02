@@ -2,13 +2,16 @@ from datetime import datetime, timedelta
 import os
 from airflow import DAG
 from airflow.operators.bash import BashOperator
-from airflow.operators.dummy import DummyOperator
+from airflow.operators.python import PythonOperator
+from airflow.operators.empty import EmptyOperator
+import subprocess
+import os
 
 # Absolute project root (Docker container path)
 PROJECT_ROOT = "/opt/airflow"
 
 # Common bash prefix to run in project, load env
-BASH_PREFIX = f"cd '{PROJECT_ROOT}' && source .env && "
+BASH_PREFIX = "cd '/opt/airflow' && source .env && "
 
 # Default arguments
 default_args = {
@@ -78,7 +81,7 @@ with DAG(
     # PIPELINE TASKS - LAYERED APPROACH
     # =============================================================================
     
-    pipeline_start = DummyOperator(
+    pipeline_start = EmptyOperator(
         task_id="pipeline_start",
         doc_md="🔄 Starting layered pipeline execution"
     )
@@ -87,26 +90,25 @@ with DAG(
     # LAYER 1: RAW DATA + RAW CHECKS
     # =============================================================================
     
-    raw_layer_start = DummyOperator(
+    raw_layer_start = EmptyOperator(
         task_id="raw_layer_start",
-        doc_md="📊 Starting RAW layer processing"
+        doc_md="🔄 Starting RAW layer processing"
     )
 
     soda_scan_raw = BashOperator(
         task_id="soda_scan_raw",
-        bash_command=BASH_PREFIX + "find soda/checks/raw/ -name '*.yml' -exec soda scan -d soda_certification_raw -c soda/configuration/configuration_raw.yml {} + || true",
+        bash_command=BASH_PREFIX + "soda scan -d soda_certification_raw -c soda/configuration/configuration_raw.yml -T soda/checks/templates/data_quality_templates.yml soda/checks/raw || true",
         doc_md="""
         **RAW Layer Quality Checks**
         
-        - Lenient quality thresholds
-        - Captures initial data issues
-        - Expected: Some failures (demonstration purposes)
+        - Initial data quality assessment
+        - Relaxed thresholds for source data
+        - Identifies data issues before transformation
+        - Includes all raw tables: customers, products, orders, order_items
         """,
     )
 
-
-
-    raw_layer_end = DummyOperator(
+    raw_layer_end = EmptyOperator(
         task_id="raw_layer_end",
         doc_md="✅ RAW layer processing completed"
     )
@@ -115,7 +117,7 @@ with DAG(
     # LAYER 2: STAGING MODELS + STAGING CHECKS
     # =============================================================================
     
-    staging_layer_start = DummyOperator(
+    staging_layer_start = EmptyOperator(
         task_id="staging_layer_start",
         doc_md="🔄 Starting STAGING layer processing"
     )
@@ -134,7 +136,7 @@ with DAG(
 
     soda_scan_staging = BashOperator(
         task_id="soda_scan_staging",
-        bash_command=BASH_PREFIX + "soda scan -d soda_certification_staging -c soda/configuration/configuration_staging.yml soda/checks/staging || true",
+        bash_command=BASH_PREFIX + "soda scan -d soda_certification_staging -c soda/configuration/configuration_staging.yml -T soda/checks/templates/data_quality_templates.yml soda/checks/staging || true",
         doc_md="""
         **STAGING Layer Quality Checks**
         
@@ -144,7 +146,7 @@ with DAG(
         """,
     )
 
-    staging_layer_end = DummyOperator(
+    staging_layer_end = EmptyOperator(
         task_id="staging_layer_end",
         doc_md="✅ STAGING layer processing completed"
     )
@@ -153,7 +155,7 @@ with DAG(
     # LAYER 3: MART MODELS + MART CHECKS
     # =============================================================================
     
-    mart_layer_start = DummyOperator(
+    mart_layer_start = EmptyOperator(
         task_id="mart_layer_start",
         doc_md="🏆 Starting MART layer processing"
     )
@@ -172,7 +174,7 @@ with DAG(
 
     soda_scan_mart = BashOperator(
         task_id="soda_scan_mart",
-        bash_command=BASH_PREFIX + "soda scan -d soda_certification_mart -c soda/configuration/configuration_mart.yml soda/checks/mart || true",
+        bash_command=BASH_PREFIX + "soda scan -d soda_certification_mart -c soda/configuration/configuration_mart.yml -T soda/checks/templates/data_quality_templates.yml soda/checks/marts || true",
         doc_md="""
         **MART Layer Quality Checks**
         
@@ -182,7 +184,7 @@ with DAG(
         """,
     )
 
-    mart_layer_end = DummyOperator(
+    mart_layer_end = EmptyOperator(
         task_id="mart_layer_end",
         doc_md="✅ MART layer processing completed"
     )
@@ -191,14 +193,14 @@ with DAG(
     # LAYER 4: QUALITY CHECKS + DBT TESTS
     # =============================================================================
     
-    quality_layer_start = DummyOperator(
+    quality_layer_start = EmptyOperator(
         task_id="quality_layer_start",
         doc_md="🔍 Starting QUALITY layer processing"
     )
 
     soda_scan_quality = BashOperator(
         task_id="soda_scan_quality",
-        bash_command=BASH_PREFIX + "soda scan -d soda_certification_quality -c soda/configuration/configuration_quality.yml soda/checks/quality || true",
+        bash_command=BASH_PREFIX + "soda scan -d soda_certification_quality -c soda/configuration/configuration_quality.yml -T soda/checks/templates/data_quality_templates.yml soda/checks/quality || true",
         doc_md="""
         **QUALITY Layer Monitoring**
         
@@ -220,7 +222,7 @@ with DAG(
         """,
     )
 
-    quality_layer_end = DummyOperator(
+    quality_layer_end = EmptyOperator(
         task_id="quality_layer_end",
         doc_md="✅ QUALITY layer processing completed"
     )
@@ -241,7 +243,7 @@ with DAG(
         """,
     )
     
-    pipeline_end = DummyOperator(
+    pipeline_end = EmptyOperator(
         task_id="pipeline_end",
         doc_md="✅ Layered pipeline execution completed successfully!"
     )
@@ -250,17 +252,9 @@ with DAG(
     # TASK DEPENDENCIES - LAYERED APPROACH
     # =============================================================================
     
-    # Layer 1: RAW
+    # Complete layered pipeline with individual layer visibility
     pipeline_start >> raw_layer_start >> soda_scan_raw >> raw_layer_end
-    
-    # Layer 2: STAGING (depends on RAW completion)
     raw_layer_end >> staging_layer_start >> dbt_run_staging >> soda_scan_staging >> staging_layer_end
-    
-    # Layer 3: MART (depends on STAGING completion)
     staging_layer_end >> mart_layer_start >> dbt_run_mart >> soda_scan_mart >> mart_layer_end
-    
-    # Layer 4: QUALITY (depends on MART completion)
     mart_layer_end >> quality_layer_start >> [soda_scan_quality, dbt_test] >> quality_layer_end
-    
-    # Final cleanup
     quality_layer_end >> cleanup >> pipeline_end

@@ -8,7 +8,7 @@ services:
       dockerfile: Dockerfile
     container_name: soda-airflow-webserver
     env_file:
-      - ../.env
+      - .env
     environment:
       - AIRFLOW__CORE__EXECUTOR=LocalExecutor
       - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres/airflow
@@ -60,7 +60,7 @@ services:
       dockerfile: Dockerfile
     container_name: soda-airflow-scheduler
     env_file:
-      - ../.env
+      - .env
     environment:
       - AIRFLOW__CORE__EXECUTOR=LocalExecutor
       - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres/airflow
@@ -110,7 +110,7 @@ services:
       dockerfile: Dockerfile
     container_name: soda-airflow-init
     env_file:
-      - ../.env
+      - .env
     environment:
       - AIRFLOW__CORE__EXECUTOR=LocalExecutor
       - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres/airflow

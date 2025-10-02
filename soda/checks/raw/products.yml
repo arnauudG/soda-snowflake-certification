@@ -32,12 +32,12 @@ checks for PRODUCTS:
           PRODUCT_NAME: varchar
           CATEGORY: varchar
           SUBCATEGORY: varchar
-          PRICE: decimal
+          PRICE: number
           CURRENCY: varchar
           DESCRIPTION: varchar
           BRAND: varchar
           SKU: varchar
-          WEIGHT: decimal
+          WEIGHT: number
           DIMENSIONS: varchar
           CREATED_AT: timestamp
           UPDATED_AT: timestamp
@@ -71,6 +71,15 @@ checks for PRODUCTS:
   
   - max(PRICE) <= 10000:
       name: "Maximum price within business limits"
+  
+  # Additional validity checks for product data
+  - invalid_count(CATEGORY) < 50:
+      name: "Invalid category values"
+      valid values: ['Electronics', 'Clothing', 'Books', 'Home & Garden', 'Sports', 'Toys', 'Health', 'Automotive']
+  
+  - invalid_count(BRAND) < 30:
+      name: "Invalid brand values"
+      valid regex: '^.{2,50}$'
   
   # Failed row samples for detailed analysis
   - failed rows:

@@ -6,7 +6,7 @@ sources:
     database: SODA_CERTIFICATION
     schema: RAW
     tables:
-      - name: customers
+      - name: CUSTOMERS
         description: "Raw customer data with potential data quality issues"
         columns:
           - name: customer_id
@@ -37,7 +37,7 @@ sources:
           - name: updated_at
             description: "Record last update timestamp"
             
-      - name: products
+      - name: PRODUCTS
         description: "Raw product data with potential data quality issues"
         columns:
           - name: product_id
@@ -70,7 +70,7 @@ sources:
           - name: updated_at
             description: "Record last update timestamp"
             
-      - name: orders
+      - name: ORDERS
         description: "Raw order data with potential data quality issues"
         columns:
           - name: order_id
@@ -97,7 +97,7 @@ sources:
           - name: updated_at
             description: "Record last update timestamp"
             
-      - name: order_items
+      - name: ORDER_ITEMS
         description: "Raw order item data with potential data quality issues"
         columns:
           - name: order_item_id

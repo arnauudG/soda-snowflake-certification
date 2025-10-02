@@ -12,17 +12,11 @@ RUN apt-get update && apt-get install -y \
 # Switch back to airflow user
 USER airflow
 
-# Install Python dependencies
-RUN pip install --no-cache-dir \
-    dbt-core==1.10.11 \
-    dbt-snowflake==1.10.2 \
-    soda-core==3.5.5 \
-    soda-core-snowflake==3.5.5 \
-    python-dotenv \
-    pandas \
-    pyarrow \
-    setuptools \
-    Faker
+# Copy requirements file
+COPY scripts/setup/requirements.txt /tmp/requirements.txt
+
+# Install Python dependencies from requirements file
+RUN pip install --no-cache-dir -r /tmp/requirements.txt
 
 # Set working directory
 WORKDIR /opt/airflow

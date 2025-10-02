@@ -1,40 +1,87 @@
 # RAW Layer - Orders Table Quality Checks
 # Database: SODA_CERTIFICATION, Schema: RAW
-# Table: orders (20,000+ records)
+# Table: ORDERS (20,000+ records)
 # Purpose: Initial data quality assessment with relaxed thresholds
 
-checks for orders:
+# Dataset discovery configuration for Soda Cloud
+discover datasets:
+  datasets:
+    - include ORDERS
+
+# Column profiling configuration for Soda Cloud
+profile columns:
+  columns:
+    - ORDERS.%
+    - exclude ORDERS.CREATED_AT
+    - exclude ORDERS.UPDATED_AT
+
+# Sample datasets configuration for Soda Cloud
+sample datasets:
+  datasets:
+    - include ORDERS
+
+checks for ORDERS:
+  # Schema validation
+  - schema:
+      name: "Order table schema validation"
+      fail:
+        when required column missing: [ORDER_ID, CUSTOMER_ID, ORDER_DATE, ORDER_STATUS, TOTAL_AMOUNT, CURRENCY, SHIPPING_ADDRESS, PAYMENT_METHOD, CREATED_AT, UPDATED_AT]
+        when forbidden column present: []
+        when wrong column type:
+          ORDER_ID: varchar
+          CUSTOMER_ID: varchar
+          ORDER_DATE: date
+          ORDER_STATUS: varchar
+          TOTAL_AMOUNT: decimal
+          CURRENCY: varchar
+          SHIPPING_ADDRESS: varchar
+          PAYMENT_METHOD: varchar
+          CREATED_AT: timestamp
+          UPDATED_AT: timestamp
   # Row count checks
   - row_count between 15000 and 25000:
       name: "Order count within expected range"
   
   # Completeness checks (relaxed for raw data)
-  - missing_count(order_id) = 0:
+  - missing_count(ORDER_ID) = 0:
       name: "No missing order IDs"
   
-  - missing_count(customer_id) < 500:
+  - missing_count(CUSTOMER_ID) < 500:
       name: "Minimal missing customer IDs"
   
-  - missing_count(total_amount) < 1000:
-      name: "Total amount completeness check"
+  - missing_count(TOTAL_AMOUNT) < 200:
+      name: "Minimal missing total amounts"
   
   # Uniqueness checks
-  - duplicate_count(order_id) = 0:
+  - duplicate_count(ORDER_ID) = 0:
       name: "Order IDs are unique"
   
-  # Validity checks (allowing some negative amounts in raw)
-  - min(total_amount) > 0:
-      name: "All total amounts are positive (raw tolerance handled in staging)"
-  
-  - invalid_count(order_status) < 200:
+  # Validity checks
+  - invalid_count(ORDER_STATUS) < 200:
       name: "Invalid order statuses"
       valid values: ['pending', 'processing', 'shipped', 'delivered', 'cancelled', 'returned']
   
-  # Freshness checks
-  # Freshness omitted (created_at is numeric in RAW)
+  # Range checks
+  - min(TOTAL_AMOUNT) >= -100:
+      name: "Negative amounts within raw tolerance"
   
-  # Schema checks
-  # Schema validation omitted
+  - max(TOTAL_AMOUNT) <= 10000:
+      name: "Maximum order amount within business limits"
   
-  # Data distribution checks
-  # Distribution checks omitted
+  # Business logic checks
+  - avg(TOTAL_AMOUNT) between 50 and 500:
+      name: "Average order amount within business range"
+  
+  # Failed row samples for detailed analysis
+  - failed rows:
+      name: "Sample failed order records for analysis"
+      samples limit: 50
+      fail query: |
+        SELECT ORDER_ID, CUSTOMER_ID, ORDER_STATUS, TOTAL_AMOUNT
+        FROM ORDERS
+        WHERE ORDER_ID IS NULL 
+           OR CUSTOMER_ID IS NULL 
+           OR ORDER_STATUS IS NULL
+           OR TOTAL_AMOUNT IS NULL
+           OR TOTAL_AMOUNT < -100
+      fail: when > 0

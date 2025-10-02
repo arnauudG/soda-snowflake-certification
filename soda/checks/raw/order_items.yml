@@ -1,9 +1,42 @@
 # RAW Layer - Order Items Table Quality Checks
 # Database: SODA_CERTIFICATION, Schema: RAW
-# Table: order_items (50,000+ records)
+# Table: ORDER_ITEMS (50,000+ records)
 # Purpose: Initial data quality assessment with relaxed thresholds
 
-checks for order_items:
+# Dataset discovery configuration for Soda Cloud
+discover datasets:
+  datasets:
+    - include ORDER_ITEMS
+
+# Column profiling configuration for Soda Cloud
+profile columns:
+  columns:
+    - ORDER_ITEMS.%
+    - exclude ORDER_ITEMS.CREATED_AT
+    - exclude ORDER_ITEMS.UPDATED_AT
+
+# Sample datasets configuration for Soda Cloud
+sample datasets:
+  datasets:
+    - include ORDER_ITEMS
+
+checks for ORDER_ITEMS:
+  # Schema validation
+  - schema:
+      name: "Order items table schema validation"
+      fail:
+        when required column missing: [ORDER_ITEM_ID, ORDER_ID, PRODUCT_ID, QUANTITY, UNIT_PRICE, TOTAL_PRICE, DISCOUNT_PERCENT, CREATED_AT, UPDATED_AT]
+        when forbidden column present: []
+        when wrong column type:
+          ORDER_ITEM_ID: varchar
+          ORDER_ID: varchar
+          PRODUCT_ID: varchar
+          QUANTITY: integer
+          UNIT_PRICE: decimal
+          TOTAL_PRICE: decimal
+          DISCOUNT_PERCENT: decimal
+          CREATED_AT: timestamp
+          UPDATED_AT: timestamp
   # Row count checks
   - row_count between 40000 and 60000:
       name: "Order items count within expected range"
@@ -15,33 +48,39 @@ checks for order_items:
   - missing_count(ORDER_ID) < 1000:
       name: "Minimal missing order IDs"
   
-  - missing_count(PRODUCT_ID) < 1000:
+  - missing_count(PRODUCT_ID) < 500:
       name: "Minimal missing product IDs"
   
-  - missing_count(QUANTITY) < 2000:
-      name: "Quantity completeness check"
+  - missing_count(QUANTITY) < 200:
+      name: "Minimal missing quantities"
   
   # Uniqueness checks
   - duplicate_count(ORDER_ITEM_ID) = 0:
       name: "Order item IDs are unique"
   
-  # Validity checks (allowing some negative quantities in raw)
-  - invalid_count(QUANTITY) < 1000:
-      name: "Negative quantities within acceptable range"
-      valid min: 1
+  # Validity checks
+  - invalid_count(QUANTITY) < 500:
+      name: "Invalid quantity values"
+      valid min: -10
+      valid max: 1000
   
-  - invalid_count(UNIT_PRICE) < 500:
-      name: "Negative unit prices within acceptable range"
-      valid min: 0
+  # Range checks
+  - min(QUANTITY) >= -10:
+      name: "Negative quantities within raw tolerance"
   
-  - invalid_count(TOTAL_PRICE) < 1000:
-      name: "Negative total prices within acceptable range"
-      valid min: 0
+  - max(QUANTITY) <= 1000:
+      name: "Maximum quantity within business limits"
   
-  # Freshness checks omitted (created_at numeric in RAW)
-  
-  # Schema checks
-  # schema validation omitted for simplicity
-  
-  # Data distribution checks
-  # distribution checks omitted
+  # Failed row samples for detailed analysis
+  - failed rows:
+      name: "Sample failed order item records for analysis"
+      samples limit: 50
+      fail query: |
+        SELECT ORDER_ITEM_ID, ORDER_ID, PRODUCT_ID, QUANTITY, UNIT_PRICE
+        FROM ORDER_ITEMS
+        WHERE ORDER_ITEM_ID IS NULL 
+           OR ORDER_ID IS NULL 
+           OR PRODUCT_ID IS NULL
+           OR QUANTITY IS NULL
+           OR QUANTITY < -10
+      fail: when > 0

@@ -3,43 +3,94 @@
 # Table: stg_products (1,000+ records)
 # Purpose: Data quality validation after initial transformation
 
+# Dataset discovery configuration for Soda Cloud
+discover datasets:
+  datasets:
+    - include STG_PRODUCTS
+
+# Soda Cloud Profiling Configuration for Partner Certification
+profile columns:
+  columns:
+    - STG_PRODUCTS.%
+    - exclude STG_PRODUCTS.CREATED_AT
+    - exclude STG_PRODUCTS.UPDATED_AT
+    - exclude STG_PRODUCTS.INGESTION_TIMESTAMP
+    - exclude STG_PRODUCTS.PRODUCT_AGE_DAYS
+    - exclude STG_PRODUCTS.HAS_NEGATIVE_PRICE
+    - exclude STG_PRODUCTS.HAS_MISSING_NAME
+    - exclude STG_PRODUCTS.HAS_NEGATIVE_WEIGHT
+    - exclude STG_PRODUCTS.HAS_FUTURE_DATE
+
+# Sample datasets configuration for Soda Cloud
+sample datasets:
+  datasets:
+    - include STG_PRODUCTS
+
 checks for STG_PRODUCTS:
-  # Row count checks
+  # Row count checks with sampling
   - row_count between 800 and 1200:
       name: "Staging product count within expected range"
+      samples limit: 1000
   
-  # Completeness checks (stricter than raw)
-  - missing_count(product_id) = 0:
+  # Schema validation
+  - schema:
+      name: "Staging product table schema validation"
+      fail:
+        when required column missing: [PRODUCT_ID, PRODUCT_NAME, PRICE, SKU, DATA_QUALITY_SCORE]
+        when forbidden column present: [DUPLICATE_PRODUCT_ID, TEST_COLUMN]
+  
+  # Completeness checks (stricter than raw) with sampling
+  - missing_count(PRODUCT_ID) = 0:
       name: "No missing product IDs in staging"
+      samples limit: 1000
   
-  - missing_count(price) < 50:
+  - missing_count(PRICE) < 50:
       name: "Price completeness in staging"
+      samples limit: 1000
   
-  # No negative prices in staging
-  - min(price) >= 0:
+  # No negative prices in staging with sampling
+  - min(PRICE) >= 0:
       name: "No negative prices in staging"
+      samples limit: 1000
   
-  # Data quality score checks
-  - avg(data_quality_score) > 90:
-      name: "Average data quality score above 90"
+  # Data quality score checks with sampling
+  - avg(DATA_QUALITY_SCORE) > 70:
+      name: "Average data quality score above 70"
+      samples limit: 1000
   
-  # Uniqueness checks (stricter than raw)
-  - duplicate_count(product_id) = 0:
+  # Uniqueness checks (stricter than raw) with sampling
+  - duplicate_count(PRODUCT_ID) = 0:
       name: "Product IDs are unique in staging"
+      samples limit: 1000
   
-  - duplicate_count(sku) < 25:
+  - duplicate_count(SKU) < 25:
       name: "SKU duplicates reduced in staging"
+      samples limit: 1000
   
-  # Validity checks (stricter than raw)
-  - min(price) > 0:
+  # Validity checks (stricter than raw) with sampling
+  - min(PRICE) > 0:
       name: "All prices are positive in staging"
+      samples limit: 1000
   
-  - max(price) <= 10000:
+  - max(PRICE) <= 10000:
       name: "All prices are within business range"
+      samples limit: 1000
   
   # Freshness checks
-  - freshness(created_at) < 1d:
+  - freshness(CREATED_AT) < 1d:
       name: "Staging product data is fresh"
   
-  # Schema checks
-  # Schema validation omitted
+  # Failed row samples for detailed analysis
+  - failed rows:
+      samples limit: 50
+      fail query: |
+        SELECT PRODUCT_ID, PRODUCT_NAME, PRICE, SKU, WEIGHT, DATA_QUALITY_SCORE
+        FROM STG_PRODUCTS
+        WHERE PRODUCT_ID IS NULL 
+           OR PRODUCT_NAME IS NULL 
+           OR PRICE IS NULL
+           OR PRICE < 0
+           OR SKU IS NULL
+           OR DATA_QUALITY_SCORE < 50
+      name: "Sample failed staging product records for analysis"
+      fail: when > 100

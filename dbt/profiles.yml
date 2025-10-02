@@ -5,8 +5,8 @@ soda_certification:
       type: snowflake
       account: "{{ env_var('SNOWFLAKE_ACCOUNT') }}"
       user: "{{ env_var('SNOWFLAKE_USER') }}"
-      authenticator: oauth
-      token: "{{ env_var('SNOWFLAKE_PASSWORD') }}"
+      authenticator: snowflake
+      password: "{{ env_var('SNOWFLAKE_PASSWORD') }}"
       role: "{{ env_var('SNOWFLAKE_ROLE', 'ACCOUNTADMIN') }}"
       database: "SODA_CERTIFICATION"
       warehouse: "SODA_WH"
@@ -14,13 +14,13 @@ soda_certification:
       threads: 4
       client_session_keep_alive: False
       query_tag: "dbt_dev"
-      quote_identifiers: false
+      quote_identifiers: true
     prod:
       type: snowflake
       account: "{{ env_var('SNOWFLAKE_ACCOUNT') }}"
       user: "{{ env_var('SNOWFLAKE_USER') }}"
-      authenticator: oauth
-      token: "{{ env_var('SNOWFLAKE_PASSWORD') }}"
+      authenticator: snowflake
+      password: "{{ env_var('SNOWFLAKE_PASSWORD') }}"
       role: "{{ env_var('SNOWFLAKE_ROLE', 'ACCOUNTADMIN') }}"
       database: "SODA_CERTIFICATION"
       warehouse: "SODA_WH"
@@ -28,4 +28,4 @@ soda_certification:
       threads: 4
       client_session_keep_alive: False
       query_tag: "dbt_prod"
-      quote_identifiers: false
+      quote_identifiers: true

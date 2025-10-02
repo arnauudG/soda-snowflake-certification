@@ -3,41 +3,83 @@
 # Table: fact_orders (20,000+ records)
 # Purpose: Business-ready data with strictest quality requirements
 
+# Dataset discovery configuration for Soda Cloud
+discover datasets:
+  datasets:
+    - include FACT_ORDERS
+
+# Soda Cloud Profiling Configuration for Partner Certification
+profile columns:
+  columns:
+    - FACT_ORDERS.%
+    - exclude FACT_ORDERS.ORDER_DATE
+    - exclude FACT_ORDERS.CREATED_AT
+    - exclude FACT_ORDERS.UPDATED_AT
+    - exclude FACT_ORDERS.INGESTION_TIMESTAMP
+    - exclude FACT_ORDERS.ORDER_YEAR
+    - exclude FACT_ORDERS.ORDER_MONTH
+    - exclude FACT_ORDERS.ORDER_DAY_OF_WEEK
+    - exclude FACT_ORDERS.ORDER_QUARTER
+    - exclude FACT_ORDERS.HAS_INVALID_CUSTOMER
+    - exclude FACT_ORDERS.HAS_NEGATIVE_AMOUNT
+    - exclude FACT_ORDERS.HAS_INVALID_STATUS
+    - exclude FACT_ORDERS.HAS_FUTURE_DATE
+    - exclude FACT_ORDERS.HAS_INVALID_CURRENCY
+    - exclude FACT_ORDERS.HAS_AMOUNT_MISMATCH
+    - exclude FACT_ORDERS.HAS_ORPHANED_ORDER
+    - exclude FACT_ORDERS.HAS_SLOW_DELIVERY
+
+# Sample datasets configuration for Soda Cloud
+sample datasets:
+  datasets:
+    - include FACT_ORDERS
+
 checks for FACT_ORDERS:
-  # Row count checks
+  # Row count checks with sampling
   - row_count between 15000 and 25000:
       name: "Mart order count within expected range"
+      samples limit: 3000
   
-  # Completeness checks (no missing values allowed)
+  # Schema validation
+  - schema:
+      name: "Mart order fact table schema validation"
+      fail:
+        when required column missing: [ORDER_ID, CUSTOMER_ID, ORDER_TOTAL_AMOUNT, ORDER_STATUS]
+        when forbidden column present: [DUPLICATE_ORDER_ID, TEST_COLUMN]
+  
+  # Completeness checks (no missing values allowed) with sampling
   - missing_count(ORDER_ID) = 0:
       name: "No missing order IDs in mart"
+      samples limit: 3000
   
   - missing_count(CUSTOMER_ID) = 0:
       name: "No missing customer IDs in mart"
+      samples limit: 3000
   
   - missing_count(ORDER_TOTAL_AMOUNT) < 1000:
       name: "Total amounts mostly present in mart"
-      samples limit: 0
+      samples limit: 3000
   
-  # Uniqueness checks (strict)
+  # Uniqueness checks (strict) with sampling
   - duplicate_count(ORDER_ID) = 0:
       name: "Order IDs are unique in mart"
+      samples limit: 3000
   
-  # Validity checks (strict)
+  # Validity checks (strict) with sampling
   - min(ORDER_TOTAL_AMOUNT) > 0:
       name: "All order amounts are positive in mart"
+      samples limit: 3000
   
   - max(ORDER_TOTAL_AMOUNT) <= 10000:
       name: "All order amounts are within business range"
+      samples limit: 3000
   
   # Referential integrity check omitted (custom SQL validation can be added later)
 
-  # Business logic checks
+  # Business logic checks with sampling
   - avg(ORDER_TOTAL_AMOUNT) between 40 and 700:
       name: "Average order amount within business range"
+      samples limit: 3000
   
   # Freshness checks
   # Omitted freshness check to avoid failures on synthetic data timestamps
-  
-  # Schema checks
-  # Schema validation omitted

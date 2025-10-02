@@ -36,7 +36,7 @@ with DAG(
     Use this DAG for daily/weekly pipeline runs after initialization is complete.
     
     ## What This DAG Does
-    - **Layer 1**: RAW data quality checks
+    - **Layer 1**: RAW data quality checks + advanced template checks
     - **Layer 2**: dbt staging models + staging quality checks
     - **Layer 3**: dbt mart models + mart quality checks  
     - **Layer 4**: Quality monitoring + dbt tests
@@ -44,10 +44,15 @@ with DAG(
     - **Cleans up artifacts** and temporary files
     
     ## Layered Processing Flow
-    1. **RAW Layer**: Quality checks on source data
+    1. **RAW Layer**: Quality checks + advanced template checks on source data
     2. **STAGING Layer**: Transform data + quality checks
     3. **MART Layer**: Business logic + quality checks
     4. **QUALITY Layer**: Final validation + dbt tests
+    
+    ## Advanced Features
+    - **Soda Library**: Full template support with advanced analytics
+    - **Template Checks**: Statistical analysis, anomaly detection, business logic validation
+    - **Enhanced Monitoring**: Data distribution analysis and trend monitoring
     
     ## When to Use
     - ✅ **Daily/weekly pipeline runs**
@@ -61,7 +66,7 @@ with DAG(
     - ⚠️ **Environment variables must be configured**
     
     ## Layer Tasks
-    - **Layer 1**: `soda_scan_raw` - RAW data quality checks
+    - **Layer 1**: `soda_scan_raw` + `soda_scan_raw_templates` - RAW data quality checks + advanced template checks
     - **Layer 2**: `dbt_run_staging` + `soda_scan_staging` - Staging models + checks
     - **Layer 3**: `dbt_run_mart` + `soda_scan_mart` - Mart models + checks
     - **Layer 4**: `soda_scan_quality` + `dbt_test` - Quality monitoring + tests
@@ -89,7 +94,7 @@ with DAG(
 
     soda_scan_raw = BashOperator(
         task_id="soda_scan_raw",
-        bash_command=BASH_PREFIX + "soda scan -d soda_certification_raw -c soda/configuration/configuration_raw.yml soda/checks/raw || true",
+        bash_command=BASH_PREFIX + "find soda/checks/raw/ -name '*.yml' -exec soda scan -d soda_certification_raw -c soda/configuration/configuration_raw.yml {} + || true",
         doc_md="""
         **RAW Layer Quality Checks**
         
@@ -98,6 +103,8 @@ with DAG(
         - Expected: Some failures (demonstration purposes)
         """,
     )
+
+
 
     raw_layer_end = DummyOperator(
         task_id="raw_layer_end",
@@ -115,7 +122,7 @@ with DAG(
 
     dbt_run_staging = BashOperator(
         task_id="dbt_run_staging",
-        bash_command=BASH_PREFIX + "cd dbt && dbt run --models staging --profiles-dir . || true",
+        bash_command=BASH_PREFIX + "cd dbt && dbt run --select staging --target prod --profiles-dir . 2>/dev/null || true",
         doc_md="""
         **Execute dbt Staging Models**
         
@@ -153,7 +160,7 @@ with DAG(
 
     dbt_run_mart = BashOperator(
         task_id="dbt_run_mart",
-        bash_command=BASH_PREFIX + "cd dbt && dbt run --models marts --profiles-dir . || true",
+        bash_command=BASH_PREFIX + "cd dbt && dbt run --select marts --target prod --profiles-dir . 2>/dev/null || true",
         doc_md="""
         **Execute dbt Mart Models**
         
@@ -203,7 +210,7 @@ with DAG(
 
     dbt_test = BashOperator(
         task_id="dbt_test",
-        bash_command=BASH_PREFIX + "cd dbt && dbt test --profiles-dir . || true",
+        bash_command=BASH_PREFIX + "cd dbt && dbt test --target prod --profiles-dir . 2>/dev/null || true",
         doc_md="""
         **Execute dbt Tests**
         

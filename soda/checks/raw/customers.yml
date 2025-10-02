@@ -1,9 +1,45 @@
 # RAW Layer - Customers Table Quality Checks
 # Database: SODA_CERTIFICATION, Schema: RAW
-# Table: customers (10,000+ records)
+# Table: CUSTOMERS (10,000+ records)
 # Purpose: Initial data quality assessment with relaxed thresholds
 
-checks for customers:
+# Dataset discovery configuration for Soda Cloud
+discover datasets:
+  datasets:
+    - include CUSTOMERS
+
+# Column profiling configuration for Soda Cloud
+profile columns:
+  columns:
+    - CUSTOMERS.%
+    - exclude CUSTOMERS.CREATED_AT
+    - exclude CUSTOMERS.UPDATED_AT
+
+# Sample datasets configuration for Soda Cloud
+sample datasets:
+  datasets:
+    - include CUSTOMERS
+
+checks for CUSTOMERS:
+  # Schema validation
+  - schema:
+      name: "Customer table schema validation"
+      fail:
+        when required column missing: [CUSTOMER_ID, FIRST_NAME, LAST_NAME, EMAIL, PHONE, ADDRESS, CITY, STATE, ZIP_CODE, COUNTRY, CREATED_AT, UPDATED_AT]
+        when forbidden column present: []
+        when wrong column type:
+          CUSTOMER_ID: varchar
+          FIRST_NAME: varchar
+          LAST_NAME: varchar
+          EMAIL: varchar
+          PHONE: varchar
+          ADDRESS: varchar
+          CITY: varchar
+          STATE: varchar
+          ZIP_CODE: varchar
+          COUNTRY: varchar
+          CREATED_AT: timestamp
+          UPDATED_AT: timestamp
   # Row count checks
   - row_count between 8000 and 12000:
       name: "Customer count within expected range"
@@ -37,10 +73,16 @@ checks for customers:
       name: "Invalid phone formats"
       valid regex: '^[0-9\-\+\(\)\s]+$'
   
-  # Freshness checks
-  # Freshness check disabled - created_at is timestamp in nanoseconds
-  # - freshness("created_at") < 1d:
-  #     name: "Customer data is fresh"
-  
-  # Schema checks
-  # Schema validation can be re-added later using Soda's columns block
+  # Failed row samples for detailed analysis
+  - failed rows:
+      name: "Sample failed customer records for analysis"
+      samples limit: 50
+      fail query: |
+        SELECT CUSTOMER_ID, FIRST_NAME, LAST_NAME, EMAIL, PHONE
+        FROM CUSTOMERS
+        WHERE CUSTOMER_ID IS NULL 
+           OR FIRST_NAME IS NULL 
+           OR LAST_NAME IS NULL
+           OR EMAIL IS NULL
+           OR EMAIL = ''
+      fail: when > 0

@@ -3,7 +3,7 @@
 -- Optimized for large dataset (20,000+ orders)
 
 with source_data as (
-    select * from SODA_CERTIFICATION.RAW.ORDERS
+    select * from {{ source('raw', 'ORDERS') }}
 ),
 
 cleaned_orders as (
@@ -114,36 +114,36 @@ orders_with_analysis as (
 )
 
 select 
-    order_id,
-    customer_id,
-    order_date,
-    order_status,
-    total_amount,
-    currency,
-    shipping_address,
-    payment_method,
-    created_at,
-    updated_at,
-    ingestion_timestamp,
-    has_invalid_customer,
-    has_negative_amount,
-    has_invalid_status,
-    has_future_date,
-    has_invalid_currency,
-    status_category,
-    order_value_tier,
-    payment_category,
-    data_quality_score,
+    order_id as ORDER_ID,
+    customer_id as CUSTOMER_ID,
+    order_date as ORDER_DATE,
+    order_status as ORDER_STATUS,
+    total_amount as TOTAL_AMOUNT,
+    currency as CURRENCY,
+    shipping_address as SHIPPING_ADDRESS,
+    payment_method as PAYMENT_METHOD,
+    created_at as CREATED_AT,
+    updated_at as UPDATED_AT,
+    ingestion_timestamp as INGESTION_TIMESTAMP,
+    has_invalid_customer as HAS_INVALID_CUSTOMER,
+    has_negative_amount as HAS_NEGATIVE_AMOUNT,
+    has_invalid_status as HAS_INVALID_STATUS,
+    has_future_date as HAS_FUTURE_DATE,
+    has_invalid_currency as HAS_INVALID_CURRENCY,
+    status_category as STATUS_CATEGORY,
+    order_value_tier as ORDER_VALUE_TIER,
+    payment_category as PAYMENT_CATEGORY,
+    data_quality_score as DATA_QUALITY_SCORE,
     -- Add derived fields
-    year(order_date) as order_year,
-    month(order_date) as order_month,
-    dayofweek(order_date) as order_day_of_week,
-    quarter(order_date) as order_quarter,
+    year(order_date) as ORDER_YEAR,
+    month(order_date) as ORDER_MONTH,
+    dayofweek(order_date) as ORDER_DAY_OF_WEEK,
+    quarter(order_date) as ORDER_QUARTER,
     
     -- Order processing time (if completed)
     case 
         when order_status = 'delivered' and created_at is not null then
             datediff('day', created_at, updated_at)
         else null
-    end as processing_days
+    end as PROCESSING_DAYS
 from orders_with_analysis

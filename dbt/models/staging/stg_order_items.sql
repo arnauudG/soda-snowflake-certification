@@ -3,7 +3,7 @@
 -- Optimized for large dataset (50,000+ order items)
 
 with source_data as (
-    select * from SODA_CERTIFICATION.RAW.ORDER_ITEMS
+    select * from {{ source('raw', 'ORDER_ITEMS') }}
 ),
 
 cleaned_order_items as (
@@ -99,30 +99,30 @@ order_items_with_calculations as (
 )
 
 select 
-    order_item_id,
-    order_id,
-    product_id,
-    quantity,
-    unit_price,
-    total_price,
-    calculated_total_price,
-    discount_percent,
-    discount_amount,
-    created_at,
-    updated_at,
-    ingestion_timestamp,
-    has_invalid_order,
-    has_invalid_product,
-    has_negative_quantity,
-    has_negative_price,
-    has_negative_total,
-    data_quality_score,
+    order_item_id as ORDER_ITEM_ID,
+    order_id as ORDER_ID,
+    product_id as PRODUCT_ID,
+    quantity as QUANTITY,
+    unit_price as UNIT_PRICE,
+    total_price as TOTAL_PRICE,
+    calculated_total_price as CALCULATED_TOTAL_PRICE,
+    discount_percent as DISCOUNT_PERCENT,
+    discount_amount as DISCOUNT_AMOUNT,
+    created_at as CREATED_AT,
+    updated_at as UPDATED_AT,
+    ingestion_timestamp as INGESTION_TIMESTAMP,
+    has_invalid_order as HAS_INVALID_ORDER,
+    has_invalid_product as HAS_INVALID_PRODUCT,
+    has_negative_quantity as HAS_NEGATIVE_QUANTITY,
+    has_negative_price as HAS_NEGATIVE_PRICE,
+    has_negative_total as HAS_NEGATIVE_TOTAL,
+    data_quality_score as DATA_QUALITY_SCORE,
     -- Add derived fields
     case 
         when quantity is not null and unit_price is not null then
             round(unit_price / quantity, 2)
         else null
-    end as price_per_unit,
+    end as PRICE_PER_UNIT,
     
     -- Item value tier
     case 
@@ -130,7 +130,7 @@ select
         when calculated_total_price < 100 then 'MEDIUM'
         when calculated_total_price < 500 then 'LARGE'
         else 'XLARGE'
-    end as item_value_tier,
+    end as ITEM_VALUE_TIER,
     
     -- Discount tier
     case 
@@ -138,5 +138,5 @@ select
         when discount_percent < 10 then 'LOW_DISCOUNT'
         when discount_percent < 25 then 'MEDIUM_DISCOUNT'
         else 'HIGH_DISCOUNT'
-    end as discount_tier
+    end as DISCOUNT_TIER
 from order_items_with_calculations

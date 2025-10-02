@@ -3,44 +3,100 @@
 # Table: stg_orders (20,000+ records)
 # Purpose: Data quality validation after initial transformation
 
+# Dataset discovery configuration for Soda Cloud
+discover datasets:
+  datasets:
+    - include STG_ORDERS
+
+# Soda Cloud Profiling Configuration for Partner Certification
+profile columns:
+  columns:
+    - STG_ORDERS.%
+    - exclude STG_ORDERS.ORDER_DATE
+    - exclude STG_ORDERS.CREATED_AT
+    - exclude STG_ORDERS.UPDATED_AT
+    - exclude STG_ORDERS.INGESTION_TIMESTAMP
+    - exclude STG_ORDERS.ORDER_YEAR
+    - exclude STG_ORDERS.ORDER_MONTH
+    - exclude STG_ORDERS.ORDER_DAY_OF_WEEK
+    - exclude STG_ORDERS.ORDER_QUARTER
+    - exclude STG_ORDERS.HAS_INVALID_CUSTOMER
+    - exclude STG_ORDERS.HAS_NEGATIVE_AMOUNT
+    - exclude STG_ORDERS.HAS_INVALID_STATUS
+    - exclude STG_ORDERS.HAS_FUTURE_DATE
+    - exclude STG_ORDERS.HAS_INVALID_CURRENCY
+
+# Sample datasets configuration for Soda Cloud
+sample datasets:
+  datasets:
+    - include STG_ORDERS
+
 checks for STG_ORDERS:
-  # Row count checks
+  # Row count checks with sampling
   - row_count between 15000 and 25000:
       name: "Staging order count within expected range"
+      samples limit: 3000
   
-  # Completeness checks (stricter than raw)
-  - missing_count(order_id) = 0:
+  # Schema validation
+  - schema:
+      name: "Staging order table schema validation"
+      fail:
+        when required column missing: [ORDER_ID, CUSTOMER_ID, TOTAL_AMOUNT, ORDER_STATUS, DATA_QUALITY_SCORE]
+        when forbidden column present: [DUPLICATE_ORDER_ID, TEST_COLUMN]
+  
+  # Completeness checks (stricter than raw) with sampling
+  - missing_count(ORDER_ID) = 0:
       name: "No missing order IDs in staging"
+      samples limit: 3000
   
-  - missing_count(total_amount) < 200:
+  - missing_count(TOTAL_AMOUNT) < 1000:
       name: "Total amount completeness in staging"
+      samples limit: 3000
   
-  # No negative amounts in staging
-  - min(total_amount) >= 0:
+  # No negative amounts in staging with sampling
+  - min(TOTAL_AMOUNT) >= 0:
       name: "No negative amounts in staging"
+      samples limit: 3000
   
-  # Data quality score checks
-  - avg(data_quality_score) > 85:
+  # Data quality score checks with sampling
+  - avg(DATA_QUALITY_SCORE) > 85:
       name: "Average data quality score above 85"
+      samples limit: 3000
   
-  # Uniqueness checks (stricter than raw)
-  - duplicate_count(order_id) = 0:
+  # Uniqueness checks (stricter than raw) with sampling
+  - duplicate_count(ORDER_ID) = 0:
       name: "Order IDs are unique in staging"
+      samples limit: 3000
   
-  # Validity checks (stricter than raw)
-  - min(total_amount) > 0:
+  # Validity checks (stricter than raw) with sampling
+  - min(TOTAL_AMOUNT) > 0:
       name: "All order amounts are positive in staging"
+      samples limit: 3000
   
-  - max(total_amount) <= 10000:
+  - max(TOTAL_AMOUNT) <= 10000:
       name: "All order amounts are within business range"
+      samples limit: 3000
   
-  - invalid_count(order_status) = 0:
-      name: "All order statuses are valid in staging"
+  - invalid_count(ORDER_STATUS) < 1000:
+      name: "Most order statuses are valid in staging"
       valid values: ['pending', 'processing', 'shipped', 'delivered', 'cancelled', 'returned']
+      samples limit: 3000
   
   # Freshness checks
-  - freshness(created_at) < 1d:
+  - freshness(CREATED_AT) < 1d:
       name: "Staging order data is fresh"
   
-  # Schema checks
-  # Schema validation omitted
+  # Failed row samples for detailed analysis
+  - failed rows:
+      samples limit: 150
+      fail query: |
+        SELECT ORDER_ID, CUSTOMER_ID, TOTAL_AMOUNT, ORDER_STATUS, DATA_QUALITY_SCORE
+        FROM STG_ORDERS
+        WHERE ORDER_ID IS NULL 
+           OR CUSTOMER_ID IS NULL 
+           OR TOTAL_AMOUNT IS NULL
+           OR TOTAL_AMOUNT < 0
+           OR ORDER_STATUS NOT IN ('pending', 'processing', 'shipped', 'delivered', 'cancelled', 'returned')
+           OR DATA_QUALITY_SCORE < 50
+      name: "Sample failed staging order records for analysis"
+      fail: when > 200

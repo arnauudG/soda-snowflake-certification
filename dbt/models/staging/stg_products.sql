@@ -3,7 +3,7 @@
 -- Optimized for large dataset (1,000+ products)
 
 with source_data as (
-    select * from SODA_CERTIFICATION.RAW.PRODUCTS
+    select * from {{ source('raw', 'PRODUCTS') }}
 ),
 
 cleaned_products as (
@@ -96,34 +96,34 @@ products_with_hierarchy as (
 )
 
 select 
-    product_id,
-    product_name,
-    category,
-    subcategory,
-    price,
-    currency,
-    description,
-    brand,
-    sku,
-    weight,
-    dimensions,
-    created_at,
-    updated_at,
-    ingestion_timestamp,
-    has_negative_price,
-    has_missing_name,
-    has_negative_weight,
-    has_future_date,
-    volume_category,
-    price_tier,
-    data_quality_score,
+    product_id as PRODUCT_ID,
+    product_name as PRODUCT_NAME,
+    category as CATEGORY,
+    subcategory as SUBCATEGORY,
+    price as PRICE,
+    currency as CURRENCY,
+    description as DESCRIPTION,
+    brand as BRAND,
+    sku as SKU,
+    weight as WEIGHT,
+    dimensions as DIMENSIONS,
+    created_at as CREATED_AT,
+    updated_at as UPDATED_AT,
+    ingestion_timestamp as INGESTION_TIMESTAMP,
+    has_negative_price as HAS_NEGATIVE_PRICE,
+    has_missing_name as HAS_MISSING_NAME,
+    has_negative_weight as HAS_NEGATIVE_WEIGHT,
+    has_future_date as HAS_FUTURE_DATE,
+    volume_category as VOLUME_CATEGORY,
+    price_tier as PRICE_TIER,
+    data_quality_score as DATA_QUALITY_SCORE,
     -- Add derived fields
     case 
         when weight is not null and weight > 0 then 
             round(price / weight, 2)
         else null
-    end as price_per_kg,
+    end as PRICE_PER_KG,
     
     -- Product age in days
-    datediff('day', created_at, current_date()) as product_age_days
+    datediff('day', created_at, current_date()) as PRODUCT_AGE_DAYS
 from products_with_hierarchy

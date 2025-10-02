@@ -15,6 +15,7 @@ data_source soda_certification_raw:
     insecure_mode: True
     query_tag: 'soda_quality_check_raw'
     network_timeout: 600
+    case_sensitive_identifiers: false
 
 # Soda Cloud Integration
 soda_cloud:

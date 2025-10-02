@@ -1,6 +1,21 @@
-# Soda Data Quality Monitoring - Layered Approach
+# Soda Data Quality Monitoring - Complete Integration
 
-This directory contains the Soda data quality monitoring configuration for the Soda Certification project, implementing a **layered orchestration approach** where each data layer is processed sequentially with its corresponding quality checks.
+This directory contains the comprehensive Soda data quality monitoring configuration for the Soda Certification project, featuring **complete Soda Cloud integration** with dataset discovery, column profiling, and sample data collection.
+
+## ✅ **Complete Soda Cloud Integration**
+
+### 🚀 **Advanced Features Implemented**
+- ✅ **Dataset Discovery**: Automatic table and column discovery across all layers
+- ✅ **Column Profiling**: Comprehensive statistical analysis with smart exclusions
+- ✅ **Sample Data Collection**: 100 sample rows per dataset for analysis
+- ✅ **Failed Row Sampling**: Detailed failure analysis with custom SQL queries
+- ✅ **Anomaly Detection**: Foundation for automated monitoring (2025)
+
+### 📊 **Quality Coverage**
+- **RAW Layer**: 4 tables with initial data quality assessment
+- **STAGING Layer**: 4 tables with transformation validation
+- **MARTS Layer**: 2 business-ready tables with strict quality standards
+- **Total Checks**: 50+ data quality checks across all layers
 
 ## 📁 Directory Structure
 
@@ -19,47 +34,51 @@ soda/
 └── README.md              # This file
 ```
 
-## 🎯 Layered Orchestration Strategy
+## 🎯 Complete Soda Cloud Configuration
 
-### **Layer 1: RAW + RAW Checks**
-- **Purpose**: Initial data quality assessment
-- **Database**: `SODA_CERTIFICATION.RAW`
-- **Focus**: Data completeness, basic validity
-- **Execution**: RAW data quality checks only
+### **Dataset Discovery**
+```yaml
+discover datasets:
+  datasets:
+    - include TABLE_NAME
+```
 
-### **Layer 2: Staging Models + Staging Checks**
-- **Purpose**: Data quality after transformation
-- **Database**: `SODA_CERTIFICATION.STAGING`
-- **Focus**: Data consistency, business rules
-- **Execution**: dbt staging models → staging quality checks
+### **Column Profiling**
+```yaml
+profile columns:
+  columns:
+    - TABLE_NAME.%
+    - exclude TABLE_NAME.CREATED_AT
+    - exclude TABLE_NAME.UPDATED_AT
+```
 
-### **Layer 3: Mart Models + Mart Checks**
-- **Purpose**: Business-ready data validation
-- **Database**: `SODA_CERTIFICATION.MART`
-- **Focus**: Perfect data quality, referential integrity
-- **Execution**: dbt mart models → mart quality checks
+### **Sample Data Collection**
+```yaml
+sample datasets:
+  datasets:
+    - include TABLE_NAME
+```
 
-### **Layer 4: Quality Monitoring + dbt Tests**
-- **Purpose**: Final validation and monitoring
-- **Database**: `SODA_CERTIFICATION.QUALITY`
-- **Focus**: Check execution, result tracking, final tests
-- **Execution**: Quality monitoring checks + dbt tests
+### **Layer-Specific Quality Standards**
+- **RAW Layer**: Relaxed thresholds for initial assessment
+- **STAGING Layer**: Stricter validation after transformation
+- **MARTS Layer**: Business-ready data with strictest requirements
 
 ## 🚀 Usage
 
-### **Layered Orchestration (Recommended)**
-The pipeline now runs in a **layered sequence** where each layer is processed with its corresponding quality checks:
+### **Complete Pipeline Execution**
+The pipeline runs with full Soda Cloud integration:
 
 ```bash
-# Trigger the complete layered pipeline
+# Trigger the complete pipeline with profiling and sampling
 make airflow-trigger-pipeline
 ```
 
 **This executes:**
-1. **Layer 1**: RAW data + RAW quality checks
-2. **Layer 2**: dbt staging models + staging quality checks  
-3. **Layer 3**: dbt mart models + mart quality checks
-4. **Layer 4**: Quality monitoring + dbt tests
+1. **RAW Layer**: Data initialization + quality checks + profiling + sampling
+2. **STAGING Layer**: dbt transformations + quality checks + profiling + sampling
+3. **MARTS Layer**: dbt models + quality checks + profiling + sampling
+4. **Soda Cloud**: All results sent to cloud dashboard
 
 ### Run Individual Layer Checks
 ```bash

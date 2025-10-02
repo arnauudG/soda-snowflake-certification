@@ -2,7 +2,7 @@
 PY?=python3.11
 VENV=.venv
 
-.PHONY: help all venv deps pipeline fresh smooth airflow-up airflow-down airflow-status airflow-trigger clean
+.PHONY: help all venv deps pipeline fresh smooth airflow-up airflow-down airflow-status airflow-trigger clean clean-logs clean-all
 
 help: ## Show this help message
 	@echo "Soda Certification Project - Available Commands:"
@@ -88,15 +88,12 @@ airflow-list: ## List available DAGs
 	@echo "📋 Listing available DAGs..."
 	@docker exec soda-airflow-webserver airflow dags list | grep soda
 
-clean: ## Clean up temporary files and artifacts
-	@rm -rf dbt/target dbt/logs *.log soda_raw_test.log || true
-	@echo "[OK] Cleanup completed"
 
 docs: ## Open documentation
 	@echo "📚 Available Documentation:"
 	@echo "  📖 README.md - Complete project documentation"
-	@echo "  🔧 SETUP_GUIDE.md - Complete setup guide with all fixes"
-	@echo "  🚀 CI_CD_TESTING.md - CI/CD testing strategy and implementation"
+	@echo "  🔧 Makefile - Development commands and automation"
+	@echo "  📋 Airflow UI - http://localhost:8080 (admin/admin)"
 	@echo ""
 	@echo "💡 Quick commands:"
 	@echo "  make help - Show all available commands"
@@ -121,5 +118,23 @@ setup: venv deps ## Complete environment setup
 	@echo "  2. Run: make airflow-up"
 	@echo "  3. Run: make airflow-trigger-init (first time setup)"
 	@echo "  4. Access Airflow UI: http://localhost:8080"
+
+clean: ## Clean up artifacts and temporary files
+	@echo "🧹 Cleaning up artifacts..."
+	@rm -rf dbt/target dbt/logs snowflake_connection_test.log
+	@find . -name "__pycache__" -type d -exec rm -rf {} + 2>/dev/null || true
+	@echo "[OK] Artifacts cleaned"
+
+clean-logs: ## Clean up old Airflow logs (keep last 7 days)
+	@echo "🧹 Cleaning up old logs..."
+	@find docker/airflow-logs -name "*.log" -mtime +7 -delete 2>/dev/null || true
+	@cd docker/airflow-logs && find . -name "run_id=*" -type d | sort -r | tail -n +4 | xargs rm -rf 2>/dev/null || true
+	@echo "[OK] Old logs cleaned"
+
+clean-all: clean clean-logs ## Deep clean: artifacts, logs, and cache
+	@echo "🧹 Deep cleaning project..."
+	@find . -name "*.pyc" -delete 2>/dev/null || true
+	@find . -name ".DS_Store" -delete 2>/dev/null || true
+	@echo "[OK] Deep clean completed"
 
 

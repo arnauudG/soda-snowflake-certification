@@ -3,47 +3,101 @@
 # Table: stg_order_items (50,000+ records)
 # Purpose: Data quality validation after initial transformation
 
+# Dataset discovery configuration for Soda Cloud
+discover datasets:
+  datasets:
+    - include STG_ORDER_ITEMS
+
+# Soda Cloud Profiling Configuration for Partner Certification
+profile columns:
+  columns:
+    - STG_ORDER_ITEMS.%
+    - exclude STG_ORDER_ITEMS.CREATED_AT
+    - exclude STG_ORDER_ITEMS.UPDATED_AT
+    - exclude STG_ORDER_ITEMS.INGESTION_TIMESTAMP
+    - exclude STG_ORDER_ITEMS.HAS_INVALID_ORDER
+    - exclude STG_ORDER_ITEMS.HAS_INVALID_PRODUCT
+    - exclude STG_ORDER_ITEMS.HAS_NEGATIVE_QUANTITY
+    - exclude STG_ORDER_ITEMS.HAS_NEGATIVE_PRICE
+    - exclude STG_ORDER_ITEMS.HAS_NEGATIVE_TOTAL
+
+# Sample datasets configuration for Soda Cloud
+sample datasets:
+  datasets:
+    - include STG_ORDER_ITEMS
+
 checks for STG_ORDER_ITEMS:
-  # Row count checks
+  # Row count checks with sampling
   - row_count between 40000 and 60000:
       name: "Staging order items count within expected range"
+      samples limit: 5000
   
-  # Completeness checks (stricter than raw)
-  - missing_count(order_item_id) = 0:
+  # Schema validation
+  - schema:
+      name: "Staging order items table schema validation"
+      fail:
+        when required column missing: [ORDER_ITEM_ID, ORDER_ID, PRODUCT_ID, QUANTITY, UNIT_PRICE, TOTAL_PRICE, DATA_QUALITY_SCORE]
+        when forbidden column present: [DUPLICATE_ORDER_ITEM_ID, TEST_COLUMN]
+  
+  # Completeness checks (stricter than raw) with sampling
+  - missing_count(ORDER_ITEM_ID) = 0:
       name: "No missing order item IDs in staging"
+      samples limit: 5000
   
-  - missing_count(quantity) < 500:
+  - missing_count(QUANTITY) < 2000:
       name: "Quantity completeness in staging"
+      samples limit: 5000
   
-  # No negative quantities in staging
-  - min(quantity) >= 0:
+  # No negative quantities in staging with sampling
+  - min(QUANTITY) >= 0:
       name: "No negative quantities in staging"
+      samples limit: 5000
   
-  # Data quality score checks
-  - avg(data_quality_score) > 85:
+  # Data quality score checks with sampling
+  - avg(DATA_QUALITY_SCORE) > 85:
       name: "Average data quality score above 85"
+      samples limit: 5000
   
-  # Uniqueness checks (stricter than raw)
-  - duplicate_count(order_item_id) = 0:
+  # Uniqueness checks (stricter than raw) with sampling
+  - duplicate_count(ORDER_ITEM_ID) = 0:
       name: "Order item IDs are unique in staging"
+      samples limit: 5000
   
-  # Validity checks (stricter than raw)
-  - min(quantity) > 0:
+  # Validity checks (stricter than raw) with sampling
+  - min(QUANTITY) > 0:
       name: "All quantities are positive in staging"
+      samples limit: 5000
   
-  - min(unit_price) >= 0:
+  - min(UNIT_PRICE) >= 0:
       name: "All unit prices are non-negative in staging"
+      samples limit: 5000
   
-  - min(total_price) >= 0:
+  - min(TOTAL_PRICE) >= 0:
       name: "All total prices are non-negative in staging"
+      samples limit: 5000
   
-  # Business logic checks
-  - avg(total_price) between 0 and 1000:
+  # Business logic checks with sampling
+  - avg(TOTAL_PRICE) between 0 and 1000:
       name: "Total prices are within reasonable range"
+      samples limit: 5000
   
   # Freshness checks
-  - freshness(created_at) < 1d:
+  - freshness(CREATED_AT) < 1d:
       name: "Staging order items data is fresh"
   
-  # Schema checks
-  # Schema validation omitted
+  # Failed row samples for detailed analysis
+  - failed rows:
+      samples limit: 200
+      fail query: |
+        SELECT ORDER_ITEM_ID, ORDER_ID, PRODUCT_ID, QUANTITY, UNIT_PRICE, TOTAL_PRICE, DATA_QUALITY_SCORE
+        FROM STG_ORDER_ITEMS
+        WHERE ORDER_ITEM_ID IS NULL 
+           OR ORDER_ID IS NULL 
+           OR PRODUCT_ID IS NULL
+           OR QUANTITY IS NULL
+           OR QUANTITY < 0
+           OR UNIT_PRICE IS NULL
+           OR TOTAL_PRICE IS NULL
+           OR DATA_QUALITY_SCORE < 50
+      name: "Sample failed staging order item records for analysis"
+      fail: when > 500

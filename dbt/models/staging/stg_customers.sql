@@ -3,7 +3,7 @@
 -- Optimized for large dataset (10,000+ customers)
 
 with source_data as (
-    select * from SODA_CERTIFICATION.RAW.CUSTOMERS
+    select * from {{ source('raw', 'CUSTOMERS') }}
 ),
 
 cleaned_customers as (
@@ -81,29 +81,29 @@ deduplicated_customers as (
 
 select 
     CUSTOMER_ID,
-    first_name,
-    last_name,
-    email,
-    phone,
-    address,
-    city,
-    state,
-    zip_code,
-    country,
-    created_at,
-    updated_at,
-    ingestion_timestamp,
-    has_missing_email,
-    has_missing_phone,
-    has_missing_name,
+    first_name as FIRST_NAME,
+    last_name as LAST_NAME,
+    email as EMAIL,
+    phone as PHONE,
+    address as ADDRESS,
+    city as CITY,
+    state as STATE,
+    zip_code as ZIP_CODE,
+    country as COUNTRY,
+    created_at as CREATED_AT,
+    updated_at as UPDATED_AT,
+    ingestion_timestamp as INGESTION_TIMESTAMP,
+    has_missing_email as HAS_MISSING_EMAIL,
+    has_missing_phone as HAS_MISSING_PHONE,
+    has_missing_name as HAS_MISSING_NAME,
     -- Add derived fields
-    concat(first_name, ' ', last_name) as full_name,
+    concat(first_name, ' ', last_name) as FULL_NAME,
     case
         when country = 'USA' or country = 'UNITED STATES' then 'US'
         when country = 'CANADA' then 'CA'
         when country = 'UNITED KINGDOM' then 'UK'
         else upper(country)
-    end as country_code,
+    end as COUNTRY_CODE,
     -- Data quality score (0-100)
     case
         when has_missing_email and has_missing_phone and has_missing_name then 0
@@ -111,5 +111,5 @@ select
         when has_missing_email or has_missing_phone then 50
         when has_missing_name then 75
         else 100
-    end as data_quality_score
+    end as DATA_QUALITY_SCORE
 from deduplicated_customers

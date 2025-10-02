@@ -21,29 +21,14 @@ wheels/
 *.egg
 MANIFEST
 
-# Virtual Environment
-.venv/
+# Virtual environments
+.env
+.venv
+env/
 venv/
 ENV/
-env/
-.env
-
-# dbt
-dbt/target/
-dbt/logs/
-dbt/dbt_packages/
-
-# Airflow
-airflow-logs/
-airflow.cfg
-unittests.cfg
-webserver_config.py
-airflow.db
-airflow.db-journal
-
-# Soda
-*.log
-soda_raw_test.log
+env.bak/
+venv.bak/
 
 # IDE
 .vscode/
@@ -54,19 +39,57 @@ soda_raw_test.log
 
 # OS
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db
+
+# Airflow
+airflow-logs/
+logs/
+*.log
+
+# dbt
+dbt/logs/
+dbt/target/
+dbt/dbt_packages/
+dbt/compiled/
+dbt/run/
+
+# Docker
+.dockerignore
+
+# Soda
+soda/check_results/
+soda/scan_results/
 
 # Temporary files
 *.tmp
 *.temp
-temp/
-tmp/
+.cache/
 
-# Logs
-*.log
-logs/
+# Environment files
+.env.local
+.env.development
+.env.test
+.env.production
 
 # Database
 *.db
 *.sqlite
 *.sqlite3
+
+# Jupyter Notebooks
+.ipynb_checkpoints/
+
+# pytest
+.pytest_cache/
+.coverage
+htmlcov/
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json

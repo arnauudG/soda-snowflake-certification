@@ -20,176 +20,176 @@ products as (
 -- Aggregate order items to order level
 order_item_aggregates as (
     select 
-        oi.order_id,
-        count(*) as total_items,
-        sum(oi.quantity) as total_quantity,
-        sum(oi.calculated_total_price) as calculated_order_total,
-        sum(oi.discount_amount) as total_discount_amount,
-        avg(oi.discount_percent) as avg_discount_percent,
-        count(distinct oi.product_id) as unique_products,
-        count(distinct p.category) as unique_categories
+        oi.ORDER_ID,
+        count(*) as TOTAL_ITEMS,
+        sum(oi.QUANTITY) as TOTAL_QUANTITY,
+        sum(oi.CALCULATED_TOTAL_PRICE) as CALCULATED_ORDER_TOTAL,
+        sum(oi.DISCOUNT_AMOUNT) as TOTAL_DISCOUNT_AMOUNT,
+        avg(oi.DISCOUNT_PERCENT) as AVG_DISCOUNT_PERCENT,
+        count(distinct oi.PRODUCT_ID) as UNIQUE_PRODUCTS,
+        count(distinct p.CATEGORY) as UNIQUE_CATEGORIES
     from order_items oi
-    left join products p on oi.product_id = p.product_id
-    where oi.order_id is not null
-    group by oi.order_id
+    left join products p on oi.PRODUCT_ID = p.PRODUCT_ID
+    where oi.ORDER_ID is not null
+    group by oi.ORDER_ID
 ),
 
 -- Join all data together
 enriched_orders as (
     select 
-        o.order_id,
-        o.customer_id,
-        o.order_date,
-        o.order_status,
-        o.status_category,
-        o.total_amount as order_total_amount,
-        o.currency,
-        o.shipping_address,
-        o.payment_method,
-        o.payment_category,
-        o.created_at,
-        o.updated_at,
-        o.ingestion_timestamp,
+        o.ORDER_ID,
+        o.CUSTOMER_ID,
+        o.ORDER_DATE,
+        o.ORDER_STATUS,
+        o.STATUS_CATEGORY,
+        o.TOTAL_AMOUNT as ORDER_TOTAL_AMOUNT,
+        o.CURRENCY,
+        o.SHIPPING_ADDRESS,
+        o.PAYMENT_METHOD,
+        o.PAYMENT_CATEGORY,
+        o.CREATED_AT,
+        o.UPDATED_AT,
+        o.INGESTION_TIMESTAMP,
         
         -- Customer information
-        c.first_name as customer_first_name,
-        c.last_name as customer_last_name,
-        c.full_name as customer_full_name,
-        c.email as customer_email,
-        c.city as customer_city,
-        c.state as customer_state,
-        c.country as customer_country,
-        c.data_quality_score as customer_data_quality_score,
+        c.FIRST_NAME as CUSTOMER_FIRST_NAME,
+        c.LAST_NAME as CUSTOMER_LAST_NAME,
+        c.FULL_NAME as CUSTOMER_FULL_NAME,
+        c.EMAIL as CUSTOMER_EMAIL,
+        c.CITY as CUSTOMER_CITY,
+        c.STATE as CUSTOMER_STATE,
+        c.COUNTRY as CUSTOMER_COUNTRY,
+        c.DATA_QUALITY_SCORE as CUSTOMER_DATA_QUALITY_SCORE,
         
         -- Order item aggregates
-        coalesce(oia.total_items, 0) as total_items,
-        coalesce(oia.total_quantity, 0) as total_quantity,
-        coalesce(oia.calculated_order_total, 0) as calculated_order_total,
-        coalesce(oia.total_discount_amount, 0) as total_discount_amount,
-        coalesce(oia.avg_discount_percent, 0) as avg_discount_percent,
-        coalesce(oia.unique_products, 0) as unique_products,
-        coalesce(oia.unique_categories, 0) as unique_categories,
+        coalesce(oia.TOTAL_ITEMS, 0) as TOTAL_ITEMS,
+        coalesce(oia.TOTAL_QUANTITY, 0) as TOTAL_QUANTITY,
+        coalesce(oia.CALCULATED_ORDER_TOTAL, 0) as CALCULATED_ORDER_TOTAL,
+        coalesce(oia.TOTAL_DISCOUNT_AMOUNT, 0) as TOTAL_DISCOUNT_AMOUNT,
+        coalesce(oia.AVG_DISCOUNT_PERCENT, 0) as AVG_DISCOUNT_PERCENT,
+        coalesce(oia.UNIQUE_PRODUCTS, 0) as UNIQUE_PRODUCTS,
+        coalesce(oia.UNIQUE_CATEGORIES, 0) as UNIQUE_CATEGORIES,
         
         -- Order analysis fields
-        o.order_value_tier,
-        o.order_year,
-        o.order_month,
-        o.order_day_of_week,
-        o.order_quarter,
-        o.processing_days,
+        o.ORDER_VALUE_TIER,
+        o.ORDER_YEAR,
+        o.ORDER_MONTH,
+        o.ORDER_DAY_OF_WEEK,
+        o.ORDER_QUARTER,
+        o.PROCESSING_DAYS,
         
         -- Data quality flags
-        o.has_invalid_customer,
-        o.has_negative_amount,
-        o.has_invalid_status,
-        o.has_future_date,
-        o.has_invalid_currency,
-        o.data_quality_score as order_data_quality_score,
+        o.HAS_INVALID_CUSTOMER,
+        o.HAS_NEGATIVE_AMOUNT,
+        o.HAS_INVALID_STATUS,
+        o.HAS_FUTURE_DATE,
+        o.HAS_INVALID_CURRENCY,
+        o.DATA_QUALITY_SCORE as ORDER_DATA_QUALITY_SCORE,
         
         -- Business logic flags
         case 
-            when o.total_amount != coalesce(oia.calculated_order_total, 0) then true
+            when o.TOTAL_AMOUNT != coalesce(oia.CALCULATED_ORDER_TOTAL, 0) then true
             else false
-        end as has_amount_mismatch,
+        end as HAS_AMOUNT_MISMATCH,
         
         case 
-            when o.total_amount > 0 and coalesce(oia.total_items, 0) = 0 then true
+            when o.TOTAL_AMOUNT > 0 and coalesce(oia.TOTAL_ITEMS, 0) = 0 then true
             else false
-        end as has_orphaned_order,
+        end as HAS_ORPHANED_ORDER,
         
         case 
-            when o.order_status = 'delivered' and o.processing_days > 30 then true
+            when o.ORDER_STATUS = 'delivered' and o.PROCESSING_DAYS > 30 then true
             else false
-        end as has_slow_delivery
+        end as HAS_SLOW_DELIVERY
         
     from orders o
-    left join customers c on o.customer_id = c.customer_id
-    left join order_item_aggregates oia on o.order_id = oia.order_id
+    left join customers c on o.CUSTOMER_ID = c.CUSTOMER_ID
+    left join order_item_aggregates oia on o.ORDER_ID = oia.ORDER_ID
 )
 
 select 
-    order_id,
-    customer_id,
-    order_date,
-    order_status,
-    status_category,
-    order_total_amount,
-    calculated_order_total,
-    currency,
-    shipping_address,
-    payment_method,
-    payment_category,
-    created_at,
-    updated_at,
-    ingestion_timestamp,
+    ORDER_ID,
+    CUSTOMER_ID,
+    ORDER_DATE,
+    ORDER_STATUS,
+    STATUS_CATEGORY,
+    ORDER_TOTAL_AMOUNT,
+    CALCULATED_ORDER_TOTAL,
+    CURRENCY,
+    SHIPPING_ADDRESS,
+    PAYMENT_METHOD,
+    PAYMENT_CATEGORY,
+    CREATED_AT,
+    UPDATED_AT,
+    INGESTION_TIMESTAMP,
     
     -- Customer information
-    customer_first_name,
-    customer_last_name,
-    customer_full_name,
-    customer_email,
-    customer_city,
-    customer_state,
-    customer_country,
-    customer_data_quality_score,
+    CUSTOMER_FIRST_NAME,
+    CUSTOMER_LAST_NAME,
+    CUSTOMER_FULL_NAME,
+    CUSTOMER_EMAIL,
+    CUSTOMER_CITY,
+    CUSTOMER_STATE,
+    CUSTOMER_COUNTRY,
+    CUSTOMER_DATA_QUALITY_SCORE,
     
     -- Order metrics
-    total_items,
-    total_quantity,
-    total_discount_amount,
-    avg_discount_percent,
-    unique_products,
-    unique_categories,
+    TOTAL_ITEMS,
+    TOTAL_QUANTITY,
+    TOTAL_DISCOUNT_AMOUNT,
+    AVG_DISCOUNT_PERCENT,
+    UNIQUE_PRODUCTS,
+    UNIQUE_CATEGORIES,
     
     -- Order analysis
-    order_value_tier,
-    order_year,
-    order_month,
-    order_day_of_week,
-    order_quarter,
-    processing_days,
+    ORDER_VALUE_TIER,
+    ORDER_YEAR,
+    ORDER_MONTH,
+    ORDER_DAY_OF_WEEK,
+    ORDER_QUARTER,
+    PROCESSING_DAYS,
     
     -- Data quality flags
-    has_invalid_customer,
-    has_negative_amount,
-    has_invalid_status,
-    has_future_date,
-    has_invalid_currency,
-    order_data_quality_score,
-    has_amount_mismatch,
-    has_orphaned_order,
-    has_slow_delivery,
+    HAS_INVALID_CUSTOMER,
+    HAS_NEGATIVE_AMOUNT,
+    HAS_INVALID_STATUS,
+    HAS_FUTURE_DATE,
+    HAS_INVALID_CURRENCY,
+    ORDER_DATA_QUALITY_SCORE,
+    HAS_AMOUNT_MISMATCH,
+    HAS_ORPHANED_ORDER,
+    HAS_SLOW_DELIVERY,
     
     -- Business metrics
     case 
-        when order_total_amount > 0 then
-            round((total_discount_amount / order_total_amount) * 100, 2)
+        when ORDER_TOTAL_AMOUNT > 0 then
+            round((TOTAL_DISCOUNT_AMOUNT / ORDER_TOTAL_AMOUNT) * 100, 2)
         else 0
-    end as discount_percentage,
+    end as DISCOUNT_PERCENTAGE,
     
     case 
-        when total_items > 0 then
-            round(order_total_amount / total_items, 2)
+        when TOTAL_ITEMS > 0 then
+            round(ORDER_TOTAL_AMOUNT / TOTAL_ITEMS, 2)
         else 0
-    end as avg_item_value,
+    end as AVG_ITEM_VALUE,
     
     case 
-        when total_quantity > 0 then
-            round(order_total_amount / total_quantity, 2)
+        when TOTAL_QUANTITY > 0 then
+            round(ORDER_TOTAL_AMOUNT / TOTAL_QUANTITY, 2)
         else 0
-    end as avg_unit_value,
+    end as AVG_UNIT_VALUE,
     
     -- Order complexity score
     case 
-        when unique_categories >= 3 and total_items >= 5 then 'COMPLEX'
-        when unique_categories >= 2 or total_items >= 3 then 'MODERATE'
+        when UNIQUE_CATEGORIES >= 3 and TOTAL_ITEMS >= 5 then 'COMPLEX'
+        when UNIQUE_CATEGORIES >= 2 or TOTAL_ITEMS >= 3 then 'MODERATE'
         else 'SIMPLE'
-    end as order_complexity,
+    end as ORDER_COMPLEXITY,
     
     -- Overall data quality score
     case 
-        when order_data_quality_score < 50 or customer_data_quality_score < 50 then 'POOR'
-        when order_data_quality_score < 75 or customer_data_quality_score < 75 then 'FAIR'
+        when ORDER_DATA_QUALITY_SCORE < 50 or CUSTOMER_DATA_QUALITY_SCORE < 50 then 'POOR'
+        when ORDER_DATA_QUALITY_SCORE < 75 or CUSTOMER_DATA_QUALITY_SCORE < 75 then 'FAIR'
         else 'GOOD'
-    end as overall_data_quality
+    end as OVERALL_DATA_QUALITY
 from enriched_orders

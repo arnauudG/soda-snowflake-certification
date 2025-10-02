@@ -10,6 +10,7 @@ This project showcases a complete data quality pipeline with:
 - **dbt** for data transformations
 - **Snowflake** as the data warehouse
 - **Docker** for containerized deployment
+- **Soda Cloud API** for metadata extraction and reporting
 
 ## 🏗️ Architecture
 
@@ -32,10 +33,9 @@ Soda Quality Checks    Soda Quality Checks    Soda Quality Checks
 
 ```
 ├── airflow/                          # Airflow DAGs and configuration
-│   ├── dags/
-│   │   ├── soda_initialization.py    # Data initialization DAG
-│   │   └── soda_pipeline_run.py     # Main pipeline DAG
-│   └── plugins/                     # Airflow plugins
+│   └── dags/
+│       ├── soda_initialization.py    # Data initialization DAG
+│       └── soda_pipeline_run.py     # Main pipeline DAG
 ├── dbt/                              # dbt project configuration
 │   ├── models/
 │   │   ├── raw/                      # Raw data sources
@@ -47,16 +47,25 @@ Soda Quality Checks    Soda Quality Checks    Soda Quality Checks
 │   ├── docker-compose.yml           # Multi-container setup
 │   └── Dockerfile                   # Custom Airflow image
 ├── scripts/                          # Utility scripts
-│   └── setup/                       # Environment setup
-│       ├── requirements.txt         # Python dependencies
-│       ├── setup_snowflake.py       # Snowflake table creation
-│       └── reset_snowflake.py       # Snowflake cleanup
+│   ├── setup/                       # Environment setup
+│   │   ├── requirements.txt         # Python dependencies
+│   │   ├── setup_snowflake.py       # Snowflake table creation
+│   │   └── reset_snowflake.py       # Snowflake cleanup
+│   ├── soda_dump_api.py             # Soda Cloud API data extraction
+│   ├── run_soda_dump.sh             # Soda Cloud data dump runner
+│   └── requirements_dump.txt         # API extraction dependencies
 ├── soda/                             # Soda data quality configuration
 │   ├── checks/                      # SodaCL check definitions
 │   │   ├── raw/                     # RAW layer quality checks
 │   │   ├── staging/                 # STAGING layer quality checks
-│   │   └── marts/                   # MARTS layer quality checks
+│   │   ├── marts/                   # MARTS layer quality checks
+│   │   └── templates/               # Reusable check templates
 │   └── configuration/               # Soda connection configurations
+├── soda_dump_output/                # Soda Cloud API extracted data (latest files only)
+│   ├── datasets_latest.csv         # Latest dataset metadata
+│   ├── checks_latest.csv           # Latest check results metadata
+│   ├── datasets_YYYY-MM-DD.csv     # Daily dataset snapshots
+│   └── checks_YYYY-MM-DD.csv       # Daily check snapshots
 └── Makefile                          # Project automation commands
 ```
 
@@ -146,8 +155,15 @@ sample datasets:
 
 ### dbt Configuration
 - **Quote Identifiers**: `quote_identifiers: true` for case sensitivity
-- **Uppercase Naming**: Consistent uppercase table and column names
+- **Uppercase Naming**: Consistent uppercase table and column names across all layers
 - **Layer Separation**: Clear separation between RAW, STAGING, and MARTS
+- **Standardized Schema**: All tables use uppercase column names (CUSTOMER_ID, FIRST_NAME, etc.)
+
+### Smart Data Filtering
+- **Complete Data Access**: Fetches ALL Soda Cloud data for maximum flexibility
+- **Intelligent Filtering**: Notebook automatically filters for project-specific data
+- **Flexible Analysis**: Can analyze different data sources by changing filter criteria
+- **Dynamic File Discovery**: Always finds the latest data without hardcoding timestamps
 
 ### Airflow DAGs
 - **Initialization DAG**: Sets up Snowflake tables and loads sample data
@@ -160,6 +176,15 @@ sample datasets:
 - Historical trend analysis
 - Failed row samples for investigation
 - Column profiling insights
+
+### Soda Cloud API Integration
+- **Complete Data Access**: Fetches ALL datasets and checks from Soda Cloud
+- **Smart Filtering**: Intelligent filtering for project-specific data sources
+- **Metadata Extraction**: Automated extraction of dataset and check metadata
+- **CSV Export**: Structured data export for external reporting tools
+- **Sigma Dashboard**: Ready-to-use data for Sigma dashboard creation
+- **API Rate Limiting**: Optimized for efficient data extraction
+- **Dynamic File Finding**: No hardcoded timestamps, always finds latest data
 
 ### Airflow UI
 - DAG execution monitoring
@@ -183,6 +208,9 @@ make airflow-trigger-pipeline # Run main pipeline DAG
 make airflow-logs            # View Airflow logs
 make dbt-debug               # Debug dbt configuration
 make soda-scan               # Run Soda scans manually
+
+# Soda Cloud API
+make soda-dump               # Extract Soda Cloud metadata to CSV
 ```
 
 ## 📋 Data Quality Checks by Layer
@@ -259,9 +287,12 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 ✅ **Monitoring**: Real-time observability and alerting  
 ✅ **Scalability**: Production-ready architecture  
 ✅ **Documentation**: Complete setup and usage guides  
+✅ **Uppercase Standardization**: Consistent naming across all layers  
+✅ **API Integration**: Soda Cloud metadata extraction and reporting  
+✅ **Fresh Reset**: Clean environment with standardized naming  
 
 ---
 
 **Project Status**: ✅ Production Ready  
 **Last Updated**: October 2025  
-**Version**: 1.0.0
+**Version**: 1.1.0

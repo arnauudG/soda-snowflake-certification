@@ -105,72 +105,72 @@ class SnowflakeSetup:
             # Create customers table
             """
             CREATE TABLE IF NOT EXISTS CUSTOMERS (
-                customer_id VARCHAR(50) PRIMARY KEY,
-                first_name VARCHAR(100),
-                last_name VARCHAR(100),
-                email VARCHAR(255),
-                phone VARCHAR(50),
-                address VARCHAR(500),
-                city VARCHAR(100),
-                state VARCHAR(50),
-                zip_code VARCHAR(20),
-                country VARCHAR(100),
-                created_at TIMESTAMP_NTZ,
-                updated_at TIMESTAMP_NTZ,
-                ingestion_timestamp TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP()
+                CUSTOMER_ID VARCHAR(50) PRIMARY KEY,
+                FIRST_NAME VARCHAR(100),
+                LAST_NAME VARCHAR(100),
+                EMAIL VARCHAR(255),
+                PHONE VARCHAR(50),
+                ADDRESS VARCHAR(500),
+                CITY VARCHAR(100),
+                STATE VARCHAR(50),
+                ZIP_CODE VARCHAR(20),
+                COUNTRY VARCHAR(100),
+                CREATED_AT TIMESTAMP_NTZ,
+                UPDATED_AT TIMESTAMP_NTZ,
+                INGESTION_TIMESTAMP TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP()
             )
             """,
             
             # Create products table
             """
             CREATE TABLE IF NOT EXISTS PRODUCTS (
-                product_id VARCHAR(50) PRIMARY KEY,
-                product_name VARCHAR(255),
-                category VARCHAR(100),
-                subcategory VARCHAR(100),
-                price DECIMAL(10,2),
-                currency VARCHAR(3),
-                description TEXT,
-                brand VARCHAR(100),
-                sku VARCHAR(100),
-                weight DECIMAL(8,2),
-                dimensions VARCHAR(100),
-                created_at TIMESTAMP_NTZ,
-                updated_at TIMESTAMP_NTZ,
-                ingestion_timestamp TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP()
+                PRODUCT_ID VARCHAR(50) PRIMARY KEY,
+                PRODUCT_NAME VARCHAR(255),
+                CATEGORY VARCHAR(100),
+                SUBCATEGORY VARCHAR(100),
+                PRICE DECIMAL(10,2),
+                CURRENCY VARCHAR(3),
+                DESCRIPTION TEXT,
+                BRAND VARCHAR(100),
+                SKU VARCHAR(100),
+                WEIGHT DECIMAL(8,2),
+                DIMENSIONS VARCHAR(100),
+                CREATED_AT TIMESTAMP_NTZ,
+                UPDATED_AT TIMESTAMP_NTZ,
+                INGESTION_TIMESTAMP TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP()
             )
             """,
             
             # Create orders table
             """
             CREATE TABLE IF NOT EXISTS ORDERS (
-                order_id VARCHAR(50) PRIMARY KEY,
-                customer_id VARCHAR(50),
-                order_date DATE,
-                order_status VARCHAR(50),
-                total_amount DECIMAL(10,2),
-                currency VARCHAR(3),
-                shipping_address VARCHAR(500),
-                payment_method VARCHAR(50),
-                created_at TIMESTAMP_NTZ,
-                updated_at TIMESTAMP_NTZ,
-                ingestion_timestamp TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP()
+                ORDER_ID VARCHAR(50) PRIMARY KEY,
+                CUSTOMER_ID VARCHAR(50),
+                ORDER_DATE DATE,
+                ORDER_STATUS VARCHAR(50),
+                TOTAL_AMOUNT DECIMAL(10,2),
+                CURRENCY VARCHAR(3),
+                SHIPPING_ADDRESS VARCHAR(500),
+                PAYMENT_METHOD VARCHAR(50),
+                CREATED_AT TIMESTAMP_NTZ,
+                UPDATED_AT TIMESTAMP_NTZ,
+                INGESTION_TIMESTAMP TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP()
             )
             """,
             
             # Create order_items table
             """
             CREATE TABLE IF NOT EXISTS ORDER_ITEMS (
-                order_item_id VARCHAR(50) PRIMARY KEY,
-                order_id VARCHAR(50),
-                product_id VARCHAR(50),
-                quantity INTEGER,
-                unit_price DECIMAL(10,2),
-                total_price DECIMAL(10,2),
-                discount_percent DECIMAL(5,2),
-                created_at TIMESTAMP_NTZ,
-                updated_at TIMESTAMP_NTZ,
-                ingestion_timestamp TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP()
+                ORDER_ITEM_ID VARCHAR(50) PRIMARY KEY,
+                ORDER_ID VARCHAR(50),
+                PRODUCT_ID VARCHAR(50),
+                QUANTITY INTEGER,
+                UNIT_PRICE DECIMAL(10,2),
+                TOTAL_PRICE DECIMAL(10,2),
+                DISCOUNT_PERCENT DECIMAL(5,2),
+                CREATED_AT TIMESTAMP_NTZ,
+                UPDATED_AT TIMESTAMP_NTZ,
+                INGESTION_TIMESTAMP TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP()
             )
             """,
             
@@ -247,18 +247,18 @@ class SnowflakeSetup:
                     email = 'duplicate@example.com'
             
             customers_data.append({
-                'customer_id': customer_id,
-                'first_name': first_name,
-                'last_name': last_name,
-                'email': email,
-                'phone': phone,
-                'address': address,
-                'city': city,
-                'state': state,
-                'zip_code': zip_code,
-                'country': country,
-                'created_at': created_at,
-                'updated_at': updated_at
+                'CUSTOMER_ID': customer_id,
+                'FIRST_NAME': first_name,
+                'LAST_NAME': last_name,
+                'EMAIL': email,
+                'PHONE': phone,
+                'ADDRESS': address,
+                'CITY': city,
+                'STATE': state,
+                'ZIP_CODE': zip_code,
+                'COUNTRY': country,
+                'CREATED_AT': created_at,
+                'UPDATED_AT': updated_at
             })
         
         # Generate products
@@ -293,24 +293,24 @@ class SnowflakeSetup:
                     price = -price  # Negative price
             
             products_data.append({
-                'product_id': product_id,
-                'product_name': product_name,
-                'category': category,
-                'subcategory': subcategory,
-                'price': price,
-                'currency': currency,
-                'description': description,
-                'brand': brand,
-                'sku': sku,
-                'weight': weight,
-                'dimensions': dimensions,
-                'created_at': created_at,
-                'updated_at': updated_at
+                'PRODUCT_ID': product_id,
+                'PRODUCT_NAME': product_name,
+                'CATEGORY': category,
+                'SUBCATEGORY': subcategory,
+                'PRICE': price,
+                'CURRENCY': currency,
+                'DESCRIPTION': description,
+                'BRAND': brand,
+                'SKU': sku,
+                'WEIGHT': weight,
+                'DIMENSIONS': dimensions,
+                'CREATED_AT': created_at,
+                'UPDATED_AT': updated_at
             })
         
         # Generate orders
         orders_data = []
-        customer_ids = [c['customer_id'] for c in customers_data]
+        customer_ids = [c['CUSTOMER_ID'] for c in customers_data]
         for i in range(20000):
             order_id = f"ORD_{i+1:08d}"
             customer_id = random.choice(customer_ids)
@@ -334,22 +334,22 @@ class SnowflakeSetup:
                     order_date = fake.date_between(start_date='today', end_date='+1y')
             
             orders_data.append({
-                'order_id': order_id,
-                'customer_id': customer_id,
-                'order_date': order_date,
-                'order_status': order_status,
-                'total_amount': total_amount,
-                'currency': currency,
-                'shipping_address': shipping_address,
-                'payment_method': payment_method,
-                'created_at': created_at,
-                'updated_at': updated_at
+                'ORDER_ID': order_id,
+                'CUSTOMER_ID': customer_id,
+                'ORDER_DATE': order_date,
+                'ORDER_STATUS': order_status,
+                'TOTAL_AMOUNT': total_amount,
+                'CURRENCY': currency,
+                'SHIPPING_ADDRESS': shipping_address,
+                'PAYMENT_METHOD': payment_method,
+                'CREATED_AT': created_at,
+                'UPDATED_AT': updated_at
             })
         
         # Generate order items
         order_items_data = []
-        order_ids = [o['order_id'] for o in orders_data]
-        product_ids = [p['product_id'] for p in products_data]
+        order_ids = [o['ORDER_ID'] for o in orders_data]
+        product_ids = [p['PRODUCT_ID'] for p in products_data]
         for i in range(50000):
             order_item_id = f"ITEM_{i+1:08d}"
             order_id = random.choice(order_ids)
@@ -367,15 +367,15 @@ class SnowflakeSetup:
                     quantity = -quantity  # Negative quantity
             
             order_items_data.append({
-                'order_item_id': order_item_id,
-                'order_id': order_id,
-                'product_id': product_id,
-                'quantity': quantity,
-                'unit_price': unit_price,
-                'total_price': total_price,
-                'discount_percent': discount_percent,
-                'created_at': created_at,
-                'updated_at': updated_at
+                'ORDER_ITEM_ID': order_item_id,
+                'ORDER_ID': order_id,
+                'PRODUCT_ID': product_id,
+                'QUANTITY': quantity,
+                'UNIT_PRICE': unit_price,
+                'TOTAL_PRICE': total_price,
+                'DISCOUNT_PERCENT': discount_percent,
+                'CREATED_AT': created_at,
+                'UPDATED_AT': updated_at
             })
         
         # Upload data to Snowflake

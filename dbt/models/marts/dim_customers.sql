@@ -8,164 +8,164 @@ with customers as (
 -- Add customer metrics
 customer_metrics as (
     select 
-        customer_id,
-        count(*) as total_orders,
-        sum(total_amount) as total_spent,
-        avg(total_amount) as avg_order_value,
-        min(order_date) as first_order_date,
-        max(order_date) as last_order_date,
-        count(distinct order_date) as active_days
+        CUSTOMER_ID,
+        count(*) as TOTAL_ORDERS,
+        sum(TOTAL_AMOUNT) as TOTAL_SPENT,
+        avg(TOTAL_AMOUNT) as AVG_ORDER_VALUE,
+        min(ORDER_DATE) as FIRST_ORDER_DATE,
+        max(ORDER_DATE) as LAST_ORDER_DATE,
+        count(distinct ORDER_DATE) as ACTIVE_DAYS
     from {{ ref('stg_orders') }}
-    where customer_id is not null
-    group by customer_id
+    where CUSTOMER_ID is not null
+    group by CUSTOMER_ID
 ),
 
 -- Add customer segmentation
 customer_segmentation as (
     select 
         c.*,
-        coalesce(cm.total_orders, 0) as total_orders,
-        coalesce(cm.total_spent, 0) as total_spent,
-        coalesce(cm.avg_order_value, 0) as avg_order_value,
-        cm.first_order_date,
-        cm.last_order_date,
-        coalesce(cm.active_days, 0) as active_days,
+        coalesce(cm.TOTAL_ORDERS, 0) as TOTAL_ORDERS,
+        coalesce(cm.TOTAL_SPENT, 0) as TOTAL_SPENT,
+        coalesce(cm.AVG_ORDER_VALUE, 0) as AVG_ORDER_VALUE,
+        cm.FIRST_ORDER_DATE,
+        cm.LAST_ORDER_DATE,
+        coalesce(cm.ACTIVE_DAYS, 0) as ACTIVE_DAYS,
         
         -- Customer lifetime value (CLV) calculation
         case 
-            when cm.total_spent > 0 then
-                round(cm.total_spent * 1.2, 2) -- Simple CLV calculation
+            when cm.TOTAL_SPENT > 0 then
+                round(cm.TOTAL_SPENT * 1.2, 2) -- Simple CLV calculation
             else 0
-        end as estimated_clv,
+        end as ESTIMATED_CLV,
         
         -- Customer recency (days since last order)
         case 
-            when cm.last_order_date is not null then
-                datediff('day', cm.last_order_date, current_date())
+            when cm.LAST_ORDER_DATE is not null then
+                datediff('day', cm.LAST_ORDER_DATE, current_date())
             else null
-        end as days_since_last_order,
+        end as DAYS_SINCE_LAST_ORDER,
         
         -- Customer frequency (orders per month)
         case 
-            when cm.first_order_date is not null then
-                round(cm.total_orders / nullif(datediff('month', cm.first_order_date, current_date()), 0), 2)
+            when cm.FIRST_ORDER_DATE is not null then
+                round(cm.TOTAL_ORDERS / nullif(datediff('month', cm.FIRST_ORDER_DATE, current_date()), 0), 2)
             else 0
-        end as orders_per_month,
+        end as ORDERS_PER_MONTH,
         
         -- Customer monetary value tier
         case 
-            when cm.total_spent >= 1000 then 'HIGH_VALUE'
-            when cm.total_spent >= 500 then 'MEDIUM_VALUE'
-            when cm.total_spent >= 100 then 'LOW_VALUE'
+            when cm.TOTAL_SPENT >= 1000 then 'HIGH_VALUE'
+            when cm.TOTAL_SPENT >= 500 then 'MEDIUM_VALUE'
+            when cm.TOTAL_SPENT >= 100 then 'LOW_VALUE'
             else 'NO_PURCHASES'
-        end as value_tier,
+        end as VALUE_TIER,
         
         -- Customer frequency tier
         case 
-            when cm.total_orders >= 10 then 'FREQUENT'
-            when cm.total_orders >= 5 then 'REGULAR'
-            when cm.total_orders >= 1 then 'OCCASIONAL'
+            when cm.TOTAL_ORDERS >= 10 then 'FREQUENT'
+            when cm.TOTAL_ORDERS >= 5 then 'REGULAR'
+            when cm.TOTAL_ORDERS >= 1 then 'OCCASIONAL'
             else 'NEW'
-        end as frequency_tier,
+        end as FREQUENCY_TIER,
         
         -- Customer recency tier
         case 
-            when cm.last_order_date is null then 'INACTIVE'
-            when datediff('day', cm.last_order_date, current_date()) <= 30 then 'ACTIVE'
-            when datediff('day', cm.last_order_date, current_date()) <= 90 then 'AT_RISK'
+            when cm.LAST_ORDER_DATE is null then 'INACTIVE'
+            when datediff('day', cm.LAST_ORDER_DATE, current_date()) <= 30 then 'ACTIVE'
+            when datediff('day', cm.LAST_ORDER_DATE, current_date()) <= 90 then 'AT_RISK'
             else 'CHURNED'
-        end as recency_tier,
+        end as RECENCY_TIER,
         
         -- RFM Score (Recency, Frequency, Monetary)
         case 
-            when cm.last_order_date is null then 1
-            when datediff('day', cm.last_order_date, current_date()) <= 30 then 5
-            when datediff('day', cm.last_order_date, current_date()) <= 60 then 4
-            when datediff('day', cm.last_order_date, current_date()) <= 90 then 3
-            when datediff('day', cm.last_order_date, current_date()) <= 180 then 2
+            when cm.LAST_ORDER_DATE is null then 1
+            when datediff('day', cm.LAST_ORDER_DATE, current_date()) <= 30 then 5
+            when datediff('day', cm.LAST_ORDER_DATE, current_date()) <= 60 then 4
+            when datediff('day', cm.LAST_ORDER_DATE, current_date()) <= 90 then 3
+            when datediff('day', cm.LAST_ORDER_DATE, current_date()) <= 180 then 2
             else 1
-        end as recency_score,
+        end as RECENCY_SCORE,
         
         case 
-            when cm.total_orders >= 20 then 5
-            when cm.total_orders >= 10 then 4
-            when cm.total_orders >= 5 then 3
-            when cm.total_orders >= 2 then 2
+            when cm.TOTAL_ORDERS >= 20 then 5
+            when cm.TOTAL_ORDERS >= 10 then 4
+            when cm.TOTAL_ORDERS >= 5 then 3
+            when cm.TOTAL_ORDERS >= 2 then 2
             else 1
-        end as frequency_score,
+        end as FREQUENCY_SCORE,
         
         case 
-            when cm.total_spent >= 2000 then 5
-            when cm.total_spent >= 1000 then 4
-            when cm.total_spent >= 500 then 3
-            when cm.total_spent >= 100 then 2
+            when cm.TOTAL_SPENT >= 2000 then 5
+            when cm.TOTAL_SPENT >= 1000 then 4
+            when cm.TOTAL_SPENT >= 500 then 3
+            when cm.TOTAL_SPENT >= 100 then 2
             else 1
-        end as monetary_score
+        end as MONETARY_SCORE
         
     from customers c
-    left join customer_metrics cm on c.customer_id = cm.customer_id
+    left join customer_metrics cm on c.CUSTOMER_ID = cm.CUSTOMER_ID
 )
 
 select 
-    customer_id,
-    first_name,
-    last_name,
-    full_name,
-    email,
-    phone,
-    address,
-    city,
-    state,
-    zip_code,
-    country,
-    country_code,
-    created_at,
-    updated_at,
-    ingestion_timestamp,
+    CUSTOMER_ID,
+    FIRST_NAME,
+    LAST_NAME,
+    FULL_NAME,
+    EMAIL,
+    PHONE,
+    ADDRESS,
+    CITY,
+    STATE,
+    ZIP_CODE,
+    COUNTRY,
+    COUNTRY_CODE,
+    CREATED_AT,
+    UPDATED_AT,
+    INGESTION_TIMESTAMP,
     
     -- Data quality fields
-    has_missing_email,
-    has_missing_phone,
-    has_missing_name,
-    data_quality_score,
+    HAS_MISSING_EMAIL,
+    HAS_MISSING_PHONE,
+    HAS_MISSING_NAME,
+    DATA_QUALITY_SCORE,
     
     -- Customer metrics
-    total_orders,
-    total_spent,
-    avg_order_value,
-    first_order_date,
-    last_order_date,
-    active_days,
-    estimated_clv,
-    days_since_last_order,
-    orders_per_month,
+    TOTAL_ORDERS,
+    TOTAL_SPENT,
+    AVG_ORDER_VALUE,
+    FIRST_ORDER_DATE,
+    LAST_ORDER_DATE,
+    ACTIVE_DAYS,
+    ESTIMATED_CLV,
+    DAYS_SINCE_LAST_ORDER,
+    ORDERS_PER_MONTH,
     
     -- Segmentation
-    value_tier,
-    frequency_tier,
-    recency_tier,
-    recency_score,
-    frequency_score,
-    monetary_score,
+    VALUE_TIER,
+    FREQUENCY_TIER,
+    RECENCY_TIER,
+    RECENCY_SCORE,
+    FREQUENCY_SCORE,
+    MONETARY_SCORE,
     
     -- RFM Segment
-    concat(recency_score, frequency_score, monetary_score) as rfm_segment,
+    concat(RECENCY_SCORE, FREQUENCY_SCORE, MONETARY_SCORE) as RFM_SEGMENT,
     
     -- Customer status
     case 
-        when recency_tier = 'ACTIVE' and frequency_tier in ('FREQUENT', 'REGULAR') and value_tier in ('HIGH_VALUE', 'MEDIUM_VALUE') then 'CHAMPION'
-        when recency_tier = 'ACTIVE' and frequency_tier = 'FREQUENT' then 'LOYAL_CUSTOMER'
-        when recency_tier = 'ACTIVE' and value_tier = 'HIGH_VALUE' then 'BIG_SPENDER'
-        when recency_tier = 'AT_RISK' then 'AT_RISK'
-        when recency_tier = 'CHURNED' then 'CHURNED'
-        when frequency_tier = 'NEW' then 'NEW_CUSTOMER'
+        when RECENCY_TIER = 'ACTIVE' and FREQUENCY_TIER in ('FREQUENT', 'REGULAR') and VALUE_TIER in ('HIGH_VALUE', 'MEDIUM_VALUE') then 'CHAMPION'
+        when RECENCY_TIER = 'ACTIVE' and FREQUENCY_TIER = 'FREQUENT' then 'LOYAL_CUSTOMER'
+        when RECENCY_TIER = 'ACTIVE' and VALUE_TIER = 'HIGH_VALUE' then 'BIG_SPENDER'
+        when RECENCY_TIER = 'AT_RISK' then 'AT_RISK'
+        when RECENCY_TIER = 'CHURNED' then 'CHURNED'
+        when FREQUENCY_TIER = 'NEW' then 'NEW_CUSTOMER'
         else 'POTENTIAL'
-    end as customer_status,
+    end as CUSTOMER_STATUS,
     
     -- Data quality flags for business use
     case 
-        when has_missing_email or has_missing_phone then 'INCOMPLETE_PROFILE'
-        when data_quality_score < 50 then 'POOR_DATA_QUALITY'
+        when HAS_MISSING_EMAIL or HAS_MISSING_PHONE then 'INCOMPLETE_PROFILE'
+        when DATA_QUALITY_SCORE < 50 then 'POOR_DATA_QUALITY'
         else 'GOOD_DATA_QUALITY'
-    end as profile_quality_status
+    end as PROFILE_QUALITY_STATUS
 from customer_segmentation

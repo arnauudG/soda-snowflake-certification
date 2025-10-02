@@ -79,6 +79,11 @@ airflow-trigger-pipeline: ## Trigger layered pipeline DAG (layer-by-layer proces
 	@docker exec soda-airflow-webserver airflow dags trigger soda_pipeline_run
 	@echo "[OK] Layered pipeline DAG triggered"
 
+soda-dump: ## Extract Soda Cloud data to CSV files
+	@echo "📊 Extracting Soda Cloud data..."
+	@./scripts/run_soda_dump.sh
+	@echo "[OK] Soda Cloud data extracted to CSV files"
+
 
 airflow-list: ## List available DAGs
 	@echo "📋 Listing available DAGs..."

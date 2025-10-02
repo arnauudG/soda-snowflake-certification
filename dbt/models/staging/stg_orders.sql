@@ -13,63 +13,63 @@ cleaned_orders as (
         case 
             when CUSTOMER_ID like 'INVALID%' then null
             else CUSTOMER_ID
-        end as customer_id,
+        end as CUSTOMER_ID,
         -- Clean order date
         case 
             when ORDER_DATE > current_date() then null
             else ORDER_DATE
-        end as order_date,
+        end as ORDER_DATE,
         -- Clean order status
         case 
             when ORDER_STATUS in ('pending', 'processing', 'shipped', 'delivered', 'cancelled', 'returned') 
             then ORDER_STATUS
             else 'unknown'
-        end as order_status,
+        end as ORDER_STATUS,
         -- Clean total amount (ensure positive values)
         case 
             when TOTAL_AMOUNT < 0 then null
             when TOTAL_AMOUNT = 0 then null
             else TOTAL_AMOUNT
-        end as total_amount,
+        end as TOTAL_AMOUNT,
         -- Standardize currency
         case 
             when CURRENCY in ('USD', 'EUR', 'GBP', 'CAD', 'AUD') then CURRENCY
             else 'USD'
-        end as currency,
+        end as CURRENCY,
         -- Clean shipping address
-        trim(SHIPPING_ADDRESS) as shipping_address,
+        trim(SHIPPING_ADDRESS) as SHIPPING_ADDRESS,
         -- Clean payment method
         case 
             when PAYMENT_METHOD in ('credit_card', 'debit_card', 'paypal', 'apple_pay', 'google_pay', 'bank_transfer')
             then PAYMENT_METHOD
             when PAYMENT_METHOD is null or PAYMENT_METHOD = '' then 'unknown'
             else 'other'
-        end as payment_method,
+        end as PAYMENT_METHOD,
         -- Standardize timestamps
-        to_timestamp(CREATED_AT) as created_at,
-        to_timestamp(UPDATED_AT) as updated_at,
-        current_timestamp() as ingestion_timestamp,
+        to_timestamp(CREATED_AT) as CREATED_AT,
+        to_timestamp(UPDATED_AT) as UPDATED_AT,
+        current_timestamp() as INGESTION_TIMESTAMP,
         -- Add data quality flags
         case 
             when CUSTOMER_ID like 'INVALID%' then true
             else false
-        end as has_invalid_customer,
+        end as HAS_INVALID_CUSTOMER,
         case 
             when TOTAL_AMOUNT < 0 then true
             else false
-        end as has_negative_amount,
+        end as HAS_NEGATIVE_AMOUNT,
         case 
             when ORDER_STATUS not in ('pending', 'processing', 'shipped', 'delivered', 'cancelled', 'returned') then true
             else false
-        end as has_invalid_status,
+        end as HAS_INVALID_STATUS,
         case 
             when ORDER_DATE > current_date() then true
             else false
-        end as has_future_date,
+        end as HAS_FUTURE_DATE,
         case 
             when CURRENCY not in ('USD', 'EUR', 'GBP', 'CAD', 'AUD') then true
             else false
-        end as has_invalid_currency
+        end as HAS_INVALID_CURRENCY
     from source_data
 ),
 
@@ -79,71 +79,71 @@ orders_with_analysis as (
         *,
         -- Order status category
         case 
-            when order_status in ('delivered') then 'COMPLETED'
-            when order_status in ('shipped', 'processing') then 'IN_PROGRESS'
-            when order_status in ('pending') then 'PENDING'
-            when order_status in ('cancelled', 'returned') then 'CANCELLED'
+            when ORDER_STATUS in ('delivered') then 'COMPLETED'
+            when ORDER_STATUS in ('shipped', 'processing') then 'IN_PROGRESS'
+            when ORDER_STATUS in ('pending') then 'PENDING'
+            when ORDER_STATUS in ('cancelled', 'returned') then 'CANCELLED'
             else 'UNKNOWN'
-        end as status_category,
+        end as STATUS_CATEGORY,
         
         -- Order value tier
         case 
-            when total_amount < 50 then 'SMALL'
-            when total_amount < 200 then 'MEDIUM'
-            when total_amount < 500 then 'LARGE'
+            when TOTAL_AMOUNT < 50 then 'SMALL'
+            when TOTAL_AMOUNT < 200 then 'MEDIUM'
+            when TOTAL_AMOUNT < 500 then 'LARGE'
             else 'XLARGE'
-        end as order_value_tier,
+        end as ORDER_VALUE_TIER,
         
         -- Payment method category
         case 
-            when payment_method in ('credit_card', 'debit_card') then 'CARD'
-            when payment_method in ('paypal', 'apple_pay', 'google_pay') then 'DIGITAL_WALLET'
-            when payment_method = 'bank_transfer' then 'BANK_TRANSFER'
+            when PAYMENT_METHOD in ('credit_card', 'debit_card') then 'CARD'
+            when PAYMENT_METHOD in ('paypal', 'apple_pay', 'google_pay') then 'DIGITAL_WALLET'
+            when PAYMENT_METHOD = 'bank_transfer' then 'BANK_TRANSFER'
             else 'OTHER'
-        end as payment_category,
+        end as PAYMENT_CATEGORY,
         
         -- Data quality score (0-100)
         case 
-            when has_invalid_customer and has_negative_amount and has_invalid_status then 0
-            when has_invalid_customer and has_negative_amount then 25
-            when has_invalid_customer or has_negative_amount then 50
-            when has_invalid_status or has_future_date or has_invalid_currency then 75
+            when HAS_INVALID_CUSTOMER and HAS_NEGATIVE_AMOUNT and HAS_INVALID_STATUS then 0
+            when HAS_INVALID_CUSTOMER and HAS_NEGATIVE_AMOUNT then 25
+            when HAS_INVALID_CUSTOMER or HAS_NEGATIVE_AMOUNT then 50
+            when HAS_INVALID_STATUS or HAS_FUTURE_DATE or HAS_INVALID_CURRENCY then 75
             else 100
-        end as data_quality_score
+        end as DATA_QUALITY_SCORE
     from cleaned_orders
 )
 
 select 
-    order_id as ORDER_ID,
-    customer_id as CUSTOMER_ID,
-    order_date as ORDER_DATE,
-    order_status as ORDER_STATUS,
-    total_amount as TOTAL_AMOUNT,
-    currency as CURRENCY,
-    shipping_address as SHIPPING_ADDRESS,
-    payment_method as PAYMENT_METHOD,
-    created_at as CREATED_AT,
-    updated_at as UPDATED_AT,
-    ingestion_timestamp as INGESTION_TIMESTAMP,
-    has_invalid_customer as HAS_INVALID_CUSTOMER,
-    has_negative_amount as HAS_NEGATIVE_AMOUNT,
-    has_invalid_status as HAS_INVALID_STATUS,
-    has_future_date as HAS_FUTURE_DATE,
-    has_invalid_currency as HAS_INVALID_CURRENCY,
-    status_category as STATUS_CATEGORY,
-    order_value_tier as ORDER_VALUE_TIER,
-    payment_category as PAYMENT_CATEGORY,
-    data_quality_score as DATA_QUALITY_SCORE,
+    ORDER_ID,
+    CUSTOMER_ID,
+    ORDER_DATE,
+    ORDER_STATUS,
+    TOTAL_AMOUNT,
+    CURRENCY,
+    SHIPPING_ADDRESS,
+    PAYMENT_METHOD,
+    CREATED_AT,
+    UPDATED_AT,
+    INGESTION_TIMESTAMP,
+    HAS_INVALID_CUSTOMER,
+    HAS_NEGATIVE_AMOUNT,
+    HAS_INVALID_STATUS,
+    HAS_FUTURE_DATE,
+    HAS_INVALID_CURRENCY,
+    STATUS_CATEGORY,
+    ORDER_VALUE_TIER,
+    PAYMENT_CATEGORY,
+    DATA_QUALITY_SCORE,
     -- Add derived fields
-    year(order_date) as ORDER_YEAR,
-    month(order_date) as ORDER_MONTH,
-    dayofweek(order_date) as ORDER_DAY_OF_WEEK,
-    quarter(order_date) as ORDER_QUARTER,
+    year(ORDER_DATE) as ORDER_YEAR,
+    month(ORDER_DATE) as ORDER_MONTH,
+    dayofweek(ORDER_DATE) as ORDER_DAY_OF_WEEK,
+    quarter(ORDER_DATE) as ORDER_QUARTER,
     
     -- Order processing time (if completed)
     case 
-        when order_status = 'delivered' and created_at is not null then
-            datediff('day', created_at, updated_at)
+        when ORDER_STATUS = 'delivered' and CREATED_AT is not null then
+            datediff('day', CREATED_AT, UPDATED_AT)
         else null
     end as PROCESSING_DAYS
 from orders_with_analysis

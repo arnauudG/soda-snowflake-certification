@@ -10,58 +10,58 @@ cleaned_products as (
     select
         PRODUCT_ID,
         -- Clean product name
-        trim(PRODUCT_NAME) as product_name,
+        trim(PRODUCT_NAME) as PRODUCT_NAME,
         -- Standardize category and subcategory
-        trim(upper(CATEGORY)) as category,
-        trim(upper(SUBCATEGORY)) as subcategory,
+        trim(upper(CATEGORY)) as CATEGORY,
+        trim(upper(SUBCATEGORY)) as SUBCATEGORY,
         -- Clean price (ensure positive values)
         case 
             when PRICE < 0 then null
             else PRICE
-        end as price,
+        end as PRICE,
         -- Standardize currency
         case 
             when CURRENCY in ('USD', 'EUR', 'GBP', 'CAD', 'AUD') then CURRENCY
             else 'USD'
-        end as currency,
+        end as CURRENCY,
         -- Clean description
-        trim(DESCRIPTION) as description,
+        trim(DESCRIPTION) as DESCRIPTION,
         -- Clean brand
-        trim(upper(BRAND)) as brand,
+        trim(upper(BRAND)) as BRAND,
         -- Clean SKU
         case 
             when SKU is null or SKU = '' then concat('SKU-', PRODUCT_ID)
             when SKU like 'INVALID%' then concat('SKU-', PRODUCT_ID)
             else trim(upper(SKU))
-        end as sku,
+        end as SKU,
         -- Clean weight (ensure positive values)
         case 
             when WEIGHT < 0 then null
             else WEIGHT
-        end as weight,
+        end as WEIGHT,
         -- Clean dimensions
-        trim(DIMENSIONS) as dimensions,
+        trim(DIMENSIONS) as DIMENSIONS,
         -- Standardize timestamps
-        to_timestamp(CREATED_AT) as created_at,
-        to_timestamp(UPDATED_AT) as updated_at,
-        current_timestamp() as ingestion_timestamp,
+        to_timestamp(CREATED_AT) as CREATED_AT,
+        to_timestamp(UPDATED_AT) as UPDATED_AT,
+        current_timestamp() as INGESTION_TIMESTAMP,
         -- Add data quality flags
         case 
             when PRICE < 0 then true
             else false
-        end as has_negative_price,
+        end as HAS_NEGATIVE_PRICE,
         case 
             when PRODUCT_NAME is null or PRODUCT_NAME = '' then true
             else false
-        end as has_missing_name,
+        end as HAS_MISSING_NAME,
         case 
             when WEIGHT < 0 then true
             else false
-        end as has_negative_weight,
+        end as HAS_NEGATIVE_WEIGHT,
         case 
             when to_timestamp(CREATED_AT) > current_timestamp() then true
             else false
-        end as has_future_date
+        end as HAS_FUTURE_DATE
     from source_data
 ),
 
@@ -71,59 +71,59 @@ products_with_hierarchy as (
         *,
         -- Create product hierarchy levels
         case 
-            when category in ('ELECTRONICS', 'CLOTHING', 'HOME & GARDEN') then 'HIGH_VOLUME'
-            when category in ('SPORTS & OUTDOORS', 'BEAUTY & HEALTH') then 'MEDIUM_VOLUME'
+            when CATEGORY in ('ELECTRONICS', 'CLOTHING', 'HOME & GARDEN') then 'HIGH_VOLUME'
+            when CATEGORY in ('SPORTS & OUTDOORS', 'BEAUTY & HEALTH') then 'MEDIUM_VOLUME'
             else 'LOW_VOLUME'
-        end as volume_category,
+        end as VOLUME_CATEGORY,
         
         -- Price tier
         case 
-            when price < 25 then 'BUDGET'
-            when price < 100 then 'MID_RANGE'
-            when price < 500 then 'PREMIUM'
+            when PRICE < 25 then 'BUDGET'
+            when PRICE < 100 then 'MID_RANGE'
+            when PRICE < 500 then 'PREMIUM'
             else 'LUXURY'
-        end as price_tier,
+        end as PRICE_TIER,
         
         -- Data quality score (0-100)
         case 
-            when has_negative_price and has_missing_name and has_negative_weight then 0
-            when has_negative_price and has_missing_name then 25
-            when has_negative_price or has_missing_name then 50
-            when has_negative_weight or has_future_date then 75
+            when HAS_NEGATIVE_PRICE and HAS_MISSING_NAME and HAS_NEGATIVE_WEIGHT then 0
+            when HAS_NEGATIVE_PRICE and HAS_MISSING_NAME then 25
+            when HAS_NEGATIVE_PRICE or HAS_MISSING_NAME then 50
+            when HAS_NEGATIVE_WEIGHT or HAS_FUTURE_DATE then 75
             else 100
-        end as data_quality_score
+        end as DATA_QUALITY_SCORE
     from cleaned_products
 )
 
 select 
-    product_id as PRODUCT_ID,
-    product_name as PRODUCT_NAME,
-    category as CATEGORY,
-    subcategory as SUBCATEGORY,
-    price as PRICE,
-    currency as CURRENCY,
-    description as DESCRIPTION,
-    brand as BRAND,
-    sku as SKU,
-    weight as WEIGHT,
-    dimensions as DIMENSIONS,
-    created_at as CREATED_AT,
-    updated_at as UPDATED_AT,
-    ingestion_timestamp as INGESTION_TIMESTAMP,
-    has_negative_price as HAS_NEGATIVE_PRICE,
-    has_missing_name as HAS_MISSING_NAME,
-    has_negative_weight as HAS_NEGATIVE_WEIGHT,
-    has_future_date as HAS_FUTURE_DATE,
-    volume_category as VOLUME_CATEGORY,
-    price_tier as PRICE_TIER,
-    data_quality_score as DATA_QUALITY_SCORE,
+    PRODUCT_ID,
+    PRODUCT_NAME,
+    CATEGORY,
+    SUBCATEGORY,
+    PRICE,
+    CURRENCY,
+    DESCRIPTION,
+    BRAND,
+    SKU,
+    WEIGHT,
+    DIMENSIONS,
+    CREATED_AT,
+    UPDATED_AT,
+    INGESTION_TIMESTAMP,
+    HAS_NEGATIVE_PRICE,
+    HAS_MISSING_NAME,
+    HAS_NEGATIVE_WEIGHT,
+    HAS_FUTURE_DATE,
+    VOLUME_CATEGORY,
+    PRICE_TIER,
+    DATA_QUALITY_SCORE,
     -- Add derived fields
     case 
-        when weight is not null and weight > 0 then 
-            round(price / weight, 2)
+        when WEIGHT is not null and WEIGHT > 0 then 
+            round(PRICE / WEIGHT, 2)
         else null
     end as PRICE_PER_KG,
     
     -- Product age in days
-    datediff('day', created_at, current_date()) as PRODUCT_AGE_DAYS
+    datediff('day', CREATED_AT, current_date()) as PRODUCT_AGE_DAYS
 from products_with_hierarchy

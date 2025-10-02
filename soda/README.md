@@ -10,6 +10,8 @@ This directory contains the comprehensive Soda data quality monitoring configura
 - ✅ **Sample Data Collection**: 100 sample rows per dataset for analysis
 - ✅ **Failed Row Sampling**: Detailed failure analysis with custom SQL queries
 - ✅ **Anomaly Detection**: Foundation for automated monitoring (2025)
+- ✅ **API Integration**: Automated metadata extraction for external reporting
+- ✅ **Uppercase Standardization**: Consistent naming across all layers
 
 ### 📊 **Quality Coverage**
 - **RAW Layer**: 4 tables with initial data quality assessment
@@ -63,6 +65,7 @@ sample datasets:
 - **RAW Layer**: Relaxed thresholds for initial assessment
 - **STAGING Layer**: Stricter validation after transformation
 - **MARTS Layer**: Business-ready data with strictest requirements
+- **Uppercase Naming**: All tables use consistent uppercase column names (CUSTOMER_ID, FIRST_NAME, etc.)
 
 ## 🚀 Usage
 

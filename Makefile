@@ -29,7 +29,7 @@ pipeline: venv ## Run standard pipeline (via Airflow)
 
 airflow-up: ## Start Airflow services with Docker
 	@echo "🚀 Starting Airflow services..."
-	@cd docker && docker-compose up -d
+	@cd airflow/docker && docker-compose up -d
 	@echo "⏳ Waiting for services to be ready..."
 	@sleep 30
 	@echo "▶️  Unpausing all Soda DAGs..."
@@ -40,16 +40,86 @@ airflow-up: ## Start Airflow services with Docker
 	@echo "[INFO] Available DAGs:"
 	@make airflow-list
 
+superset-up: ## Start Superset visualization service (separate setup)
+	@echo "📊 Starting Superset services..."
+	@cd superset && docker-compose up -d
+	@echo "⏳ Waiting for Superset to be ready..."
+	@sleep 45
+	@echo "[OK] Superset started with Docker"
+	@echo "[INFO] Superset UI: http://localhost:8089 (admin/admin)"
+
+all-up: airflow-up superset-up ## Start all services (Airflow + Superset)
+	@echo "🚀 Starting all services..."
+	@cd airflow/docker && docker-compose up -d
+	@cd superset && docker-compose up -d
+	@echo "⏳ Waiting for all services to be ready..."
+	@sleep 45
+	@echo "▶️  Unpausing all Soda DAGs..."
+	@docker exec soda-airflow-webserver airflow dags unpause soda_initialization || true
+	@docker exec soda-airflow-webserver airflow dags unpause soda_pipeline_run || true
+	@echo "[OK] All services started"
+	@echo "[INFO] Airflow UI: http://localhost:8080 (admin/admin)"
+	@echo "[INFO] Superset UI: http://localhost:8089 (admin/admin)"
+
 airflow-down: ## Stop Airflow services
-	@cd docker && docker-compose down
+	@cd airflow/docker && docker-compose down
 	@echo "[OK] Airflow services stopped"
+
+superset-down: ## Stop Superset services
+	@cd superset && docker-compose down
+	@echo "[OK] Superset services stopped"
+
+superset-status: ## Check Superset services status
+	@echo "🔍 Checking Superset services..."
+	@cd superset && docker-compose ps
+
+superset-logs: ## View Superset logs
+	@cd superset && docker-compose logs -f superset
+
+superset-reset: ## Reset Superset database and restart
+	@echo "🔄 Resetting Superset..."
+	@cd superset && docker-compose down
+	@cd superset && docker volume rm superset_superset-postgres-data superset_superset-data 2>/dev/null || true
+	@cd superset && docker-compose up -d
+	@echo "⏳ Waiting for Superset to be ready..."
+	@sleep 45
+	@echo "[OK] Superset reset and restarted"
+
+
+superset-data: ## Complete Soda data workflow: organize + upload to Superset
+	@echo "🔄 Running complete Soda data workflow..."
+	@echo "1. Organizing data..."
+	@make organize-soda-data
+	@echo "2. Uploading to Superset..."
+	@make superset-upload-data
+	@echo "✅ Complete Soda data workflow finished!"
+
+dump-databases: ## Dump all databases (Superset, Airflow, Soda data)
+	@echo "🗄️  Dumping all databases..."
+	@./scripts/dump_databases.sh --all
+	@echo "[OK] All databases dumped"
+
+dump-superset: ## Dump Superset database only
+	@echo "📊 Dumping Superset database..."
+	@./scripts/dump_databases.sh --superset-only
+	@echo "[OK] Superset database dumped"
+
+dump-airflow: ## Dump Airflow database only
+	@echo "🔄 Dumping Airflow database..."
+	@./scripts/dump_databases.sh --airflow-only
+	@echo "[OK] Airflow database dumped"
+
+dump-soda: ## Dump Soda data only
+	@echo "📈 Dumping Soda data..."
+	@./scripts/dump_databases.sh --soda-only
+	@echo "[OK] Soda data dumped"
 
 airflow-status: ## Check Airflow services status
 	@echo "🔍 Checking Airflow services..."
-	@cd docker && docker-compose ps
+	@cd airflow/docker && docker-compose ps
 
 airflow-logs: ## View Airflow logs
-	@cd docker && docker-compose logs -f
+	@cd airflow/docker && docker-compose logs -f
 
 airflow-unpause-all: ## Unpause all Soda DAGs
 	@echo "▶️  Unpausing all Soda DAGs..."
@@ -64,9 +134,9 @@ airflow-pause-all: ## Pause all Soda DAGs
 	@echo "[OK] All Soda DAGs paused"
 
 airflow-rebuild: ## Rebuild Airflow containers
-	@cd docker && docker-compose down
-	@cd docker && docker-compose build --no-cache
-	@cd docker && docker-compose up -d
+	@cd airflow/docker && docker-compose down
+	@cd airflow/docker && docker-compose build --no-cache
+	@cd airflow/docker && docker-compose up -d
 	@echo "[OK] Airflow containers rebuilt and started"
 
 airflow-trigger-init: ## Trigger initialization DAG (fresh setup only)
@@ -95,10 +165,11 @@ docs: ## Open documentation
 	@echo "  📖 README.md - Complete project documentation"
 	@echo "  🔧 Makefile - Development commands and automation"
 	@echo "  📋 Airflow UI - http://localhost:8080 (admin/admin)"
+	@echo "  📊 Superset UI - http://localhost:8089 (admin/admin)"
 	@echo ""
 	@echo "💡 Quick commands:"
 	@echo "  make help - Show all available commands"
-	@echo "  make airflow-up - Start Airflow services"
+	@echo "  make all-up - Start all services (Airflow + Superset)"
 	@echo "  make airflow-trigger-init - Fresh initialization (first time)"
 	@echo "  make airflow-trigger-pipeline - Layered pipeline runs"
 
@@ -124,12 +195,12 @@ clean: ## Clean up artifacts and temporary files
 	@echo "🧹 Cleaning up artifacts..."
 	@rm -rf dbt/target dbt/logs snowflake_connection_test.log
 	@find . -name "__pycache__" -type d -exec rm -rf {} + 2>/dev/null || true
-	@rm -rf docker/airflow-logs 2>/dev/null || true
+	@rm -rf airflow/airflow-logs 2>/dev/null || true
 	@echo "[OK] Artifacts cleaned"
 
 clean-logs: ## Clean up old Airflow logs
 	@echo "🧹 Cleaning up old logs..."
-	@rm -rf docker/airflow-logs 2>/dev/null || true
+	@rm -rf airflow/airflow-logs 2>/dev/null || true
 	@echo "[OK] Old logs cleaned"
 
 clean-all: clean clean-logs ## Deep clean: artifacts, logs, and cache
@@ -137,5 +208,44 @@ clean-all: clean clean-logs ## Deep clean: artifacts, logs, and cache
 	@find . -name "*.pyc" -delete 2>/dev/null || true
 	@find . -name ".DS_Store" -delete 2>/dev/null || true
 	@echo "[OK] Deep clean completed"
+
+# =============================================================================
+# SODA DATA MANAGEMENT
+# =============================================================================
+
+soda-data: ## Complete Soda data workflow: organize + upload to Superset
+	@echo "🔄 Running complete Soda data workflow..."
+	@echo "1. Organizing data..."
+	@make organize-soda-data
+	@echo "2. Uploading to Superset..."
+	@make superset-upload-data
+	@echo "✅ Complete Soda data workflow finished!"
+
+organize-soda-data: ## Organize Soda dump data in user-friendly structure
+	@echo "📁 Organizing Soda dump data..."
+	@python3 scripts/organize_soda_data.py
+	@echo "✅ Data organized successfully!"
+
+superset-upload-data: ## Upload organized Soda data to Superset database
+	@echo "📤 Uploading Soda data to Superset..."
+	@echo "1. Organizing data first..."
+	@make organize-soda-data
+	@echo "2. Uploading to Superset..."
+	@cp scripts/upload_soda_data_docker.py superset/data/
+	@cd superset && docker-compose exec superset python /app/soda_data/upload_soda_data_docker.py
+	@echo "✅ Data uploaded to Superset successfully!"
+
+superset-clean-restart: ## Clean restart Superset (removes all data)
+	@echo "🧹 Performing clean Superset restart..."
+	@make superset-down
+	@cd superset && docker-compose down -v
+	@echo "🗑️  Removed all Superset data and volumes"
+	@make superset-up
+	@echo "✅ Superset clean restart completed!"
+
+superset-reset-data: ## Reset only Superset data (keep containers)
+	@echo "🔄 Resetting Superset data..."
+	@cd superset && docker-compose exec superset-db psql -U superset -d superset -c "DROP SCHEMA IF EXISTS soda CASCADE;"
+	@echo "✅ Superset data reset completed!"
 
 

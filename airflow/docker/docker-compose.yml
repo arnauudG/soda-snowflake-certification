@@ -35,12 +35,12 @@ services:
       - SODA_CLOUD_API_KEY_SECRET=${SODA_CLOUD_API_KEY_SECRET}
       - SODA_CLOUD_HOST=${SODA_CLOUD_HOST:-cloud.soda.io}
     volumes:
-      - ../airflow/dags:/opt/airflow/dags
-      - ../airflow/plugins:/opt/airflow/plugins
-      - ../scripts:/opt/airflow/scripts
-      - ../dbt:/opt/airflow/dbt
-      - ../soda:/opt/airflow/soda
-      - ../.env:/opt/airflow/.env
+      - ../dags:/opt/airflow/dags
+      - ../plugins:/opt/airflow/plugins
+      - ../../scripts:/opt/airflow/scripts
+      - ../../dbt:/opt/airflow/dbt
+      - ../../soda:/opt/airflow/soda
+      - ../../.env:/opt/airflow/.env
       - ./airflow-logs:/opt/airflow/logs
     ports:
       - "8080:8080"
@@ -87,12 +87,12 @@ services:
       - SODA_CLOUD_API_KEY_SECRET=${SODA_CLOUD_API_KEY_SECRET}
       - SODA_CLOUD_HOST=${SODA_CLOUD_HOST:-cloud.soda.io}
     volumes:
-      - ../airflow/dags:/opt/airflow/dags
-      - ../airflow/plugins:/opt/airflow/plugins
-      - ../scripts:/opt/airflow/scripts
-      - ../dbt:/opt/airflow/dbt
-      - ../soda:/opt/airflow/soda
-      - ../.env:/opt/airflow/.env
+      - ../dags:/opt/airflow/dags
+      - ../plugins:/opt/airflow/plugins
+      - ../../scripts:/opt/airflow/scripts
+      - ../../dbt:/opt/airflow/dbt
+      - ../../soda:/opt/airflow/soda
+      - ../../.env:/opt/airflow/.env
       - ./airflow-logs:/opt/airflow/logs
     command: scheduler
     healthcheck:
@@ -141,12 +141,12 @@ services:
       - SODA_CLOUD_API_KEY_SECRET=${SODA_CLOUD_API_KEY_SECRET}
       - SODA_CLOUD_HOST=${SODA_CLOUD_HOST:-cloud.soda.io}
     volumes:
-      - ../airflow/dags:/opt/airflow/dags
-      - ../airflow/plugins:/opt/airflow/plugins
-      - ../scripts:/opt/airflow/scripts
-      - ../dbt:/opt/airflow/dbt
-      - ../soda:/opt/airflow/soda
-      - ../.env:/opt/airflow/.env
+      - ../dags:/opt/airflow/dags
+      - ../plugins:/opt/airflow/plugins
+      - ../../scripts:/opt/airflow/scripts
+      - ../../dbt:/opt/airflow/dbt
+      - ../../soda:/opt/airflow/soda
+      - ../../.env:/opt/airflow/.env
       - ./airflow-logs:/opt/airflow/logs
     command: version
     depends_on:

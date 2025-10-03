@@ -9,6 +9,7 @@ This project showcases a complete data quality pipeline with:
 - **Apache Airflow** for workflow orchestration
 - **dbt** for data transformations
 - **Snowflake** as the data warehouse
+- **Apache Superset** for data visualization and dashboards
 - **Docker** for containerized deployment
 - **Soda Cloud API** for metadata extraction and reporting
 
@@ -26,16 +27,22 @@ Soda Quality Checks    Soda Quality Checks    Soda Quality Checks
 - **Data Warehouse**: Snowflake
 - **Transformations**: dbt Core 1.10.11
 - **Data Quality**: Soda Library 1.12.24
+- **Visualization**: Apache Superset
 - **Containerization**: Docker & Docker Compose
 - **Language**: Python 3.11
 
 ## 📁 Project Structure
 
 ```
-├── airflow/                          # Airflow DAGs and configuration
-│   └── dags/
-│       ├── soda_initialization.py    # Data initialization DAG
-│       └── soda_pipeline_run.py     # Main pipeline DAG
+├── airflow/                          # Airflow Docker configuration
+│   ├── docker/                      # Docker configuration
+│   │   ├── docker-compose.yml       # Multi-container setup
+│   │   ├── Dockerfile               # Custom Airflow image
+│   │   └── requirements.txt         # Python dependencies
+│   ├── dags/                        # Airflow DAGs
+│   │   ├── soda_initialization.py   # Data initialization DAG
+│   │   └── soda_pipeline_run.py     # Main pipeline DAG
+│   └── plugins/                     # Airflow plugins
 ├── dbt/                              # dbt project configuration
 │   ├── models/
 │   │   ├── raw/                      # Raw data sources
@@ -43,38 +50,59 @@ Soda Quality Checks    Soda Quality Checks    Soda Quality Checks
 │   │   └── marts/                    # Business-ready models
 │   ├── dbt_project.yml              # dbt project configuration
 │   └── profiles.yml                 # dbt profiles for Snowflake
-├── docker/                           # Docker configuration
-│   ├── docker-compose.yml           # Multi-container setup
-│   └── Dockerfile                   # Custom Airflow image
 ├── scripts/                          # Utility scripts
-│   ├── setup/                       # Environment setup
-│   │   ├── requirements.txt         # Python dependencies
-│   │   ├── setup_snowflake.py       # Snowflake table creation
-│   │   └── reset_snowflake.py       # Snowflake cleanup
+│   ├── organize_soda_data.py        # Organize Soda data in friendly structure
+│   ├── upload_soda_data_docker.py   # Upload Soda data to Superset database
 │   ├── soda_dump_api.py             # Soda Cloud API data extraction
 │   ├── run_soda_dump.sh             # Soda Cloud data dump runner
-│   └── requirements_dump.txt         # API extraction dependencies
+│   ├── requirements_dump.txt         # API extraction dependencies
+│   └── setup/                       # Environment setup
+│       ├── requirements.txt         # Python dependencies
+│       ├── setup_snowflake.py       # Snowflake table creation
+│       └── reset_snowflake.py       # Snowflake cleanup
 ├── soda/                             # Soda data quality configuration
 │   ├── checks/                      # SodaCL check definitions
 │   │   ├── raw/                     # RAW layer quality checks
 │   │   ├── staging/                 # STAGING layer quality checks
 │   │   ├── marts/                   # MARTS layer quality checks
+│   │   ├── quality/                 # Quality check results
 │   │   └── templates/               # Reusable check templates
-│   └── configuration/               # Soda connection configurations
-├── soda_dump_output/                # Soda Cloud API extracted data (latest files only)
-│   ├── datasets_latest.csv         # Latest dataset metadata
-│   ├── checks_latest.csv           # Latest check results metadata
-│   ├── datasets_YYYY-MM-DD.csv     # Daily dataset snapshots
-│   └── checks_YYYY-MM-DD.csv       # Daily check snapshots
-└── Makefile                          # Project automation commands
+│   ├── configuration/               # Soda connection configurations
+│   └── README.md                    # Soda configuration documentation
+├── superset/                         # Superset visualization setup
+│   ├── docker-compose.yml           # Superset services with dedicated database
+│   ├── superset_config.py           # Superset configuration
+│   ├── data/                        # Soda Cloud data and organized structure
+│   │   ├── datasets_latest.csv      # Latest dataset metadata
+│   │   ├── checks_latest.csv        # Latest check results metadata
+│   │   ├── analysis_summary.csv     # Analysis summary
+│   │   ├── organized/               # Organized data (user-friendly structure)
+│   │   │   ├── latest/              # Most recent datasets and checks
+│   │   │   ├── historical/          # Timestamped historical data
+│   │   │   ├── reports/             # Summary reports and analysis
+│   │   │   └── analysis/            # Analysis and summary files
+│   │   └── upload_soda_data_docker.py # Upload script (copied during execution)
+│   └── README.md                    # Superset documentation
+├── Makefile                         # Project automation and commands
+└── README.md                        # This file
 ```
 
 ## 🚀 Quick Start
 
 ### Prerequisites
-- Docker and Docker Compose
-- Snowflake account with appropriate permissions
-- Soda Cloud account (optional, for enhanced monitoring)
+- **Docker & Docker Compose** (latest version)
+- **Snowflake account** with appropriate permissions
+- **Soda Cloud account** (required for data extraction and visualization)
+- **Python 3.11+** (for local script execution)
+
+### 🎯 What This Project Does
+This project demonstrates a complete data quality pipeline with:
+1. **Data Pipeline**: Raw → Staging → Marts (using dbt)
+2. **Quality Monitoring**: Soda Library checks at each layer
+3. **Orchestration**: Apache Airflow for workflow management
+4. **Visualization**: Apache Superset for dashboards
+5. **Cloud Integration**: Soda Cloud for centralized monitoring
+6. **Data Extraction**: Automated Soda Cloud metadata extraction
 
 ### 1. Environment Setup
 ```bash
@@ -82,18 +110,40 @@ Soda Quality Checks    Soda Quality Checks    Soda Quality Checks
 git clone <repository-url>
 cd Soda-Certification
 
-# Set up environment variables
+# Create .env file with your credentials
 cp .env.example .env
-# Edit .env with your Snowflake and Soda Cloud credentials
+# Edit .env with your actual credentials
+```
+
+**Required Environment Variables:**
+```bash
+# Snowflake Configuration
+SNOWFLAKE_ACCOUNT=your_account
+SNOWFLAKE_USER=your_user
+SNOWFLAKE_PASSWORD=your_password
+SNOWFLAKE_WAREHOUSE=your_warehouse
+SNOWFLAKE_DATABASE=SODA_CERTIFICATION
+SNOWFLAKE_SCHEMA=RAW
+
+# Soda Cloud Configuration
+SODA_CLOUD_HOST=https://cloud.soda.io
+SODA_CLOUD_API_KEY_ID=your_api_key_id
+SODA_CLOUD_API_KEY_SECRET=your_api_key_secret
+SODA_CLOUD_ORGANIZATION_ID=your_org_id
 ```
 
 ### 2. Start Services
 ```bash
-# Start all services
-make airflow-up
+# Start all services (Airflow + Superset)
+make all-up
+
+# Or start services separately
+make airflow-up      # Start Airflow only
+make superset-up     # Start Superset only
 
 # Verify services are running
 make airflow-status
+make superset-status
 ```
 
 ### 3. Initialize Data
@@ -107,6 +157,196 @@ make airflow-trigger-init
 # Execute the main pipeline
 make airflow-trigger-pipeline
 ```
+
+### 5. Extract Soda Cloud Data
+```bash
+# Extract data from Soda Cloud platform
+make soda-dump
+
+# Complete workflow: organize + upload to Superset
+make soda-data
+```
+
+### 6. Visualize Data Quality Results
+```bash
+# Access Superset UI at http://localhost:8089 (admin/admin)
+# The data is automatically uploaded to PostgreSQL tables:
+# - soda.checks_latest (latest check results)
+# - soda.dataset_latest (latest dataset information)
+# - soda.analysis_summary (analysis summary)
+
+# Create dashboards and visualizations from the uploaded data
+```
+
+### 7. Complete Workflow Example
+```bash
+# Complete end-to-end workflow
+make all-up                    # Start all services
+make airflow-trigger-init      # Initialize data
+make airflow-trigger-pipeline  # Run quality checks
+make soda-dump                 # Extract Soda Cloud data
+make superset-upload-data      # Organize and upload to Superset
+# Access Superset at http://localhost:8089
+```
+
+## 👋 First Time User Guide
+
+### **Step-by-Step Setup for New Users**
+
+#### **1. Prerequisites Check**
+```bash
+# Verify Docker is running
+docker --version
+docker-compose --version
+
+# Verify Python is available
+python3 --version
+```
+
+#### **2. Environment Configuration**
+```bash
+# Create your .env file
+cp .env.example .env
+
+# Edit .env with your actual credentials
+nano .env  # or use your preferred editor
+```
+
+#### **3. First Run - Complete Setup**
+```bash
+# Start all services
+make all-up
+
+# Wait for services to be ready (about 2-3 minutes)
+# Check status
+make airflow-status
+make superset-status
+
+# Initialize the data pipeline
+make airflow-trigger-init
+
+# Run the complete data quality pipeline
+make airflow-trigger-pipeline
+
+# Extract and visualize Soda Cloud data
+make soda-dump
+make superset-upload-data
+```
+
+#### **4. Access Your Dashboards**
+- **Airflow UI**: http://localhost:8080 (admin/admin)
+- **Superset UI**: http://localhost:8089 (admin/admin)
+
+#### **5. Verify Everything Works**
+```bash
+# Check all services are running
+make airflow-status
+make superset-status
+
+# Check data was created
+# - Airflow: Look for successful DAG runs
+# - Superset: Check for uploaded Soda data tables
+```
+
+### **What You'll See**
+1. **Airflow**: Two DAGs running successfully
+2. **Snowflake**: Database with sample data and quality checks
+3. **Soda Cloud**: Quality results uploaded to your organization
+4. **Superset**: Data quality dashboards ready to create
+
+## 🔄 Soda Cloud Data Workflow
+
+### Overview
+The project includes a complete data extraction and visualization workflow that fetches data from your Soda Cloud platform and makes it available in Superset for analysis and dashboards.
+
+### Data Flow
+```
+Soda Cloud Platform → CSV Files → Organized Data → Superset Database → Dashboards
+```
+
+### Step-by-Step Workflow
+
+#### 1. **Extract from Soda Cloud** (`make soda-dump`)
+- Connects to Soda Cloud API using your credentials
+- Fetches **ALL** datasets and checks from your account
+- Saves data as CSV files in `soda_dump_output/`
+- Includes historical data and latest snapshots
+
+#### 2. **Organize Data** (`make organize-soda-data`)
+- Takes raw CSV files and organizes them into user-friendly structure
+- Always updates `*_latest.csv` files with the most recent data
+- Maintains historical data in separate folders
+- Creates organized structure in `superset/data/organized/`
+- **Automatically cleans up** temporary `soda_dump_output` folder
+
+#### 3. **Upload to Superset** (`make superset-upload-data`)
+- Uploads organized data to PostgreSQL database
+- Creates dedicated tables: `soda.checks_latest` and `soda.dataset_latest`
+- Stores historical data in separate tables
+- Refreshes latest tables with new data each time
+- **Automatically cleans up** temporary `soda_dump_output` folder
+
+#### 4. **Complete Workflow** (`make soda-data`)
+- Combines organize + upload in one command
+- Perfect for regular data updates
+
+### Required Configuration
+
+Add these variables to your `.env` file:
+
+```bash
+# Soda Cloud API Credentials
+SODA_CLOUD_API_KEY_ID=your_api_key_id
+SODA_CLOUD_API_KEY_SECRET=your_api_key_secret
+SODA_CLOUD_HOST=https://cloud.us.soda.io  # or https://cloud.soda.io for EU
+```
+
+### Available Commands
+
+```bash
+# Complete workflow (recommended)
+make soda-data
+
+# Individual steps
+make soda-dump           # Extract from Soda Cloud
+make organize-soda-data  # Organize data
+make superset-upload-data # Upload to Superset
+
+# Clean restart options
+make superset-clean-restart  # Complete clean restart
+make superset-reset-data     # Reset only data
+```
+
+### Data Organization Structure
+
+```
+superset/data/
+├── datasets_latest.csv      # Latest dataset information
+├── checks_latest.csv        # Latest check results
+├── datasets_YYYY-MM-DD.csv # Daily dataset snapshots
+├── checks_YYYY-MM-DD.csv    # Daily check snapshots
+└── organized/               # Organized data structure
+    ├── latest/              # Most recent data
+    ├── historical/           # Timestamped historical data
+    ├── reports/             # Summary reports
+    └── analysis/            # Analysis files
+```
+
+### Database Tables Created
+
+- **`soda.checks_latest`** - Latest check results (always refreshed)
+- **`soda.dataset_latest`** - Latest dataset information (always refreshed)
+- **`soda.*_historical`** - Historical data files
+- **`soda.analysis_summary`** - Analysis and summary data
+
+### Key Features
+
+✅ **Complete Data Fetch**: Gets ALL data from Soda Cloud (not filtered)  
+✅ **API Rate Limiting**: Respectful API usage with delays  
+✅ **Historical Tracking**: Maintains all historical data  
+✅ **Latest Updates**: Always updates to most recent data  
+✅ **Clean Restart**: Can completely reset and re-upload data  
+✅ **Error Handling**: Robust error handling and retry logic  
 
 ## 📊 Data Quality Features
 
@@ -192,25 +432,41 @@ sample datasets:
 - Pipeline performance metrics
 - Error tracking and debugging
 
+### Superset Visualization
+- Interactive dashboards for data quality metrics
+- Real-time visualization of Soda check results
+- Custom charts and reports
+- Data exploration and analysis tools
+
 ## 🛠️ Available Commands
 
 ```bash
 # Service Management
-make airflow-up              # Start all services
-make airflow-down            # Stop all services
-make airflow-status          # Check service status
+make all-up                  # Start all services (Airflow + Superset)
+make airflow-up             # Start Airflow services only
+make superset-up            # Start Superset services only
+make airflow-down           # Stop Airflow services
+make superset-down          # Stop Superset services
+make airflow-status         # Check Airflow status
+make superset-status        # Check Superset status
 
 # Pipeline Execution
-make airflow-trigger-init    # Run initialization DAG
+make airflow-trigger-init   # Run initialization DAG
 make airflow-trigger-pipeline # Run main pipeline DAG
 
-# Development
-make airflow-logs            # View Airflow logs
-make dbt-debug               # Debug dbt configuration
-make soda-scan               # Run Soda scans manually
+# Soda Data Management
+make soda-data              # Complete workflow: organize + upload to Superset
+make soda-dump              # Extract Soda Cloud metadata to CSV
+make organize-soda-data     # Organize Soda data in friendly structure (always updates to latest)
+make superset-upload-data   # Upload Soda dump data to Superset (refreshes latest data)
+make superset-clean-restart # Clean restart Superset (removes all data)
+make superset-reset-data    # Reset only Superset data (keep containers)
 
-# Soda Cloud API
-make soda-dump               # Extract Soda Cloud metadata to CSV
+# Development
+make airflow-logs           # View Airflow logs
+make superset-logs          # View Superset logs
+make dbt-debug              # Debug dbt configuration
+make soda-scan              # Run Soda scans manually
 ```
 
 ## 📋 Data Quality Checks by Layer
@@ -250,15 +506,91 @@ make soda-dump               # Extract Soda Cloud metadata to CSV
 ## 🚨 Troubleshooting
 
 ### Common Issues
+
+#### **Soda Cloud Data Extraction**
+1. **API Credentials**: Verify `SODA_CLOUD_API_KEY_ID` and `SODA_CLOUD_API_KEY_SECRET` in `.env`
+2. **API Host**: Check `SODA_CLOUD_HOST` is correct (US: `https://cloud.us.soda.io`, EU: `https://cloud.soda.io`)
+3. **Network**: Ensure internet connectivity to Soda Cloud
+4. **Rate Limits**: If getting rate limit errors, the script includes built-in delays
+
+#### **Data Organization & Upload**
+1. **Missing Data**: Run `make soda-dump` first to extract data from Soda Cloud
+2. **Upload Errors**: Check Superset container is running with `make superset-status`
+3. **Database Connection**: Verify Superset database is healthy
+4. **File Permissions**: Ensure `superset/data/` directory is writable
+
+#### **General Issues**
 1. **Snowflake Connection**: Verify credentials in `.env`
-2. **Soda Cloud**: Ensure API keys are configured
-3. **Docker**: Check container logs with `make airflow-logs`
-4. **dbt**: Validate profiles with `make dbt-debug`
+2. **Docker**: Check container logs with `make airflow-logs` or `make superset-logs`
+3. **dbt**: Validate profiles with `make dbt-debug`
 
 ### Log Locations
-- Airflow logs: `docker/airflow-logs/`
+- Airflow logs: `airflow/airflow-logs/`
 - dbt logs: Available in Airflow UI
 - Soda logs: Integrated with Airflow task logs
+- Superset logs: `make superset-logs`
+
+## 🎯 Complete Workflow Examples
+
+### **Daily Data Quality Workflow**
+```bash
+# 1. Start all services
+make all-up
+
+# 2. Run data quality pipeline
+make airflow-trigger-pipeline
+
+# 3. Extract and visualize Soda Cloud data
+make soda-data
+
+# 4. Access dashboards
+# - Airflow: http://localhost:8080
+# - Superset: http://localhost:8089
+```
+
+### **Fresh Start Workflow**
+```bash
+# 1. Clean restart everything
+make superset-clean-restart
+make airflow-down && make airflow-up
+
+# 2. Initialize data
+make airflow-trigger-init
+
+# 3. Run pipeline
+make airflow-trigger-pipeline
+
+# 4. Extract and visualize data
+make soda-data
+```
+
+### **Data Update Workflow**
+```bash
+# 1. Extract fresh data from Soda Cloud
+make soda-dump
+
+# 2. Organize and upload to Superset
+make soda-data
+
+# 3. Check results in Superset UI
+```
+
+### **Development Workflow**
+```bash
+# 1. Start services
+make all-up
+
+# 2. Check status
+make airflow-status
+make superset-status
+
+# 3. View logs if needed
+make airflow-logs
+make superset-logs
+
+# 4. Debug if needed
+make dbt-debug
+```
 
 ## 📚 Documentation
 

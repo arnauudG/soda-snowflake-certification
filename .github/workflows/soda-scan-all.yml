@@ -57,12 +57,23 @@ jobs:
         run: |
           code="${SCAN_EXIT_CODE:-}"
           echo "RAW_SCN_EXIT_CODE=${code}"
-          if [[ -z "$code" || "$code" -eq 1 ]]; then
+          echo "Step outcome: ${{ steps.soda_raw.outcome }}"
+          if [[ -z "$code" ]]; then
+            echo "Raw: SCAN_EXIT_CODE not set, checking step outcome..."
+            if [[ "${{ steps.soda_raw.outcome }}" == "failure" ]]; then
+              echo "Raw: step failed → failing job."
+              exit 1
+            else
+              echo "Raw: step succeeded → keep green."
+              exit 0
+            fi
+          elif [[ "$code" -eq 1 ]]; then
             echo "Raw: execution/config error → failing job."
             exit 1
+          else
+            echo "Raw: checks executed (exit ${code}) → keep green."
+            exit 0
           fi
-          echo "Raw: checks executed (exit ${code}) → keep green."
-          exit 0
       - name: Upload scan results artifact (raw)
         if: always()
         uses: actions/upload-artifact@v4
@@ -127,12 +138,23 @@ jobs:
         run: |
           code="${SCAN_EXIT_CODE:-}"
           echo "STAGING_SCN_EXIT_CODE=${code}"
-          if [[ -z "$code" || "$code" -eq 1 ]]; then
+          echo "Step outcome: ${{ steps.soda_staging.outcome }}"
+          if [[ -z "$code" ]]; then
+            echo "Staging: SCAN_EXIT_CODE not set, checking step outcome..."
+            if [[ "${{ steps.soda_staging.outcome }}" == "failure" ]]; then
+              echo "Staging: step failed → failing job."
+              exit 1
+            else
+              echo "Staging: step succeeded → keep green."
+              exit 0
+            fi
+          elif [[ "$code" -eq 1 ]]; then
             echo "Staging: execution/config error → failing job."
             exit 1
+          else
+            echo "Staging: checks executed (exit ${code}) → keep green."
+            exit 0
           fi
-          echo "Staging: checks executed (exit ${code}) → keep green."
-          exit 0
       - name: Upload scan results artifact (staging)
         if: always()
         uses: actions/upload-artifact@v4
@@ -197,12 +219,23 @@ jobs:
         run: |
           code="${SCAN_EXIT_CODE:-}"
           echo "MART_SCN_EXIT_CODE=${code}"
-          if [[ -z "$code" || "$code" -eq 1 ]]; then
+          echo "Step outcome: ${{ steps.soda_mart.outcome }}"
+          if [[ -z "$code" ]]; then
+            echo "Mart: SCAN_EXIT_CODE not set, checking step outcome..."
+            if [[ "${{ steps.soda_mart.outcome }}" == "failure" ]]; then
+              echo "Mart: step failed → failing job."
+              exit 1
+            else
+              echo "Mart: step succeeded → keep green."
+              exit 0
+            fi
+          elif [[ "$code" -eq 1 ]]; then
             echo "Mart: execution/config error → failing job."
             exit 1
+          else
+            echo "Mart: checks executed (exit ${code}) → keep green."
+            exit 0
           fi
-          echo "Mart: checks executed (exit ${code}) → keep green."
-          exit 0
       - name: Upload scan results artifact (mart)
         if: always()
         uses: actions/upload-artifact@v4
@@ -267,12 +300,23 @@ jobs:
         run: |
           code="${SCAN_EXIT_CODE:-}"
           echo "QUALITY_SCN_EXIT_CODE=${code}"
-          if [[ -z "$code" || "$code" -eq 1 ]]; then
+          echo "Step outcome: ${{ steps.soda_quality.outcome }}"
+          if [[ -z "$code" ]]; then
+            echo "Quality: SCAN_EXIT_CODE not set, checking step outcome..."
+            if [[ "${{ steps.soda_quality.outcome }}" == "failure" ]]; then
+              echo "Quality: step failed → failing job."
+              exit 1
+            else
+              echo "Quality: step succeeded → keep green."
+              exit 0
+            fi
+          elif [[ "$code" -eq 1 ]]; then
             echo "Quality: execution/config error → failing job."
             exit 1
+          else
+            echo "Quality: checks executed (exit ${code}) → keep green."
+            exit 0
           fi
-          echo "Quality: checks executed (exit ${code}) → keep green."
-          exit 0
       - name: Upload scan results artifact (quality)
         if: always()
         uses: actions/upload-artifact@v4

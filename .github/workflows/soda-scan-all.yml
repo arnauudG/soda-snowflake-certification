@@ -23,29 +23,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Debug environment variables
-        run: |
-          echo "Checking environment variables..."
-          echo "SNOWFLAKE_ACCOUNT: ${SNOWFLAKE_ACCOUNT:+SET}"
-          echo "SNOWFLAKE_USER: ${SNOWFLAKE_USER:+SET}"
-          echo "SNOWFLAKE_PASSWORD: ${SNOWFLAKE_PASSWORD:+SET}"
-          echo "SNOWFLAKE_ROLE: ${SNOWFLAKE_ROLE:+SET}"
-          echo "SNOWFLAKE_WAREHOUSE: ${SNOWFLAKE_WAREHOUSE:+SET}"
-          echo "SNOWFLAKE_DATABASE: ${SNOWFLAKE_DATABASE:+SET}"
-          echo "SODA_CLOUD_API_KEY_ID: ${SODA_CLOUD_API_KEY_ID:+SET}"
-          echo "SODA_CLOUD_API_KEY_SECRET: ${SODA_CLOUD_API_KEY_SECRET:+SET}"
-          echo "SODA_CLOUD_HOST: ${SODA_CLOUD_HOST:+SET}"
-        env:
-          SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
-          SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
-          SNOWFLAKE_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}
-          SNOWFLAKE_ROLE: ${{ secrets.SNOWFLAKE_ROLE }}
-          SNOWFLAKE_WAREHOUSE: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
-          SNOWFLAKE_DATABASE: ${{ secrets.SNOWFLAKE_DATABASE }}
-          SODA_CLOUD_API_KEY_ID: ${{ secrets.SODA_CLOUD_API_KEY_ID }}
-          SODA_CLOUD_API_KEY_SECRET: ${{ secrets.SODA_CLOUD_API_KEY_SECRET }}
-          SODA_CLOUD_HOST: ${{ secrets.SODA_CLOUD_HOST }}
-
       - name: Soda Library Action (raw)
         id: soda_raw
         uses: sodadata/soda-github-action@v1.0.2
@@ -80,23 +57,12 @@ jobs:
         run: |
           code="${SCAN_EXIT_CODE:-}"
           echo "RAW_SCN_EXIT_CODE=${code}"
-          echo "Step outcome: ${{ steps.soda_raw.outcome }}"
-          if [[ -z "$code" ]]; then
-            echo "Raw: SCAN_EXIT_CODE not set, checking step outcome..."
-            if [[ "${{ steps.soda_raw.outcome }}" == "failure" ]]; then
-              echo "Raw: step failed → failing job."
-              exit 1
-            else
-              echo "Raw: step succeeded → keep green."
-              exit 0
-            fi
-          elif [[ "$code" -eq 1 ]]; then
+          if [[ -z "$code" || "$code" -eq 1 ]]; then
             echo "Raw: execution/config error → failing job."
             exit 1
-          else
-            echo "Raw: checks executed (exit ${code}) → keep green."
-            exit 0
           fi
+          echo "Raw: checks executed (exit ${code}) → keep green."
+          exit 0
       - name: Upload scan results artifact (raw)
         if: always()
         uses: actions/upload-artifact@v4
@@ -161,23 +127,12 @@ jobs:
         run: |
           code="${SCAN_EXIT_CODE:-}"
           echo "STAGING_SCN_EXIT_CODE=${code}"
-          echo "Step outcome: ${{ steps.soda_staging.outcome }}"
-          if [[ -z "$code" ]]; then
-            echo "Staging: SCAN_EXIT_CODE not set, checking step outcome..."
-            if [[ "${{ steps.soda_staging.outcome }}" == "failure" ]]; then
-              echo "Staging: step failed → failing job."
-              exit 1
-            else
-              echo "Staging: step succeeded → keep green."
-              exit 0
-            fi
-          elif [[ "$code" -eq 1 ]]; then
+          if [[ -z "$code" || "$code" -eq 1 ]]; then
             echo "Staging: execution/config error → failing job."
             exit 1
-          else
-            echo "Staging: checks executed (exit ${code}) → keep green."
-            exit 0
           fi
+          echo "Staging: checks executed (exit ${code}) → keep green."
+          exit 0
       - name: Upload scan results artifact (staging)
         if: always()
         uses: actions/upload-artifact@v4
@@ -242,23 +197,12 @@ jobs:
         run: |
           code="${SCAN_EXIT_CODE:-}"
           echo "MART_SCN_EXIT_CODE=${code}"
-          echo "Step outcome: ${{ steps.soda_mart.outcome }}"
-          if [[ -z "$code" ]]; then
-            echo "Mart: SCAN_EXIT_CODE not set, checking step outcome..."
-            if [[ "${{ steps.soda_mart.outcome }}" == "failure" ]]; then
-              echo "Mart: step failed → failing job."
-              exit 1
-            else
-              echo "Mart: step succeeded → keep green."
-              exit 0
-            fi
-          elif [[ "$code" -eq 1 ]]; then
+          if [[ -z "$code" || "$code" -eq 1 ]]; then
             echo "Mart: execution/config error → failing job."
             exit 1
-          else
-            echo "Mart: checks executed (exit ${code}) → keep green."
-            exit 0
           fi
+          echo "Mart: checks executed (exit ${code}) → keep green."
+          exit 0
       - name: Upload scan results artifact (mart)
         if: always()
         uses: actions/upload-artifact@v4
@@ -323,23 +267,12 @@ jobs:
         run: |
           code="${SCAN_EXIT_CODE:-}"
           echo "QUALITY_SCN_EXIT_CODE=${code}"
-          echo "Step outcome: ${{ steps.soda_quality.outcome }}"
-          if [[ -z "$code" ]]; then
-            echo "Quality: SCAN_EXIT_CODE not set, checking step outcome..."
-            if [[ "${{ steps.soda_quality.outcome }}" == "failure" ]]; then
-              echo "Quality: step failed → failing job."
-              exit 1
-            else
-              echo "Quality: step succeeded → keep green."
-              exit 0
-            fi
-          elif [[ "$code" -eq 1 ]]; then
+          if [[ -z "$code" || "$code" -eq 1 ]]; then
             echo "Quality: execution/config error → failing job."
             exit 1
-          else
-            echo "Quality: checks executed (exit ${code}) → keep green."
-            exit 0
           fi
+          echo "Quality: checks executed (exit ${code}) → keep green."
+          exit 0
       - name: Upload scan results artifact (quality)
         if: always()
         uses: actions/upload-artifact@v4

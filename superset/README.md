@@ -12,11 +12,13 @@ Apache Superset provides powerful data visualization capabilities for your data 
 ```bash
 make superset-up
 ```
+**Note**: Environment variables are automatically loaded and validated before starting Superset.
 
 ### Start All Services (Airflow + Superset)
 ```bash
 make all-up
 ```
+**Note**: Environment variables are automatically loaded and validated before starting all services.
 
 ### Access Superset UI
 - URL: http://localhost:8089
@@ -33,11 +35,25 @@ make all-up
 
 ## Configuration
 
+### Environment Variables
+Superset automatically loads and validates environment variables when started with `make superset-up`. The following variables are required:
+
+**Required Variables:**
+- `SNOWFLAKE_ACCOUNT`, `SNOWFLAKE_USER`, `SNOWFLAKE_PASSWORD`
+- `SNOWFLAKE_WAREHOUSE`, `SNOWFLAKE_DATABASE`, `SNOWFLAKE_SCHEMA`
+- `SODA_CLOUD_API_KEY_ID`, `SODA_CLOUD_API_KEY_SECRET`
+
+**Optional Variables:**
+- `SODA_CLOUD_HOST`, `SODA_CLOUD_REGION`
+- `SODA_AGENT_API_KEY_ID`, `SODA_AGENT_API_KEY_SECRET`
+
+For complete setup instructions, see the main project README.
+
 ### Database Connection
 Superset uses its own PostgreSQL database. The Soda data is automatically uploaded to the following tables:
 
-- **soda.checks_latest** - Latest check results from Soda Cloud
-- **soda.dataset_latest** - Latest dataset information from Soda Cloud  
+- **soda.datasets_latest** - Latest dataset information from Soda Cloud
+- **soda.checks_latest** - Latest check results from Soda Cloud  
 - **soda.analysis_summary** - Analysis summary data
 
 To connect to additional data sources:
@@ -45,6 +61,15 @@ To connect to additional data sources:
 1. Access Superset UI at http://localhost:8089
 2. Go to Settings > Database Connections
 3. Add your connections (e.g., Snowflake, PostgreSQL, etc.)
+
+### Data Persistence
+Your Superset dashboards, charts, and configurations are automatically preserved using Docker volumes:
+
+- **`superset-data`** - Preserves dashboards, charts, datasets, and user configurations
+- **`superset-postgres-data`** - Preserves database data and metadata
+- **`superset-logs`** - Preserves application logs
+
+**Your work is automatically saved** - no need to recreate dashboards after restarts!
 
 ### Data Quality Dashboards
 
@@ -68,6 +93,13 @@ Superset can visualize data from:
 ### Superset Won't Start
 ```bash
 make superset-reset
+```
+
+### Database Schema Issues (Duplicate Tables)
+If you see errors like "column does not exist" or duplicate tables:
+```bash
+make superset-reset-schema  # Reset only the soda schema
+make superset-upload-data  # Re-upload data with correct schema
 ```
 
 ### Check Logs

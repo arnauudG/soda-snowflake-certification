@@ -13,6 +13,8 @@ scripts/
 ├── soda_dump_api.py               # Soda Cloud API data extraction
 ├── run_soda_dump.sh               # Soda Cloud data dump runner
 ├── requirements_dump.txt          # API extraction dependencies
+├── organize_soda_data.py          # Organize Soda data in user-friendly structure
+├── upload_soda_data_docker.py     # Upload Soda data to Superset database
 └── README.md                      # This file
 ```
 
@@ -21,6 +23,35 @@ scripts/
 ### **Automated Metadata Extraction**
 
 The Soda Cloud API integration provides automated extraction of dataset and check metadata for external reporting and dashboard creation.
+
+## 📊 Data Organization & Upload
+
+### **Data Organization Script**
+- **`organize_soda_data.py`**: Organizes raw Soda dump data into a user-friendly structure
+- **Features**: 
+  - Creates organized directory structure (`latest/`, `historical/`, `reports/`, `analysis/`)
+  - Updates `*_latest.csv` files with most recent data
+  - Cleans up temporary files automatically
+  - Generates summary reports
+
+### **Data Upload Script**
+- **`upload_soda_data_docker.py`**: Uploads organized Soda data to Superset PostgreSQL database
+- **Features**:
+  - Creates dedicated `soda` schema in PostgreSQL
+  - Uploads latest data to dedicated tables (`soda.datasets_latest`, `soda.checks_latest`, `soda.analysis_summary`)
+  - Handles historical data upload
+  - Cleans up temporary files after successful upload
+
+### **Usage**
+```bash
+# Complete workflow (recommended)
+make superset-upload-data
+
+# Individual steps
+make soda-dump           # Extract from Soda Cloud
+make organize-soda-data  # Organize data
+make superset-upload-data # Upload to Superset
+```
 
 #### **Features:**
 - ✅ **Dataset Metadata**: Extract table information, health status, and statistics

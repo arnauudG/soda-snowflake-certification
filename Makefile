@@ -29,6 +29,9 @@ pipeline: venv ## Run standard pipeline (via Airflow)
 
 airflow-up: ## Start Airflow services with Docker
 	@echo "🚀 Starting Airflow services..."
+	@echo "📥 Loading environment variables..."
+	@source load_env.sh
+	@echo "🐳 Starting Docker containers..."
 	@cd airflow/docker && docker-compose up -d
 	@echo "⏳ Waiting for services to be ready..."
 	@sleep 30
@@ -42,22 +45,29 @@ airflow-up: ## Start Airflow services with Docker
 
 superset-up: ## Start Superset visualization service (separate setup)
 	@echo "📊 Starting Superset services..."
+	@echo "📥 Loading environment variables..."
+	@source load_env.sh
+	@echo "🐳 Starting Docker containers..."
 	@cd superset && docker-compose up -d
 	@echo "⏳ Waiting for Superset to be ready..."
 	@sleep 45
 	@echo "[OK] Superset started with Docker"
 	@echo "[INFO] Superset UI: http://localhost:8089 (admin/admin)"
 
-all-up: airflow-up superset-up ## Start all services (Airflow + Superset)
+all-up: ## Start all services (Airflow + Superset)
 	@echo "🚀 Starting all services..."
+	@echo "📥 Loading environment variables..."
+	@source load_env.sh
+	@echo "🐳 Starting Airflow containers..."
 	@cd airflow/docker && docker-compose up -d
+	@echo "🐳 Starting Superset containers..."
 	@cd superset && docker-compose up -d
-	@echo "⏳ Waiting for all services to be ready..."
+	@echo "⏳ Waiting for services to be ready..."
 	@sleep 45
 	@echo "▶️  Unpausing all Soda DAGs..."
 	@docker exec soda-airflow-webserver airflow dags unpause soda_initialization || true
 	@docker exec soda-airflow-webserver airflow dags unpause soda_pipeline_run || true
-	@echo "[OK] All services started"
+	@echo "[OK] All services started with Docker"
 	@echo "[INFO] Airflow UI: http://localhost:8080 (admin/admin)"
 	@echo "[INFO] Superset UI: http://localhost:8089 (admin/admin)"
 
@@ -213,7 +223,7 @@ clean-all: clean clean-logs ## Deep clean: artifacts, logs, and cache
 # SODA DATA MANAGEMENT
 # =============================================================================
 
-soda-data: ## Complete Soda data workflow: organize + upload to Superset
+soda-data: ## Legacy: Complete Soda data workflow (use superset-upload-data instead)
 	@echo "🔄 Running complete Soda data workflow..."
 	@echo "1. Organizing data..."
 	@make organize-soda-data
@@ -226,14 +236,16 @@ organize-soda-data: ## Organize Soda dump data in user-friendly structure
 	@python3 scripts/organize_soda_data.py
 	@echo "✅ Data organized successfully!"
 
-superset-upload-data: ## Upload organized Soda data to Superset database
-	@echo "📤 Uploading Soda data to Superset..."
-	@echo "1. Organizing data first..."
+superset-upload-data: ## Complete Soda workflow: dump + organize + upload to Superset
+	@echo "📤 Complete Soda data workflow..."
+	@echo "1. Extracting data from Soda Cloud..."
+	@make soda-dump
+	@echo "2. Organizing data..."
 	@make organize-soda-data
-	@echo "2. Uploading to Superset..."
+	@echo "3. Uploading to Superset..."
 	@cp scripts/upload_soda_data_docker.py superset/data/
 	@cd superset && docker-compose exec superset python /app/soda_data/upload_soda_data_docker.py
-	@echo "✅ Data uploaded to Superset successfully!"
+	@echo "✅ Complete Soda data workflow finished!"
 
 superset-clean-restart: ## Clean restart Superset (removes all data)
 	@echo "🧹 Performing clean Superset restart..."
@@ -247,5 +259,40 @@ superset-reset-data: ## Reset only Superset data (keep containers)
 	@echo "🔄 Resetting Superset data..."
 	@cd superset && docker-compose exec superset-db psql -U superset -d superset -c "DROP SCHEMA IF EXISTS soda CASCADE;"
 	@echo "✅ Superset data reset completed!"
+
+superset-reset-schema: ## Reset only the soda schema (fixes table structure issues)
+	@echo "🔄 Resetting soda schema..."
+	@cd superset && docker-compose exec superset-db psql -U superset -d superset -c "DROP SCHEMA IF EXISTS soda CASCADE;"
+	@echo "✅ Soda schema reset complete"
+
+# Soda Agent Infrastructure Commands
+soda-agent-bootstrap: ## Bootstrap Soda Agent infrastructure (one-time setup)
+	@if [ -z "$(ENV)" ]; then \
+		echo "❌ Error: ENV parameter required. Usage: make soda-agent-bootstrap ENV=dev"; \
+		exit 1; \
+	fi
+	@echo "🏗️  Bootstrapping Soda Agent infrastructure for $(ENV)..."
+	@cd soda/soda-agent && ./bootstrap.sh $(ENV)
+	@echo "✅ Bootstrap completed for $(ENV) environment"
+
+soda-agent-deploy: ## Deploy Soda Agent infrastructure
+	@if [ -z "$(ENV)" ]; then \
+		echo "❌ Error: ENV parameter required. Usage: make soda-agent-deploy ENV=dev"; \
+		exit 1; \
+	fi
+	@echo "🚀 Deploying Soda Agent infrastructure for $(ENV)..."
+	@cd soda/soda-agent && ./deploy.sh $(ENV)
+	@echo "✅ Deployment completed for $(ENV) environment"
+
+soda-agent-destroy: ## Destroy Soda Agent infrastructure
+	@if [ -z "$(ENV)" ]; then \
+		echo "❌ Error: ENV parameter required. Usage: make soda-agent-destroy ENV=dev"; \
+		exit 1; \
+	fi
+	@echo "⚠️  Destroying Soda Agent infrastructure for $(ENV)..."
+	@echo "This will permanently delete all resources. Continue? [y/N]"
+	@read -r confirm && [ "$$confirm" = "y" ] || exit 1
+	@cd soda/soda-agent && ./destroy.sh $(ENV)
+	@echo "✅ Destruction completed for $(ENV) environment"
 
 

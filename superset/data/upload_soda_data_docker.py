@@ -170,8 +170,9 @@ def main():
     
     # Upload latest files to dedicated tables
     latest_files = {
-        "datasets_latest.csv": "soda.checks_latest",
-        "checks_latest.csv": "soda.dataset_latest"
+        "datasets_latest.csv": "soda.datasets_latest",
+        "checks_latest.csv": "soda.checks_latest",
+        "analysis_summary.csv": "soda.analysis_summary"
     }
     
     print("\n📤 Uploading latest data to dedicated tables...")
@@ -185,7 +186,7 @@ def main():
     
     # Upload historical data to general tables
     print("\n📤 Uploading historical data...")
-    historical_files = [f for f in soda_data_dir.glob("*.csv") if "latest" not in f.name]
+    historical_files = [f for f in soda_data_dir.glob("*.csv") if "latest" not in f.name and f.name != "analysis_summary.csv"]
     
     for csv_file in historical_files:
         table_name = f"soda.{csv_file.stem}"
@@ -200,8 +201,9 @@ def main():
     
     print("\n🎉 All Soda dump data uploaded successfully!")
     print("\n📊 Database Tables Created:")
-    print("  - soda.checks_latest    - Latest check results")
-    print("  - soda.dataset_latest    - Latest dataset information")
+    print("  - soda.datasets_latest  - Latest dataset information")
+    print("  - soda.checks_latest     - Latest check results")
+    print("  - soda.analysis_summary  - Analysis summary data")
     print("  - soda.*_historical      - Historical data files")
     print("\nNext steps:")
     print("1. Access Superset UI: http://localhost:8089")

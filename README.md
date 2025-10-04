@@ -56,6 +56,7 @@ Soda Quality Checks    Soda Quality Checks    Soda Quality Checks
 │   ├── soda_dump_api.py             # Soda Cloud API data extraction
 │   ├── run_soda_dump.sh             # Soda Cloud data dump runner
 │   ├── requirements_dump.txt         # API extraction dependencies
+├── load_env.sh                       # Environment variables loader
 │   └── setup/                       # Environment setup
 │       ├── requirements.txt         # Python dependencies
 │       ├── setup_snowflake.py       # Snowflake table creation
@@ -68,6 +69,17 @@ Soda Quality Checks    Soda Quality Checks    Soda Quality Checks
 │   │   ├── quality/                 # Quality check results
 │   │   └── templates/               # Reusable check templates
 │   ├── configuration/               # Soda connection configurations
+│   ├── soda-agent/                  # Soda Agent AWS Infrastructure
+│   │   ├── module/                  # Terraform modules
+│   │   │   ├── helm-soda-agent/     # Soda Agent Helm deployment
+│   │   │   └── ops-ec2-eks-access/ # EKS access configuration
+│   │   ├── env/                     # Environment-specific configurations
+│   │   │   ├── dev/eu-west-1/      # Development environment
+│   │   │   └── prod/eu-west-1/     # Production environment
+│   │   ├── bootstrap.sh             # One-time infrastructure bootstrap
+│   │   ├── deploy.sh               # Infrastructure deployment
+│   │   ├── destroy.sh              # Infrastructure destruction
+│   │   └── README.md               # Infrastructure documentation
 │   └── README.md                    # Soda configuration documentation
 ├── superset/                         # Superset visualization setup
 │   ├── docker-compose.yml           # Superset services with dedicated database
@@ -95,7 +107,34 @@ Soda Quality Checks    Soda Quality Checks    Soda Quality Checks
 - **Soda Cloud account** (required for data extraction and visualization)
 - **Python 3.11+** (for local script execution)
 
-### 🎯 What This Project Does
+### 🏗️ Soda Agent Infrastructure
+
+The project includes infrastructure as code for deploying Soda Agent on AWS using Terraform and Terragrunt:
+
+### Infrastructure Components
+- **VPC with private/public subnets** across 3 AZs
+- **VPC Endpoints** for SSM, ECR, STS, CloudWatch Logs, and S3
+- **EKS Cluster** with managed node groups
+- **Ops Infrastructure** (EC2 instance, security groups, IAM roles)
+- **Soda Agent** deployed via Helm on EKS
+
+### Available Environments
+- **Development** (`dev/eu-west-1/`) - For testing and development
+- **Production** (`prod/eu-west-1/`) - For production workloads
+
+### Infrastructure Commands
+```bash
+# Bootstrap infrastructure (one-time setup)
+make soda-agent-bootstrap ENV=dev
+
+# Deploy infrastructure
+make soda-agent-deploy ENV=dev
+
+# Destroy infrastructure
+make soda-agent-destroy ENV=dev
+```
+
+## 🎯 What This Project Does
 This project demonstrates a complete data quality pipeline with:
 1. **Data Pipeline**: Raw → Staging → Marts (using dbt)
 2. **Quality Monitoring**: Soda Library checks at each layer
@@ -132,6 +171,40 @@ SODA_CLOUD_API_KEY_SECRET=your_api_key_secret
 SODA_CLOUD_ORGANIZATION_ID=your_org_id
 ```
 
+### **🔧 Environment Variables Loader**
+
+The project includes an automated environment variable loader that:
+
+- **Validates all required variables** before starting services
+- **Masks sensitive information** for security
+- **Provides clear feedback** on missing or invalid variables
+- **Automatically loads** when starting Airflow or Superset
+
+#### **Automatic Loading (Recommended)**
+Environment variables are automatically loaded when you run:
+```bash
+make airflow-up      # Loads env vars before starting Airflow
+make superset-up     # Loads env vars before starting Superset  
+make all-up          # Loads env vars before starting all services
+```
+
+#### **Manual Loading**
+You can also manually load environment variables:
+```bash
+# Load environment variables from .env file
+source load_env.sh
+
+# Or make it executable and run directly
+chmod +x load_env.sh
+./load_env.sh
+```
+
+**Features:**
+- ✅ **Automatic validation** - Checks for required variables
+- ✅ **Security** - Hides sensitive values in output
+- ✅ **User-friendly** - Color-coded status messages
+- ✅ **Error handling** - Clear guidance for missing variables
+
 ### 2. Start Services
 ```bash
 # Start all services (Airflow + Superset)
@@ -158,24 +231,27 @@ make airflow-trigger-init
 make airflow-trigger-pipeline
 ```
 
-### 5. Extract Soda Cloud Data
+### 5. Extract and Visualize Soda Cloud Data
 ```bash
-# Extract data from Soda Cloud platform
-make soda-dump
+# Complete workflow: extract + organize + upload to Superset
+make superset-upload-data
 
-# Complete workflow: organize + upload to Superset
-make soda-data
+# Or run individual steps:
+make soda-dump                 # Extract from Soda Cloud
+make organize-soda-data        # Organize data structure
+make superset-upload-data      # Upload to Superset (includes dump + organize)
 ```
 
 ### 6. Visualize Data Quality Results
 ```bash
 # Access Superset UI at http://localhost:8089 (admin/admin)
 # The data is automatically uploaded to PostgreSQL tables:
+# - soda.datasets_latest (latest dataset information)
 # - soda.checks_latest (latest check results)
-# - soda.dataset_latest (latest dataset information)
 # - soda.analysis_summary (analysis summary)
 
 # Create dashboards and visualizations from the uploaded data
+# Your dashboards and charts are automatically preserved!
 ```
 
 ### 7. Complete Workflow Example
@@ -184,8 +260,7 @@ make soda-data
 make all-up                    # Start all services
 make airflow-trigger-init      # Initialize data
 make airflow-trigger-pipeline  # Run quality checks
-make soda-dump                 # Extract Soda Cloud data
-make superset-upload-data      # Organize and upload to Superset
+make superset-upload-data      # Extract + organize + upload to Superset
 # Access Superset at http://localhost:8089
 ```
 
@@ -228,8 +303,7 @@ make airflow-trigger-init
 # Run the complete data quality pipeline
 make airflow-trigger-pipeline
 
-# Extract and visualize Soda Cloud data
-make soda-dump
+# Extract and visualize Soda Cloud data (complete workflow)
 make superset-upload-data
 ```
 
@@ -253,6 +327,13 @@ make superset-status
 2. **Snowflake**: Database with sample data and quality checks
 3. **Soda Cloud**: Quality results uploaded to your organization
 4. **Superset**: Data quality dashboards ready to create
+
+### **Data Persistence**
+Your work is automatically preserved:
+- **Superset Dashboards**: Automatically saved using Docker volumes
+- **Database Data**: PostgreSQL data persisted across restarts
+- **Configuration**: All settings and connections preserved
+- **No Data Loss**: Restart services without losing your work!
 
 ## 🔄 Soda Cloud Data Workflow
 
@@ -281,12 +362,12 @@ Soda Cloud Platform → CSV Files → Organized Data → Superset Database → D
 
 #### 3. **Upload to Superset** (`make superset-upload-data`)
 - Uploads organized data to PostgreSQL database
-- Creates dedicated tables: `soda.checks_latest` and `soda.dataset_latest`
+- Creates dedicated tables: `soda.datasets_latest`, `soda.checks_latest`, and `soda.analysis_summary`
 - Stores historical data in separate tables
 - Refreshes latest tables with new data each time
 - **Automatically cleans up** temporary `soda_dump_output` folder
 
-#### 4. **Complete Workflow** (`make soda-data`)
+#### 4. **Complete Workflow** (`make superset-upload-data`)
 - Combines organize + upload in one command
 - Perfect for regular data updates
 
@@ -305,7 +386,7 @@ SODA_CLOUD_HOST=https://cloud.us.soda.io  # or https://cloud.soda.io for EU
 
 ```bash
 # Complete workflow (recommended)
-make soda-data
+make superset-upload-data
 
 # Individual steps
 make soda-dump           # Extract from Soda Cloud
@@ -315,6 +396,11 @@ make superset-upload-data # Upload to Superset
 # Clean restart options
 make superset-clean-restart  # Complete clean restart
 make superset-reset-data     # Reset only data
+
+# Soda Agent Infrastructure
+make soda-agent-bootstrap ENV=dev  # Bootstrap infrastructure (one-time)
+make soda-agent-deploy ENV=dev     # Deploy infrastructure
+make soda-agent-destroy ENV=dev    # Destroy infrastructure
 ```
 
 ### Data Organization Structure
@@ -455,12 +541,13 @@ make airflow-trigger-init   # Run initialization DAG
 make airflow-trigger-pipeline # Run main pipeline DAG
 
 # Soda Data Management
-make soda-data              # Complete workflow: organize + upload to Superset
+make superset-upload-data   # Complete workflow: extract + organize + upload to Superset
 make soda-dump              # Extract Soda Cloud metadata to CSV
 make organize-soda-data     # Organize Soda data in friendly structure (always updates to latest)
-make superset-upload-data   # Upload Soda dump data to Superset (refreshes latest data)
+make soda-data              # Legacy: organize + upload to Superset
 make superset-clean-restart # Clean restart Superset (removes all data)
 make superset-reset-data    # Reset only Superset data (keep containers)
+make superset-reset-schema  # Reset only soda schema (fixes table structure issues)
 
 # Development
 make airflow-logs           # View Airflow logs
@@ -541,7 +628,7 @@ make all-up
 make airflow-trigger-pipeline
 
 # 3. Extract and visualize Soda Cloud data
-make soda-data
+make superset-upload-data
 
 # 4. Access dashboards
 # - Airflow: http://localhost:8080
@@ -561,7 +648,7 @@ make airflow-trigger-init
 make airflow-trigger-pipeline
 
 # 4. Extract and visualize data
-make soda-data
+make superset-upload-data
 ```
 
 ### **Data Update Workflow**
@@ -570,7 +657,7 @@ make soda-data
 make soda-dump
 
 # 2. Organize and upload to Superset
-make soda-data
+make superset-upload-data
 
 # 3. Check results in Superset UI
 ```

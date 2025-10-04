@@ -36,6 +36,7 @@ services:
       - REDIS_URL=redis://superset-redis:6379/0
     volumes:
       - superset-data:/app/superset_home
+      - superset-logs:/app/superset_logs
       - ./data:/app/soda_data
       - ./superset_config.py:/app/superset_config.py
     ports:
@@ -61,3 +62,4 @@ services:
 volumes:
   superset-postgres-data:
   superset-data:
+  superset-logs:

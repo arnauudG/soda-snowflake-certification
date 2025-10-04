@@ -41,6 +41,8 @@ services:
       - ../../dbt:/opt/airflow/dbt
       - ../../soda:/opt/airflow/soda
       - ../../.env:/opt/airflow/.env
+      - ../../load_env.sh:/opt/airflow/load_env.sh
+      - ./validate_env.sh:/opt/airflow/validate_env.sh
       - ./airflow-logs:/opt/airflow/logs
     ports:
       - "8080:8080"
@@ -93,6 +95,8 @@ services:
       - ../../dbt:/opt/airflow/dbt
       - ../../soda:/opt/airflow/soda
       - ../../.env:/opt/airflow/.env
+      - ../../load_env.sh:/opt/airflow/load_env.sh
+      - ./validate_env.sh:/opt/airflow/validate_env.sh
       - ./airflow-logs:/opt/airflow/logs
     command: scheduler
     healthcheck:
@@ -147,6 +151,8 @@ services:
       - ../../dbt:/opt/airflow/dbt
       - ../../soda:/opt/airflow/soda
       - ../../.env:/opt/airflow/.env
+      - ../../load_env.sh:/opt/airflow/load_env.sh
+      - ./validate_env.sh:/opt/airflow/validate_env.sh
       - ./airflow-logs:/opt/airflow/logs
     command: version
     depends_on:

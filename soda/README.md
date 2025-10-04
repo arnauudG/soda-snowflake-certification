@@ -19,6 +19,33 @@ This directory contains the comprehensive Soda data quality monitoring configura
 - **MARTS Layer**: 2 business-ready tables with strict quality standards
 - **Total Checks**: 50+ data quality checks across all layers
 
+## 🏗️ Soda Agent AWS Infrastructure
+
+The project includes infrastructure as code for deploying Soda Agent on AWS using Terraform and Terragrunt:
+
+### **Infrastructure Components**
+- **VPC with private/public subnets** across 3 AZs
+- **VPC Endpoints** for SSM, ECR, STS, CloudWatch Logs, and S3
+- **EKS Cluster** with managed node groups
+- **Ops Infrastructure** (EC2 instance, security groups, IAM roles)
+- **Soda Agent** deployed via Helm on EKS
+
+### **Available Environments**
+- **Development** (`dev/eu-west-1/`) - For testing and development
+- **Production** (`prod/eu-west-1/`) - For production workloads
+
+### **Infrastructure Commands**
+```bash
+# Bootstrap infrastructure (one-time setup)
+make soda-agent-bootstrap ENV=dev
+
+# Deploy infrastructure
+make soda-agent-deploy ENV=dev
+
+# Destroy infrastructure
+make soda-agent-destroy ENV=dev
+```
+
 ## 📁 Directory Structure
 
 ```
@@ -28,6 +55,13 @@ soda/
 │   ├── configuration_staging.yml  # STAGING layer configuration
 │   ├── configuration_mart.yml     # MART layer configuration
 │   └── configuration_quality.yml  # QUALITY layer configuration
+├── soda-agent/              # Soda Agent AWS Infrastructure
+│   ├── module/              # Terraform modules
+│   ├── env/                 # Environment-specific configurations
+│   ├── bootstrap.sh         # Infrastructure bootstrap
+│   ├── deploy.sh           # Infrastructure deployment
+│   ├── destroy.sh          # Infrastructure destruction
+│   └── README.md           # Infrastructure documentation
 ├── checks/                 # Data quality checks organized by layer
 │   ├── raw/               # RAW layer checks (lenient thresholds)
 │   ├── staging/           # STAGING layer checks (stricter thresholds)

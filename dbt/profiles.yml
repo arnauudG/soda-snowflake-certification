@@ -24,7 +24,7 @@ soda_certification:
       role: "{{ env_var('SNOWFLAKE_ROLE', 'ACCOUNTADMIN') }}"
       database: "SODA_CERTIFICATION"
       warehouse: "SODA_WH"
-      schema: "STAGING"
+      schema: "MART"
       threads: 4
       client_session_keep_alive: False
       query_tag: "dbt_prod"

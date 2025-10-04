@@ -175,6 +175,27 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dbt and dependencies
+        run: |
+          pip install dbt-snowflake
+          pip install -r scripts/setup/requirements.txt
+
+      - name: Run dbt to create mart layer tables
+        run: |
+          cd dbt
+          dbt run --models marts --target prod
+        env:
+          SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+          SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
+          SNOWFLAKE_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}
+          SNOWFLAKE_ROLE: ${{ secrets.SNOWFLAKE_ROLE }}
+          SNOWFLAKE_WAREHOUSE: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
+
       - name: Soda Library Action (mart)
         id: soda_mart
         uses: sodadata/soda-github-action@v1.0.2
@@ -193,7 +214,7 @@ jobs:
           soda_library_version: v1.0.4
           data_source: soda_certification_mart
           configuration: soda/configuration/configuration_mart.yml
-          checks: soda/checks/mart/*.yml
+          checks: soda/checks/marts/*.yml
 
       - name: Persist Soda results (mart)
         if: always()

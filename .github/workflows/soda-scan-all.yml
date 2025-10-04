@@ -40,7 +40,7 @@ jobs:
           SNOWFLAKE_WAREHOUSE: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
           SNOWFLAKE_DATABASE: ${{ secrets.SNOWFLAKE_DATABASE }}
         with:
-          soda_library_version: v1.0.4
+          soda_library_version: v1.0.5
           data_source: soda_certification_raw
           configuration: soda/configuration/configuration_raw.yml
           checks: soda/checks/raw/*.yml
@@ -110,7 +110,7 @@ jobs:
           SNOWFLAKE_WAREHOUSE: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
           SNOWFLAKE_DATABASE: ${{ secrets.SNOWFLAKE_DATABASE }}
         with:
-          soda_library_version: v1.0.4
+          soda_library_version: v1.0.5
           data_source: soda_certification_staging
           configuration: soda/configuration/configuration_staging.yml
           checks: soda/checks/staging/*.yml
@@ -180,7 +180,7 @@ jobs:
           SNOWFLAKE_WAREHOUSE: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
           SNOWFLAKE_DATABASE: ${{ secrets.SNOWFLAKE_DATABASE }}
         with:
-          soda_library_version: v1.0.4
+          soda_library_version: v1.0.5
           data_source: soda_certification_mart
           configuration: soda/configuration/configuration_mart.yml
           checks: soda/checks/mart/*.yml
@@ -250,7 +250,7 @@ jobs:
           SNOWFLAKE_WAREHOUSE: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
           SNOWFLAKE_DATABASE: ${{ secrets.SNOWFLAKE_DATABASE }}
         with:
-          soda_library_version: v1.0.4
+          soda_library_version: v1.0.5
           data_source: soda_certification_quality
           configuration: soda/configuration/configuration_quality.yml
           checks: soda/checks/quality/*.yml
@@ -295,4 +295,4 @@ jobs:
             ```
             ${SCAN_RESULTS}
             ```
-            _Artifacts_: **soda-scan-results-quality** (JSON + link)test
+            _Artifacts_: **soda-scan-results-quality** (JSON + link)

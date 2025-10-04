@@ -51,32 +51,18 @@ jobs:
         run: |
           printf '%s\n' "${SCAN_RESULTS:-[]}" > soda_scan_results_raw.json
           printf '%s\n' "${SCAN_CLOUD_LINK:-}" > soda_scan_results_raw.link.txt
-
       - name: Decide job outcome (raw) — fail only on execution errors
         if: always()
         shell: bash
         run: |
           code="${SCAN_EXIT_CODE:-}"
           echo "RAW_SCN_EXIT_CODE=${code}"
-          echo "Step outcome: ${{ steps.soda_raw.outcome }}"
-          echo "Step result: ${{ steps.soda_raw.result }}"
-          if [[ -z "$code" ]]; then
-            echo "Raw: SCAN_EXIT_CODE not set, checking step outcome..."
-            if [[ "${{ steps.soda_raw.outcome }}" == "failure" ]]; then
-              echo "Raw: step failed → failing job."
-              exit 1
-            else
-              echo "Raw: step succeeded but no exit code → assuming success."
-              exit 0
-            fi
-          elif [[ "$code" -eq 1 ]]; then
+          if [[ -z "$code" || "$code" -eq 1 ]]; then
             echo "Raw: execution/config error → failing job."
             exit 1
-          else
-            echo "Raw: checks executed (exit ${code}) → keep green."
-            exit 0
           fi
-
+          echo "Raw: checks executed (exit ${code}) → keep green."
+          exit 0
       - name: Upload scan results artifact (raw)
         if: always()
         uses: actions/upload-artifact@v4
@@ -95,14 +81,11 @@ jobs:
           message: |
             **Soda scan (raw) completed**
             **Soda Cloud:** ${SCAN_CLOUD_LINK}
-
             **Summary (Pass/Warn/Fail counts):**
             ```
             ${SCAN_RESULTS}
             ```
-
             _Artifacts_: **soda-scan-results-raw** (JSON + link)
-
   staging:
     runs-on: ubuntu-latest
     name: Run Soda Scan (staging)
@@ -138,7 +121,6 @@ jobs:
         run: |
           printf '%s\n' "${SCAN_RESULTS:-[]}" > soda_scan_results_staging.json
           printf '%s\n' "${SCAN_CLOUD_LINK:-}" > soda_scan_results_staging.link.txt
-
       - name: Decide job outcome (staging) — fail only on execution errors
         if: always()
         shell: bash
@@ -151,7 +133,6 @@ jobs:
           fi
           echo "Staging: checks executed (exit ${code}) → keep green."
           exit 0
-
       - name: Upload scan results artifact (staging)
         if: always()
         uses: actions/upload-artifact@v4
@@ -170,14 +151,11 @@ jobs:
           message: |
             **Soda scan (staging) completed**
             **Soda Cloud:** ${SCAN_CLOUD_LINK}
-
             **Summary (Pass/Warn/Fail counts):**
             ```
             ${SCAN_RESULTS}
             ```
-
             _Artifacts_: **soda-scan-results-staging** (JSON + link)
-
   mart:
     runs-on: ubuntu-latest
     name: Run Soda Scan (mart)
@@ -186,27 +164,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Setup Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.11'
-
-      - name: Install dbt and dependencies
-        run: |
-          pip install dbt-snowflake
-          pip install -r scripts/setup/requirements.txt
-
-      - name: Run dbt to create mart layer tables
-        run: |
-          cd dbt
-          dbt run --models marts --target prod
-        env:
-          SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
-          SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
-          SNOWFLAKE_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}
-          SNOWFLAKE_ROLE: ${{ secrets.SNOWFLAKE_ROLE }}
-          SNOWFLAKE_WAREHOUSE: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
 
       - name: Soda Library Action (mart)
         id: soda_mart
@@ -234,7 +191,6 @@ jobs:
         run: |
           printf '%s\n' "${SCAN_RESULTS:-[]}" > soda_scan_results_mart.json
           printf '%s\n' "${SCAN_CLOUD_LINK:-}" > soda_scan_results_mart.link.txt
-
       - name: Decide job outcome (mart) — fail only on execution errors
         if: always()
         shell: bash
@@ -247,7 +203,6 @@ jobs:
           fi
           echo "Mart: checks executed (exit ${code}) → keep green."
           exit 0
-
       - name: Upload scan results artifact (mart)
         if: always()
         uses: actions/upload-artifact@v4
@@ -266,14 +221,11 @@ jobs:
           message: |
             **Soda scan (mart) completed**
             **Soda Cloud:** ${SCAN_CLOUD_LINK}
-
             **Summary (Pass/Warn/Fail counts):**
             ```
             ${SCAN_RESULTS}
             ```
-
             _Artifacts_: **soda-scan-results-mart** (JSON + link)
-
   quality:
     runs-on: ubuntu-latest
     name: Run Soda Scan (quality/results)
@@ -309,7 +261,6 @@ jobs:
         run: |
           printf '%s\n' "${SCAN_RESULTS:-[]}" > soda_scan_results_quality.json
           printf '%s\n' "${SCAN_CLOUD_LINK:-}" > soda_scan_results_quality.link.txt
-
       - name: Decide job outcome (quality) — fail only on execution errors
         if: always()
         shell: bash
@@ -322,7 +273,6 @@ jobs:
           fi
           echo "Quality: checks executed (exit ${code}) → keep green."
           exit 0
-
       - name: Upload scan results artifact (quality)
         if: always()
         uses: actions/upload-artifact@v4
@@ -341,10 +291,8 @@ jobs:
           message: |
             **Soda scan (quality/results) completed**
             **Soda Cloud:** ${SCAN_CLOUD_LINK}
-
             **Summary (Pass/Warn/Fail counts):**
             ```
             ${SCAN_RESULTS}
             ```
-
             _Artifacts_: **soda-scan-results-quality** (JSON + link)

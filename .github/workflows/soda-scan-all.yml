@@ -228,7 +228,7 @@ jobs:
           soda_library_version: v1.0.4
           data_source: soda_certification_mart
           configuration: soda/configuration/configuration_mart.yml
-          checks: soda/checks/marts/*.yml
+          checks: soda/checks/mart/*.yml
 
       - name: Persist Soda results (mart)
         if: always()

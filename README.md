@@ -47,7 +47,7 @@ Soda Quality Checks    Soda Quality Checks    Soda Quality Checks
 │   ├── models/
 │   │   ├── raw/                      # Raw data sources
 │   │   ├── staging/                  # Staging transformations
-│   │   └── marts/                    # Business-ready models
+│   │   └── mart/                     # Business-ready models
 │   ├── dbt_project.yml              # dbt project configuration
 │   └── profiles.yml                 # dbt profiles for Snowflake
 ├── scripts/                          # Utility scripts
@@ -65,7 +65,7 @@ Soda Quality Checks    Soda Quality Checks    Soda Quality Checks
 │   ├── checks/                      # SodaCL check definitions
 │   │   ├── raw/                     # RAW layer quality checks
 │   │   ├── staging/                 # STAGING layer quality checks
-│   │   ├── marts/                   # MARTS layer quality checks
+│   │   ├── mart/                    # MART layer quality checks
 │   │   ├── quality/                 # Quality check results
 │   │   └── templates/               # Reusable check templates
 │   ├── configuration/               # Soda connection configurations

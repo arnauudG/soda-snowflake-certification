@@ -162,7 +162,7 @@ with DAG(
 
     dbt_run_mart = BashOperator(
         task_id="dbt_run_mart",
-        bash_command=BASH_PREFIX + "cd dbt && dbt run --select marts --target prod --profiles-dir . 2>/dev/null || true",
+        bash_command=BASH_PREFIX + "cd dbt && dbt run --select mart --target prod --profiles-dir . 2>/dev/null || true",
         doc_md="""
         **Execute dbt Mart Models**
         
@@ -174,7 +174,7 @@ with DAG(
 
     soda_scan_mart = BashOperator(
         task_id="soda_scan_mart",
-        bash_command=BASH_PREFIX + "soda scan -d soda_certification_mart -c soda/configuration/configuration_mart.yml -T soda/checks/templates/data_quality_templates.yml soda/checks/marts || true",
+        bash_command=BASH_PREFIX + "soda scan -d soda_certification_mart -c soda/configuration/configuration_mart.yml -T soda/checks/templates/data_quality_templates.yml soda/checks/mart || true",
         doc_md="""
         **MART Layer Quality Checks**
         

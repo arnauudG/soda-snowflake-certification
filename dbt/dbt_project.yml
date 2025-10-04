@@ -29,10 +29,10 @@ models:
       +materialized: table
       +schema: STAGING
       +tags: ["staging", "silver"]
-    marts:
+    mart:
       +materialized: table
       +schema: MART
-      +tags: ["marts", "gold"]
+      +tags: ["mart", "gold"]
 
 # Variables for the project
 vars:

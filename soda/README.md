@@ -65,7 +65,7 @@ soda/
 ├── checks/                 # Data quality checks organized by layer
 │   ├── raw/               # RAW layer checks (lenient thresholds)
 │   ├── staging/           # STAGING layer checks (stricter thresholds)
-│   ├── marts/             # MARTS layer checks (strictest thresholds)
+│   ├── mart/              # MART layer checks (strictest thresholds)
 │   └── quality/           # QUALITY layer checks (monitoring)
 └── README.md              # This file
 ```
@@ -126,7 +126,7 @@ soda scan -d soda_certification_raw -c soda/configuration/configuration_raw.yml 
 soda scan -d soda_certification_staging -c soda/configuration/configuration_staging.yml soda/checks/staging/
 
 # MARTS layer
-soda scan -d soda_certification_mart -c soda/configuration/configuration_mart.yml soda/checks/marts/
+soda scan -d soda_certification_mart -c soda/configuration/configuration_mart.yml soda/checks/mart/
 
 # QUALITY layer
 soda scan -d soda_certification_quality -c soda/configuration/configuration_quality.yml soda/checks/quality/

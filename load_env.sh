@@ -2,6 +2,7 @@
 
 # Soda Certification Project - Environment Variables Loader
 # This script loads environment variables from the .env file in the project root
+# It dynamically loads all variables found in the .env file without predefined requirements
 
 # Get the directory where this script is located
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -38,35 +39,7 @@ echo -e "${BLUE}📥 Loading environment variables...${NC}"
 
 # Counter for loaded variables
 LOADED_COUNT=0
-MISSING_VARS=()
-MISSING_OPTIONAL_VARS=()
-
-# Required variables to check
-REQUIRED_VARS=(
-    "SNOWFLAKE_ACCOUNT"
-    "SNOWFLAKE_USER" 
-    "SNOWFLAKE_PASSWORD"
-    "SNOWFLAKE_WAREHOUSE"
-    "SNOWFLAKE_DATABASE"
-    "SNOWFLAKE_SCHEMA"
-    "SODA_CLOUD_API_KEY_ID"
-    "SODA_CLOUD_API_KEY_SECRET"
-    "SODA_AGENT_API_KEY_ID"
-    "SODA_AGENT_API_KEY_SECRET"
-)
-
-# Optional variables to check (will show warnings if missing but won't fail)
-OPTIONAL_VARS=(
-    "SNOWFLAKE_ROLE"
-    "SODA_CLOUD_HOST"
-    "SODA_CLOUD_REGION"
-    "SODA_LOG_FORMAT"
-    "SODA_LOG_LEVEL"
-    "DBT_PROFILES_DIR"
-    "AWS_ACCESS_KEY_ID"
-    "AWS_SECRET_ACCESS_KEY"
-    "AWS_DEFAULT_REGION"
-)
+EMPTY_VARS=()
 
 # Load variables from .env file
 while IFS= read -r line || [ -n "$line" ]; do
@@ -77,68 +50,74 @@ while IFS= read -r line || [ -n "$line" ]; do
     
     # Check if line contains an assignment
     if [[ "$line" =~ ^[A-Za-z_][A-Za-z0-9_]*= ]]; then
-        # Export the variable
-        export "$line"
-        LOADED_COUNT=$((LOADED_COUNT + 1))
-        
-        # Extract variable name for checking
+        # Extract variable name and value
         VAR_NAME=$(echo "$line" | cut -d'=' -f1)
+        VAR_VALUE=$(echo "$line" | cut -d'=' -f2-)
         
-        # Check if it's a required variable and has a value
-        if [[ " ${REQUIRED_VARS[*]} " =~ " ${VAR_NAME} " ]]; then
-            VAR_VALUE=$(echo "$line" | cut -d'=' -f2-)
-            if [[ -z "$VAR_VALUE" || "$VAR_VALUE" =~ ^[[:space:]]*$ ]]; then
-                MISSING_VARS+=("$VAR_NAME")
-            fi
-        fi
-        
-        # Check if it's an optional variable and has a value
-        if [[ " ${OPTIONAL_VARS[*]} " =~ " ${VAR_NAME} " ]]; then
-            VAR_VALUE=$(echo "$line" | cut -d'=' -f2-)
-            if [[ -z "$VAR_VALUE" || "$VAR_VALUE" =~ ^[[:space:]]*$ ]]; then
-                MISSING_OPTIONAL_VARS+=("$VAR_NAME")
-            fi
+        # Check if variable has a value
+        if [[ -z "$VAR_VALUE" || "$VAR_VALUE" =~ ^[[:space:]]*$ ]]; then
+            EMPTY_VARS+=("$VAR_NAME")
+        else
+            # Export the variable
+            export "$line"
+            LOADED_COUNT=$((LOADED_COUNT + 1))
         fi
     fi
 done < "$ENV_FILE"
 
 echo -e "${GREEN}✅ Loaded $LOADED_COUNT environment variables${NC}"
 
-# Check for missing required variables
-if [ ${#MISSING_VARS[@]} -gt 0 ]; then
-    echo -e "${YELLOW}⚠️  Warning: Some required variables are empty or missing:${NC}"
-    for var in "${MISSING_VARS[@]}"; do
+# Check for empty variables
+if [ ${#EMPTY_VARS[@]} -gt 0 ]; then
+    echo -e "${YELLOW}⚠️  Warning: Some variables in .env file are empty:${NC}"
+    for var in "${EMPTY_VARS[@]}"; do
         echo -e "   ${YELLOW}• $var${NC}"
     done
-    echo -e "${YELLOW}💡 Please update your .env file with actual values${NC}"
-fi
-
-# Check for missing optional variables
-if [ ${#MISSING_OPTIONAL_VARS[@]} -gt 0 ]; then
-    echo -e "${BLUE}ℹ️  Info: Some optional variables are not set (this is OK):${NC}"
-    for var in "${MISSING_OPTIONAL_VARS[@]}"; do
-        echo -e "   ${BLUE}• $var${NC}"
-    done
-    echo -e "${BLUE}💡 These variables have defaults or are optional for certain features${NC}"
+    echo -e "${YELLOW}💡 Please update your .env file with actual values for these variables${NC}"
 fi
 
 # Display loaded variables (without sensitive values)
 echo -e "${BLUE}📋 Environment Variables Summary:${NC}"
 echo "----------------------------------------"
 
-# Show non-sensitive variables (public configuration)
-for var in SNOWFLAKE_WAREHOUSE SNOWFLAKE_DATABASE SNOWFLAKE_SCHEMA SODA_CLOUD_HOST SODA_CLOUD_REGION DBT_PROFILES_DIR AWS_DEFAULT_REGION; do
-    var_value=$(eval echo \$$var)
-    if [ ! -z "$var_value" ]; then
-        echo -e "   ${GREEN}✓${NC} $var = $var_value"
-    fi
-done
+# List of variables that should be shown with their values (non-sensitive)
+NON_SENSITIVE_VARS=(
+    "SNOWFLAKE_WAREHOUSE"
+    "SNOWFLAKE_DATABASE" 
+    "SNOWFLAKE_SCHEMA"
+    "SODA_CLOUD_HOST"
+    "SODA_CLOUD_REGION"
+    "DBT_PROFILES_DIR"
+)
 
-# Show that sensitive variables are loaded (but not their values)
-for var in SNOWFLAKE_ACCOUNT SNOWFLAKE_USER SNOWFLAKE_PASSWORD SNOWFLAKE_ROLE SODA_CLOUD_API_KEY_ID SODA_CLOUD_API_KEY_SECRET SODA_CLOUD_ORGANIZATION_ID SODA_AGENT_API_KEY_ID SODA_AGENT_API_KEY_SECRET AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY; do
+# List of variables that should be hidden (sensitive)
+SENSITIVE_VARS=(
+    "SNOWFLAKE_ACCOUNT"
+    "SNOWFLAKE_USER"
+    "SNOWFLAKE_PASSWORD"
+    "SNOWFLAKE_ROLE"
+    "SODA_CLOUD_API_KEY_ID"
+    "SODA_CLOUD_API_KEY_SECRET"
+    "SODA_AGENT_API_KEY_ID"
+    "SODA_AGENT_API_KEY_SECRET"
+)
+
+# Show all loaded variables
+for var in $(env | grep -E '^[A-Z_]+=' | cut -d'=' -f1 | sort); do
     var_value=$(eval echo \$$var)
     if [ ! -z "$var_value" ]; then
-        echo -e "   ${GREEN}✓${NC} $var = [HIDDEN]"
+        if [[ " ${NON_SENSITIVE_VARS[*]} " =~ " ${var} " ]]; then
+            echo -e "   ${GREEN}✓${NC} $var = $var_value"
+        elif [[ " ${SENSITIVE_VARS[*]} " =~ " ${var} " ]]; then
+            echo -e "   ${GREEN}✓${NC} $var = [HIDDEN]"
+        else
+            # For any other variables, show them but hide if they look sensitive
+            if [[ "$var" =~ (PASSWORD|SECRET|KEY|TOKEN|CREDENTIAL) ]]; then
+                echo -e "   ${GREEN}✓${NC} $var = [HIDDEN]"
+            else
+                echo -e "   ${GREEN}✓${NC} $var = $var_value"
+            fi
+        fi
     fi
 done
 

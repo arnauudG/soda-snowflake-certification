@@ -272,15 +272,50 @@ soda-agent-bootstrap: ## Bootstrap Soda Agent infrastructure (one-time setup)
 		exit 1; \
 	fi
 	@echo "🏗️  Bootstrapping Soda Agent infrastructure for $(ENV)..."
-	@cd soda/soda-agent && ./bootstrap.sh $(ENV)
+	@cd soda/soda-agent && ./bootstrap.sh $(ENV) create
 	@echo "✅ Bootstrap completed for $(ENV) environment"
 
-soda-agent-deploy: ## Deploy Soda Agent infrastructure
+soda-agent-bootstrap-destroy: ## Destroy Soda Agent bootstrap infrastructure (with automatic S3 cleanup)
+	@if [ -z "$(ENV)" ]; then \
+		echo "❌ Error: ENV parameter required. Usage: make soda-agent-bootstrap-destroy ENV=dev"; \
+		exit 1; \
+	fi
+	@echo "⚠️  Destroying Soda Agent bootstrap infrastructure for $(ENV)..."
+	@echo "This will permanently delete bootstrap resources (S3 bucket, DynamoDB table)."
+	@echo "✅ Enhanced with automatic S3 versioning cleanup to prevent hanging issues."
+	@echo "Continue? [y/N]"
+	@read -r confirm && [ "$$confirm" = "y" ] || exit 1
+	@cd soda/soda-agent && ./bootstrap.sh $(ENV) delete
+	@echo "✅ Bootstrap destruction completed for $(ENV) environment"
+
+soda-agent-bootstrap-status: ## Check Soda Agent bootstrap status
+	@if [ -z "$(ENV)" ]; then \
+		echo "❌ Error: ENV parameter required. Usage: make soda-agent-bootstrap-status ENV=dev"; \
+		exit 1; \
+	fi
+	@echo "🔍 Checking Soda Agent bootstrap status for $(ENV)..."
+	@cd soda/soda-agent && ./bootstrap.sh $(ENV) status
+	@echo "✅ Bootstrap status check completed for $(ENV) environment"
+
+soda-agent-bootstrap-unlock: ## Force unlock Soda Agent bootstrap state (if stuck)
+	@if [ -z "$(ENV)" ]; then \
+		echo "❌ Error: ENV parameter required. Usage: make soda-agent-bootstrap-unlock ENV=dev"; \
+		exit 1; \
+	fi
+	@echo "🔓 Force unlocking Soda Agent bootstrap state for $(ENV)..."
+	@echo "⚠️  This should only be used if bootstrap is stuck or locked."
+	@echo "Continue? [y/N]"
+	@read -r confirm && [ "$$confirm" = "y" ] || exit 1
+	@cd soda/soda-agent && ./bootstrap.sh $(ENV) unlock
+	@echo "✅ Bootstrap unlock completed for $(ENV) environment"
+
+soda-agent-deploy: ## Deploy Soda Agent infrastructure (auto-creates bootstrap if missing)
 	@if [ -z "$(ENV)" ]; then \
 		echo "❌ Error: ENV parameter required. Usage: make soda-agent-deploy ENV=dev"; \
 		exit 1; \
 	fi
 	@echo "🚀 Deploying Soda Agent infrastructure for $(ENV)..."
+	@echo "📋 Note: Bootstrap will be created automatically if missing"
 	@cd soda/soda-agent && ./deploy.sh $(ENV)
 	@echo "✅ Deployment completed for $(ENV) environment"
 
@@ -294,5 +329,16 @@ soda-agent-destroy: ## Destroy Soda Agent infrastructure
 	@read -r confirm && [ "$$confirm" = "y" ] || exit 1
 	@cd soda/soda-agent && ./destroy.sh $(ENV)
 	@echo "✅ Destruction completed for $(ENV) environment"
+
+soda-agent-destroy-all: ## Destroy Soda Agent infrastructure AND bootstrap
+	@if [ -z "$(ENV)" ]; then \
+		echo "❌ Error: ENV parameter required. Usage: make soda-agent-destroy-all ENV=dev"; \
+		exit 1; \
+	fi
+	@echo "⚠️  Destroying Soda Agent infrastructure AND bootstrap for $(ENV)..."
+	@echo "This will permanently delete ALL resources including bootstrap. Continue? [y/N]"
+	@read -r confirm && [ "$$confirm" = "y" ] || exit 1
+	@cd soda/soda-agent && ./destroy.sh $(ENV) --destroy-bootstrap
+	@echo "✅ Complete destruction completed for $(ENV) environment"
 
 

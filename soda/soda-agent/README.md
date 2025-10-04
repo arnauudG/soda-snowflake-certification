@@ -61,6 +61,9 @@ make soda-agent-bootstrap ENV=prod   # Bootstrap production environment
 - **Multiple confirmation prompts** to prevent accidents
 - **Automatic disable** after completion
 - **Resource existence checks** before proceeding
+- **Enhanced S3 cleanup** with automatic versioning handling
+- **Fallback mechanisms** for stuck processes
+- **Automatic DynamoDB cleanup** if terragrunt fails
 
 ## **Deployment Order**
 
@@ -184,6 +187,40 @@ export SODA_LOG_FORMAT="raw"   # or "json"
 export SODA_LOG_LEVEL="INFO"   # ERROR, WARN, INFO, DEBUG, TRACE
 ```
 
+## **Enhanced Bootstrap Features**
+
+### **Automatic S3 Versioning Cleanup**
+The bootstrap script now includes enhanced S3 bucket cleanup that automatically handles:
+- **Object versions** - Deletes all historical versions
+- **Delete markers** - Removes all delete markers
+- **Bucket deletion** - Safely deletes the bucket after cleanup
+- **Fallback mechanism** - If terragrunt fails, manual cleanup is triggered
+
+### **Robust Error Handling**
+- **Timeout protection** - 30-minute timeout with fallback
+- **Stuck process detection** - Automatically detects and resolves stuck processes
+- **Manual cleanup** - Automatic fallback to manual S3/DynamoDB cleanup
+- **State lock handling** - Built-in state lock resolution
+
+### **New Bootstrap Commands**
+```bash
+# Enhanced bootstrap destruction (recommended)
+./bootstrap.sh <env> delete
+
+# Force unlock if stuck
+./bootstrap.sh <env> unlock
+
+# Check bootstrap status
+./bootstrap.sh <env> status
+```
+
+### **Enhanced Bootstrap Destruction**
+The bootstrap script now includes enhanced S3 bucket cleanup that automatically handles:
+- **Object versions** - Deletes all historical versions
+- **Delete markers** - Removes all delete markers
+- **Bucket deletion** - Safely deletes the bucket after cleanup
+- **Fallback mechanism** - If terragrunt fails, manual cleanup is triggered
+
 ## **Common Issues & Troubleshooting**
 
 ### **1. Bootstrap Issues**
@@ -192,6 +229,22 @@ export SODA_LOG_LEVEL="INFO"   # ERROR, WARN, INFO, DEBUG, TRACE
 **Solution**: Run bootstrap first:
 ```bash
 ./bootstrap.sh <env>
+```
+
+### **1.1. S3 Bucket Deletion Issues (RESOLVED)**
+**Error**: `BucketNotEmpty` or `The bucket you tried to delete is not empty`
+
+**Solution**: The enhanced bootstrap script now automatically handles this:
+- **Automatic version cleanup** - Deletes all object versions
+- **Delete marker removal** - Removes all delete markers
+- **No manual intervention needed** - Fully automated cleanup
+
+**Previous manual steps (now automated)**:
+```bash
+# These steps are now handled automatically by the enhanced bootstrap script
+aws s3api delete-objects --bucket <bucket> --delete "$(aws s3api list-object-versions --bucket <bucket> --query '{Objects: Versions[].{Key:Key,VersionId:VersionId}}')"
+aws s3api delete-objects --bucket <bucket> --delete "$(aws s3api list-object-versions --bucket <bucket> --query '{Objects: DeleteMarkers[].{Key:Key,VersionId:VersionId}}')"
+aws s3api delete-bucket --bucket <bucket>
 ```
 
 ### **2. Dependency Errors**
@@ -445,6 +498,7 @@ export SODA_IMAGE_APIKEY_SECRET="your-image-secret"
 ---
 
 **Last Updated**: December 2024  
+**Version**: 1.3.0  
 **Terraform Version**: >= 1.6  
 **Terragrunt Version**: >= 0.54  
 **AWS Provider**: >= 5.0, < 6.0

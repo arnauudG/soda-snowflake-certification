@@ -32,6 +32,10 @@ make all-up
 - `make superset-status` - Check Superset status
 - `make superset-logs` - View Superset logs
 - `make superset-reset` - Reset Superset database
+- `make superset-clean-restart` - Clean restart Superset (removes all data)
+- `make superset-reset-data` - Reset only Superset data (keep containers)
+- `make superset-reset-schema` - Reset only soda schema (fixes table structure issues)
+- `make superset-upload-data` - Complete Soda workflow: dump + organize + upload to Superset
 
 ## Configuration
 

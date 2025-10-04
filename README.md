@@ -118,6 +118,15 @@ The project includes infrastructure as code for deploying Soda Agent on AWS usin
 - **Ops Infrastructure** (EC2 instance, security groups, IAM roles)
 - **Soda Agent** deployed via Helm on EKS
 
+### Enhanced Infrastructure Features
+- **Automatic S3 cleanup** - Handles S3 versioning issues automatically
+- **Robust error handling** - Fallback mechanisms for stuck processes
+- **State lock resolution** - Built-in state lock handling
+- **Timeout protection** - 30-minute timeout with automatic cleanup
+- **Manual cleanup fallback** - Automatic fallback to manual S3/DynamoDB cleanup
+- **Enhanced bootstrap destruction** - Automatic S3 versioning cleanup to prevent hanging issues
+- **Force unlock capability** - Built-in state lock resolution for stuck processes
+
 ### Available Environments
 - **Development** (`dev/eu-west-1/`) - For testing and development
 - **Production** (`prod/eu-west-1/`) - For production workloads
@@ -132,6 +141,15 @@ make soda-agent-deploy ENV=dev
 
 # Destroy infrastructure
 make soda-agent-destroy ENV=dev
+
+# Enhanced bootstrap destruction (with automatic S3 cleanup)
+make soda-agent-bootstrap-destroy ENV=dev
+
+# Force unlock if bootstrap is stuck
+make soda-agent-bootstrap-unlock ENV=dev
+
+# Check bootstrap status
+make soda-agent-bootstrap-status ENV=dev
 ```
 
 ## 🎯 What This Project Does
@@ -543,17 +561,33 @@ make airflow-trigger-pipeline # Run main pipeline DAG
 # Soda Data Management
 make superset-upload-data   # Complete workflow: extract + organize + upload to Superset
 make soda-dump              # Extract Soda Cloud metadata to CSV
-make organize-soda-data     # Organize Soda data in friendly structure (always updates to latest)
+make organize-soda-data     # Organize Soda data in user-friendly structure (always updates to latest)
 make soda-data              # Legacy: organize + upload to Superset
 make superset-clean-restart # Clean restart Superset (removes all data)
 make superset-reset-data    # Reset only Superset data (keep containers)
 make superset-reset-schema  # Reset only soda schema (fixes table structure issues)
 
+# Database Management
+make dump-databases         # Dump all databases (Superset, Airflow, Soda data)
+make dump-superset         # Dump Superset database only
+make dump-airflow          # Dump Airflow database only
+make dump-soda             # Dump Soda data only
+
 # Development
 make airflow-logs           # View Airflow logs
 make superset-logs          # View Superset logs
-make dbt-debug              # Debug dbt configuration
-make soda-scan              # Run Soda scans manually
+make airflow-rebuild        # Rebuild Airflow containers
+make clean                  # Clean up artifacts and temporary files
+make clean-logs             # Clean up old Airflow logs
+make clean-all              # Deep clean: artifacts, logs, and cache
+
+# Soda Agent Infrastructure
+make soda-agent-bootstrap ENV=dev        # Bootstrap infrastructure (one-time)
+make soda-agent-deploy ENV=dev           # Deploy infrastructure
+make soda-agent-destroy ENV=dev           # Destroy infrastructure
+make soda-agent-bootstrap-destroy ENV=dev # Destroy bootstrap infrastructure
+make soda-agent-bootstrap-status ENV=dev # Check bootstrap status
+make soda-agent-bootstrap-unlock ENV=dev # Force unlock bootstrap state
 ```
 
 ## 📋 Data Quality Checks by Layer
@@ -713,5 +747,5 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 ---
 
 **Project Status**: ✅ Production Ready  
-**Last Updated**: October 2025  
-**Version**: 1.1.0
+**Last Updated**: December 2024  
+**Version**: 1.2.0

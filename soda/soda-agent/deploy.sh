@@ -1,7 +1,8 @@
 #!/bin/bash
 
 # Soda Infrastructure Deployment Script
-# This script deploys the infrastructure in the correct dependency order
+# This script deploys all infrastructure for an environment
+# Usage: ./deploy.sh <environment>
 
 set -e  # Exit on any error
 
@@ -31,16 +32,13 @@ print_error() {
 
 # Check if environment is provided
 if [ $# -eq 0 ]; then
-    print_error "Usage: $0 <environment> [phase]"
+    print_error "Usage: $0 <environment>"
     print_error "Environment: dev, prod"
-    print_error "Phase: 1-7 (optional, deploy specific phase only)"
-    print_error "Example: $0 prod        # Deploy all phases"
-    print_error "Example: $0 prod 3      # Deploy phase 3 only (Security Group - Ops)"
+    print_error "Example: $0 dev"
     exit 1
 fi
 
 ENVIRONMENT=$1
-PHASE=${2:-0}  # Default to 0 (all phases)
 
 # Validate environment
 if [[ ! "$ENVIRONMENT" =~ ^(dev|prod)$ ]]; then
@@ -49,17 +47,7 @@ if [[ ! "$ENVIRONMENT" =~ ^(dev|prod)$ ]]; then
     exit 1
 fi
 
-# Validate phase
-if [ $PHASE -ne 0 ] && [ $PHASE -lt 1 -o $PHASE -gt 7 ]; then
-    print_error "Invalid phase: $PHASE"
-    print_error "Valid phases: 1-7"
-    exit 1
-fi
-
 print_status "Deploying to environment: $ENVIRONMENT"
-if [ $PHASE -ne 0 ]; then
-    print_status "Deploying phase: $PHASE only"
-fi
 
 # Set base directory
 BASE_DIR="env/$ENVIRONMENT/eu-west-1"
@@ -69,6 +57,52 @@ cd "$BASE_DIR" || {
 }
 
 print_status "Working directory: $(pwd)"
+
+# Get AWS account ID and region
+AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+AWS_REGION="eu-west-1"
+
+# Define resource names
+BUCKET_NAME="datashift-$ENVIRONMENT-tfstate-$AWS_ACCOUNT_ID-$AWS_REGION"
+TABLE_NAME="datashift-$ENVIRONMENT-tf-locks"
+
+# Function to check if bootstrap resources exist
+check_bootstrap_exists() {
+    local bucket_exists=false
+    local table_exists=false
+    
+    # Check S3 bucket
+    if aws s3api head-bucket --bucket "$BUCKET_NAME" 2>/dev/null; then
+        bucket_exists=true
+    fi
+    
+    # Check DynamoDB table
+    if aws dynamodb describe-table --table-name "$TABLE_NAME" --region "$AWS_REGION" 2>/dev/null; then
+        table_exists=true
+    fi
+    
+    if [[ "$bucket_exists" == true && "$table_exists" == true ]]; then
+        return 0  # Bootstrap exists
+    else
+        return 1  # Bootstrap does not exist
+    fi
+}
+
+# Function to handle state locks
+handle_state_lock() {
+    local module_path=$1
+    local module_name=$2
+    
+    print_warning "State lock detected for $module_name. Attempting to force unlock..."
+    if timeout 60 terragrunt force-unlock -force "$(terragrunt show-lock-id 2>/dev/null || echo 'unknown')" 2>/dev/null; then
+        print_success "State lock released for $module_name"
+        return 0
+    else
+        print_error "Failed to release state lock for $module_name"
+        print_error "You may need to manually release the lock or wait for it to expire"
+        return 1
+    fi
+}
 
 # Function to deploy a module
 deploy_module() {
@@ -81,82 +115,74 @@ deploy_module() {
         exit 1
     }
     
-    terragrunt apply --auto-approve
-    print_success "$module_name deployed successfully"
+    # Run terragrunt apply with full output
+    if terragrunt apply --auto-approve; then
+        print_success "$module_name deployed successfully"
+    else
+        local exit_code=$?
+        # Check if it's a state lock error
+        if terragrunt apply --auto-approve 2>&1 | grep -q "Error acquiring the state lock"; then
+            print_warning "State lock detected. Attempting to resolve..."
+            if handle_state_lock "$module_path" "$module_name"; then
+                print_status "Retrying deployment after lock release..."
+                if terragrunt apply --auto-approve; then
+                    print_success "$module_name deployed successfully"
+                else
+                    print_error "Failed to deploy $module_name after lock release"
+                    exit 1
+                fi
+            else
+                print_error "Failed to resolve state lock for $module_name"
+                exit 1
+            fi
+        else
+            print_error "Failed to deploy $module_name (exit code: $exit_code)"
+            exit 1
+        fi
+    fi
     
     cd - > /dev/null
 }
 
-# Function to deploy a specific phase
-deploy_phase() {
-    local phase=$1
-    
-    case $phase in
-        1)
-            print_status "Phase 1: Deploying VPC..."
-            deploy_module "network/vpc" "VPC"
-            ;;
-        2)
-            print_status "Phase 2: Deploying VPC Endpoints..."
-            deploy_module "network/vpc-endpoints" "VPC Endpoints"
-            ;;
-        3)
-            print_status "Phase 3: Deploying Ops Infrastructure..."
-            deploy_module "ops/sg-ops" "Security Groups"
-            ;;
-        4)
-            print_status "Phase 4: Deploying EKS Cluster..."
-            deploy_module "eks" "EKS Cluster"
-            ;;
-        5)
-            print_status "Phase 5: Deploying Ops Infrastructure..."
-            deploy_module "ops/ec2-ops" "EC2 Ops Instance"
-            ;;
-        6)
-            print_status "Phase 6: Deploying EKS Access Configuration..."
-            deploy_module "eks/ops-ec2-eks-access" "EKS Access"
-            ;;
-        7)
-            print_status "Phase 7: Deploying Soda Agent..."
-            deploy_module "addons/soda-agent" "Soda Agent"
-            ;;
-        *)
-            print_error "Invalid phase: $phase"
-            exit 1
-            ;;
-    esac
-}
+# Handle interruptions gracefully
+trap 'print_error "Deployment interrupted. Exiting..."; exit 130' INT TERM
 
-# Main deployment logic
-if [ $PHASE -eq 0 ]; then
-    print_status "Deploying all phases in order..."
-    
-    # Phase 1: VPC
-    deploy_phase 1
-    
-    # Phase 2: VPC Endpoints
-    deploy_phase 2
-
-    # Phase 3: Security Group Ops
-    deploy_phase 3
-    
-    # Phase 4: EKS Cluster
-    deploy_phase 4
-    
-    # Phase 5: Ops Infrastructure
-    deploy_phase 5
-    
-    # Phase 6: EKS Access Configuration
-    deploy_phase 6
-    
-    # Phase 7: Soda Agent
-    deploy_phase 7
-    
-    print_success "All phases deployed successfully!"
+# Check if bootstrap exists
+print_status "Checking bootstrap status..."
+if check_bootstrap_exists; then
+    print_success "Bootstrap exists for environment: $ENVIRONMENT"
+    print_status "Proceeding with deployment..."
 else
-    deploy_phase $PHASE
+    print_warning "Bootstrap does not exist for environment: $ENVIRONMENT"
+    print_status "Creating bootstrap first..."
+    
+    # Navigate to soda-agent directory to run bootstrap script
+    cd ../../.. || {
+        print_error "Failed to navigate to soda-agent directory"
+        exit 1
+    }
+    
+    ./bootstrap.sh "$ENVIRONMENT" create
+    
+    # Return to deployment directory
+    cd "$BASE_DIR" || {
+        print_error "Failed to return to deployment directory"
+        exit 1
+    }
+    
+    print_success "Bootstrap created successfully!"
 fi
 
-print_status "Deployment completed successfully!"
+# Deploy all infrastructure using terragrunt run-all
+print_status "Deploying all infrastructure..."
+if terragrunt run-all apply --auto-approve; then
+    print_success "All infrastructure deployed successfully!"
+else
+    exit_code=$?
+    print_error "Failed to deploy infrastructure (exit code: $exit_code)"
+    exit 1
+fi
+
+print_success "Deployment completed successfully!"
 print_status "Environment: $ENVIRONMENT"
 print_status "Current directory: $(pwd)"

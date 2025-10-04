@@ -51,6 +51,12 @@ make superset-upload-data
 make soda-dump           # Extract from Soda Cloud
 make organize-soda-data  # Organize data
 make superset-upload-data # Upload to Superset
+
+# Database Management
+make dump-databases      # Dump all databases (Superset, Airflow, Soda data)
+make dump-superset      # Dump Superset database only
+make dump-airflow       # Dump Airflow database only
+make dump-soda          # Dump Soda data only
 ```
 
 #### **Features:**
@@ -299,5 +305,5 @@ filtered_datasets = datasets_df[datasets_df['datasource_name'].isin(soda_certifi
 
 ---
 
-**Last Updated**: October 2025  
-**Version**: 1.3.0
+**Last Updated**: December 2024  
+**Version**: 1.4.0

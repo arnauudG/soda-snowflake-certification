@@ -1,7 +1,8 @@
 #!/bin/bash
 
 # Soda Infrastructure Destruction Script
-# This script destroys the infrastructure in the reverse dependency order
+# This script destroys all infrastructure for an environment
+# Usage: ./destroy.sh <environment> [--destroy-bootstrap]
 
 set -e  # Exit on any error
 
@@ -31,35 +32,41 @@ print_error() {
 
 # Check if environment is provided
 if [ $# -eq 0 ]; then
-    print_error "Usage: $0 <environment> [phase]"
-    print_error "Environment: dev, prod, gen"
-    print_error "Phase: 1-7 (optional, destroy specific phase only)"
-    print_error "Example: $0 prod        # Destroy all phases"
-    print_error "Example: $0 prod 7      # Destroy phase 7 only (Soda Agent)"
+    print_error "Usage: $0 <environment> [--destroy-bootstrap]"
+    print_error "Environment: dev, prod"
+    print_error "Options:"
+    print_error "  --destroy-bootstrap  - Also destroy bootstrap resources (S3 bucket, DynamoDB table)"
+    print_error "Example: $0 dev"
+    print_error "Example: $0 dev --destroy-bootstrap"
     exit 1
 fi
 
 ENVIRONMENT=$1
-PHASE=${2:-0}  # Default to 0 (all phases)
+DESTROY_BOOTSTRAP=false
+
+# Parse additional arguments
+shift 1
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --destroy-bootstrap)
+            DESTROY_BOOTSTRAP=true
+            shift
+            ;;
+        *)
+            print_error "Unknown option: $1"
+            exit 1
+            ;;
+    esac
+done
 
 # Validate environment
-if [[ ! "$ENVIRONMENT" =~ ^(dev|prod|gen)$ ]]; then
+if [[ ! "$ENVIRONMENT" =~ ^(dev|prod)$ ]]; then
     print_error "Invalid environment: $ENVIRONMENT"
-    print_error "Valid environments: dev, prod, gen"
+    print_error "Valid environments: dev, prod"
     exit 1
 fi
 
-# Validate phase
-if [ $PHASE -ne 0 ] && [ $PHASE -lt 1 -o $PHASE -gt 7 ]; then
-    print_error "Invalid phase: $PHASE"
-    print_error "Valid phases: 1-7"
-    exit 1
-fi
-
-print_status "Destroying infrastructure in environment: $ENVIRONMENT"
-if [ $PHASE -ne 0 ]; then
-    print_status "Destroying phase: $PHASE only"
-fi
+print_status "Destroying environment: $ENVIRONMENT"
 
 # Set base directory
 BASE_DIR="env/$ENVIRONMENT/eu-west-1"
@@ -70,102 +77,100 @@ cd "$BASE_DIR" || {
 
 print_status "Working directory: $(pwd)"
 
-# Function to destroy a module
-destroy_module() {
-    local module_path=$1
-    local module_name=$2
-    
-    print_status "Destroying $module_name..."
-    cd "$module_path" || {
-        print_error "Module directory not found: $module_path"
-        exit 1
-    }
-    
-    terragrunt destroy --auto-approve
-    print_success "$module_name destroyed successfully"
-    
-    cd - > /dev/null
-}
+# Get AWS account ID and region
+AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+AWS_REGION="eu-west-1"
 
-# Function to destroy a specific phase
-destroy_phase() {
-    local phase=$1
+# Define resource names
+BUCKET_NAME="datashift-$ENVIRONMENT-tfstate-$AWS_ACCOUNT_ID-$AWS_REGION"
+TABLE_NAME="datashift-$ENVIRONMENT-tf-locks"
+
+# Function to check if bootstrap resources exist
+check_bootstrap_exists() {
+    local bucket_exists=false
+    local table_exists=false
     
-    case $phase in
-        7)
-            print_status "Phase 7: Destroying Soda Agent..."
-            destroy_module "addons/soda-agent" "Soda Agent"
-            ;;
-        6)
-            print_status "Phase 6: Destroying EKS Access Configuration..."
-            destroy_module "eks/ops-ec2-eks-access" "EKS Access"
-            ;;
-        5)
-            print_status "Phase 5: Destroying Ops Infrastructure..."
-            destroy_module "ops/ec2-ops" "EC2 Ops Instance"
-            ;;
-        4)
-            print_status "Phase 4: Destroying EKS Cluster..."
-            destroy_module "eks" "EKS Cluster"
-            ;;
-
-        3)
-            print_status "Phase 3: Destroying Security Group Ops Infrastructure..."
-            destroy_module "ops/sg-ops" "Security Groups"
-            ;;
-
-        2)
-            print_status "Phase 2: Destroying VPC Endpoints..."
-            destroy_module "network/vpc-endpoints" "VPC Endpoints"
-            ;;
-        1)
-            print_status "Phase 1: Destroying VPC..."
-            destroy_module "network/vpc" "VPC"
-            ;;
-        *)
-            print_error "Invalid phase: $phase"
-            exit 1
-            ;;
-    esac
-}
-
-# Main destruction logic
-if [ $PHASE -eq 0 ]; then
-    print_warning "This will destroy ALL infrastructure in the $ENVIRONMENT environment!"
-    read -p "Are you sure you want to continue? (yes/no): " -r
-    if [[ ! $REPLY =~ ^[Yy][Ee][Ss]$ ]]; then
-        print_status "Destruction cancelled"
-        exit 0
+    # Check S3 bucket
+    if aws s3api head-bucket --bucket "$BUCKET_NAME" 2>/dev/null; then
+        bucket_exists=true
     fi
     
-    print_status "Destroying all phases in reverse order..."
+    # Check DynamoDB table
+    if aws dynamodb describe-table --table-name "$TABLE_NAME" --region "$AWS_REGION" 2>/dev/null; then
+        table_exists=true
+    fi
     
-    # Phase 7: Soda Agent
-    destroy_phase 7
-    
-    # Phase 6: EKS Access Configuration
-    destroy_phase 6
-    
-    # Phase 5: Ops Infrastructure
-    destroy_phase 5
-    
-    # Phase 4: EKS Cluster
-    destroy_phase 4
+    if [[ "$bucket_exists" == true && "$table_exists" == true ]]; then
+        return 0  # Bootstrap exists
+    else
+        return 1  # Bootstrap does not exist
+    fi
+}
 
-    # Phase 3: Security Group Ops
-    destroy_phase 3
-    
-    # Phase 2: VPC Endpoints
-    destroy_phase 2
-    
-    # Phase 1: VPC
-    destroy_phase 1
-    
-    print_success "All phases destroyed successfully!"
-else
-    destroy_phase $PHASE
+# Handle interruptions gracefully
+trap 'print_error "Destruction interrupted. Exiting..."; exit 130' INT TERM
+
+# Main destruction logic
+print_warning "This will destroy ALL infrastructure in the $ENVIRONMENT environment!"
+read -p "Are you sure you want to continue? (yes/no): " -r
+if [[ ! $REPLY =~ ^[Yy][Ee][Ss]$ ]]; then
+    print_status "Destruction cancelled"
+    exit 0
 fi
 
-print_status "Destruction completed successfully!"
+print_status "Destroying all infrastructure using Terragrunt destroy --all..."
+
+# Use terragrunt destroy --all to handle dependencies automatically
+# This is the newer recommended approach instead of run-all destroy
+if terragrunt destroy --all --auto-approve; then
+    print_success "All infrastructure destroyed successfully!"
+else
+    print_error "Failed to destroy infrastructure"
+    exit 1
+fi
+
+# Handle bootstrap destruction if requested
+if [ "$DESTROY_BOOTSTRAP" = true ]; then
+    print_status "Checking bootstrap status..."
+    
+    if check_bootstrap_exists; then
+        print_warning "Bootstrap exists and will be destroyed!"
+        print_warning "This will destroy:"
+        print_warning "  - S3 bucket: $BUCKET_NAME"
+        print_warning "  - DynamoDB table: $TABLE_NAME"
+        print_warning "  - All associated IAM policies and configurations"
+        print_warning "This action is IRREVERSIBLE!"
+        read -p "Are you absolutely sure you want to destroy the bootstrap? Type 'DESTROY_BOOTSTRAP' to confirm: " -r
+
+        if [[ $REPLY =~ ^DESTROY_BOOTSTRAP$ ]]; then
+            print_status "Destroying bootstrap..."
+            
+            # Navigate to soda-agent directory to run bootstrap script
+            cd ../../.. || {
+                print_error "Failed to navigate to soda-agent directory"
+                exit 1
+            }
+            
+            ./bootstrap.sh "$ENVIRONMENT" delete
+            
+            # Return to deployment directory
+            cd "$BASE_DIR" || {
+                print_error "Failed to return to deployment directory"
+                exit 1
+            }
+            
+            print_success "Bootstrap destroyed successfully!"
+        else
+            print_status "Bootstrap destruction cancelled"
+        fi
+    else
+        print_warning "Bootstrap does not exist for this environment!"
+        print_status "Nothing to destroy."
+    fi
+else
+    print_status "Bootstrap destruction not requested. Use --destroy-bootstrap flag to also destroy bootstrap resources."
+fi
+
+print_success "Destruction completed successfully!"
 print_status "Environment: $ENVIRONMENT"
 print_status "Current directory: $(pwd)"

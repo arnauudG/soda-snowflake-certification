@@ -295,4 +295,4 @@ jobs:
             ```
             ${SCAN_RESULTS}
             ```
-            _Artifacts_: **soda-scan-results-quality** (JSON + link)
+            _Artifacts_: **soda-scan-results-quality** (JSON + link)test

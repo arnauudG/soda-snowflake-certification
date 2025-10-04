@@ -188,7 +188,7 @@ jobs:
       - name: Run dbt to create mart layer tables
         run: |
           cd dbt
-          dbt run --models marts --target mart
+          dbt run --models marts --target prod
         env:
           SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
           SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}

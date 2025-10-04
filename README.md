@@ -26,7 +26,7 @@ Soda Quality Checks    Soda Quality Checks    Soda Quality Checks
 - **Orchestration**: Apache Airflow 2.8+
 - **Data Warehouse**: Snowflake
 - **Transformations**: dbt Core 1.10.11
-- **Data Quality**: Soda Library 1.12.24
+- **Data Quality**: Soda Library 1.0.5
 - **Visualization**: Apache Superset
 - **Containerization**: Docker & Docker Compose
 - **Language**: Python 3.11

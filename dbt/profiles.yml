@@ -1,5 +1,5 @@
 soda_certification:
-  target: prod
+  target: dev
   outputs:
     dev:
       type: snowflake
@@ -24,8 +24,22 @@ soda_certification:
       role: "{{ env_var('SNOWFLAKE_ROLE', 'ACCOUNTADMIN') }}"
       database: "SODA_CERTIFICATION"
       warehouse: "SODA_WH"
-      schema: "MART"
+      schema: "STAGING"
       threads: 4
       client_session_keep_alive: False
       query_tag: "dbt_prod"
+      quote_identifiers: true
+    mart:
+      type: snowflake
+      account: "{{ env_var('SNOWFLAKE_ACCOUNT') }}"
+      user: "{{ env_var('SNOWFLAKE_USER') }}"
+      authenticator: snowflake
+      password: "{{ env_var('SNOWFLAKE_PASSWORD') }}"
+      role: "{{ env_var('SNOWFLAKE_ROLE', 'ACCOUNTADMIN') }}"
+      database: "SODA_CERTIFICATION"
+      warehouse: "SODA_WH"
+      schema: "MART"
+      threads: 4
+      client_session_keep_alive: False
+      query_tag: "dbt_mart"
       quote_identifiers: true

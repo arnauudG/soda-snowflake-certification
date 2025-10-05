@@ -22,7 +22,7 @@ scripts/
 
 ### **Automated Metadata Extraction**
 
-The Soda Cloud API integration provides automated extraction of dataset and check metadata for external reporting and dashboard creation.
+The Soda Cloud API integration provides automated extraction of dataset and check metadata for external reporting and dashboard creation. The enhanced environment loader now supports dynamic loading of all variables from your .env file.
 
 ## 📊 Data Organization & Upload
 

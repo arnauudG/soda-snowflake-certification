@@ -12,13 +12,13 @@ Apache Superset provides powerful data visualization capabilities for your data 
 ```bash
 make superset-up
 ```
-**Note**: Environment variables are automatically loaded and validated before starting Superset.
+**Note**: Environment variables are automatically loaded with dynamic validation. The enhanced loader supports any variables in your .env file with intelligent sensitivity detection.
 
 ### Start All Services (Airflow + Superset)
 ```bash
 make all-up
 ```
-**Note**: Environment variables are automatically loaded and validated before starting all services.
+**Note**: Environment variables are automatically loaded with dynamic validation. The enhanced loader supports any variables in your .env file with intelligent sensitivity detection.
 
 ### Access Superset UI
 - URL: http://localhost:8089

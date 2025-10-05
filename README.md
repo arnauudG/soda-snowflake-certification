@@ -119,13 +119,13 @@ The project includes infrastructure as code for deploying Soda Agent on AWS usin
 - **Soda Agent** deployed via Helm on EKS
 
 ### Enhanced Infrastructure Features
-- **Automatic S3 cleanup** - Handles S3 versioning issues automatically
-- **Robust error handling** - Fallback mechanisms for stuck processes
-- **State lock resolution** - Built-in state lock handling
-- **Timeout protection** - 30-minute timeout with automatic cleanup
-- **Manual cleanup fallback** - Automatic fallback to manual S3/DynamoDB cleanup
-- **Enhanced bootstrap destruction** - Automatic S3 versioning cleanup to prevent hanging issues
-- **Force unlock capability** - Built-in state lock resolution for stuck processes
+- **Smart Bootstrap Management** - Automatic detection and creation of bootstrap resources
+- **Flexible Destruction** - Choose to destroy infrastructure only or everything including bootstrap
+- **Status Checking** - Comprehensive bootstrap status reporting with resource details
+- **Automatic Bootstrap Creation** - Deploy script automatically creates bootstrap if missing
+- **Safety Confirmations** - Multiple confirmation prompts for destructive operations
+- **Terragrunt Skip Handling** - Intelligent handling of terragrunt skip parameters
+- **Error Handling** - Robust error handling with clear feedback
 
 ### Available Environments
 - **Development** (`dev/eu-west-1/`) - For testing and development
@@ -136,20 +136,18 @@ The project includes infrastructure as code for deploying Soda Agent on AWS usin
 # Bootstrap infrastructure (one-time setup)
 make soda-agent-bootstrap ENV=dev
 
-# Deploy infrastructure
+# Deploy infrastructure (auto-creates bootstrap if missing)
 make soda-agent-deploy ENV=dev
 
-# Destroy infrastructure
+# Destroy infrastructure only
 make soda-agent-destroy ENV=dev
 
-# Enhanced bootstrap destruction (with automatic S3 cleanup)
-make soda-agent-bootstrap-destroy ENV=dev
+# Destroy infrastructure AND bootstrap
+make soda-agent-destroy-all ENV=dev
 
-# Force unlock if bootstrap is stuck
-make soda-agent-bootstrap-unlock ENV=dev
-
-# Check bootstrap status
-make soda-agent-bootstrap-status ENV=dev
+# Bootstrap management
+make soda-agent-bootstrap-status ENV=dev    # Check status
+make soda-agent-bootstrap-destroy ENV=dev # Destroy bootstrap only
 ```
 
 ## 🎯 What This Project Does
@@ -191,12 +189,13 @@ SODA_CLOUD_ORGANIZATION_ID=your_org_id
 
 ### **🔧 Environment Variables Loader**
 
-The project includes an automated environment variable loader that:
+The project includes an enhanced automated environment variable loader that:
 
-- **Validates all required variables** before starting services
-- **Masks sensitive information** for security
-- **Provides clear feedback** on missing or invalid variables
-- **Automatically loads** when starting Airflow or Superset
+- **Dynamic Loading** - Loads all variables from .env file without predefined requirements
+- **Smart Validation** - Checks for empty values and provides clear feedback
+- **Intelligent Display** - Shows non-sensitive variables with values, hides sensitive ones
+- **Automatic Detection** - Automatically detects and masks sensitive variables by naming patterns
+- **Flexible Configuration** - Works with any variables defined in your .env file
 
 #### **Automatic Loading (Recommended)**
 Environment variables are automatically loaded when you run:

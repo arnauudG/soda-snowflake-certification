@@ -27,28 +27,36 @@ infra/
 └── README.md                       # This file
 ```
 
-## **Bootstrap Process (One-Time Setup)**
+## **Enhanced Bootstrap Management**
 
-**CRITICAL**: Bootstrap must be run ONCE per environment before any other deployment.
+The bootstrap system now provides comprehensive management capabilities with automatic detection and flexible operations.
 
-The bootstrap process creates:
-- **S3 bucket** for Terraform state storage
-- **DynamoDB table** for state locking
-- **IAM policies** and configurations
+### **Bootstrap Features:**
+- **Smart Detection** - Automatically checks if bootstrap exists before operations
+- **Auto-Creation** - Deploy script automatically creates bootstrap if missing
+- **Flexible Destruction** - Choose to destroy infrastructure only or everything including bootstrap
+- **Status Checking** - Comprehensive status reporting with resource details
+- **Safety Confirmations** - Multiple confirmation prompts for destructive operations
 
-### **When to Bootstrap:**
-- **New environment** (dev, prod)
-- **First time setup**
-- **Existing environment** (already has state bucket)
-
-### **Bootstrap Command:**
+### **Bootstrap Commands:**
 ```bash
-# Using Makefile (recommended)
+# Create bootstrap (one-time setup)
 make soda-agent-bootstrap ENV=<environment>
 
-# Or directly
-cd soda/soda-agent
-./bootstrap.sh <environment>
+# Check bootstrap status
+make soda-agent-bootstrap-status ENV=<environment>
+
+# Destroy bootstrap only
+make soda-agent-bootstrap-destroy ENV=<environment>
+
+# Deploy infrastructure (auto-creates bootstrap if missing)
+make soda-agent-deploy ENV=<environment>
+
+# Destroy infrastructure only
+make soda-agent-destroy ENV=<environment>
+
+# Destroy everything including bootstrap
+make soda-agent-destroy-all ENV=<environment>
 
 # Examples:
 make soda-agent-bootstrap ENV=dev    # Bootstrap development environment

@@ -21,7 +21,7 @@ This directory contains the comprehensive Soda data quality monitoring configura
 
 ## 🏗️ Soda Agent AWS Infrastructure
 
-The project includes infrastructure as code for deploying Soda Agent on AWS using Terraform and Terragrunt:
+The project includes enhanced infrastructure as code for deploying Soda Agent on AWS using Terraform and Terragrunt:
 
 ### **Infrastructure Components**
 - **VPC with private/public subnets** across 3 AZs
@@ -29,6 +29,13 @@ The project includes infrastructure as code for deploying Soda Agent on AWS usin
 - **EKS Cluster** with managed node groups
 - **Ops Infrastructure** (EC2 instance, security groups, IAM roles)
 - **Soda Agent** deployed via Helm on EKS
+
+### **Enhanced Bootstrap Management**
+- **Smart Detection** - Automatically checks if bootstrap exists before operations
+- **Auto-Creation** - Deploy script automatically creates bootstrap if missing
+- **Flexible Destruction** - Choose to destroy infrastructure only or everything including bootstrap
+- **Status Checking** - Comprehensive status reporting with resource details
+- **Safety Confirmations** - Multiple confirmation prompts for destructive operations
 
 ### **Available Environments**
 - **Development** (`dev/eu-west-1/`) - For testing and development

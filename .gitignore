@@ -91,3 +91,10 @@ htmlcov/
 .mypy_cache/
 .dmypy.json
 dmypy.json
+
+# Terraform/Terragrunt
+.terraform/
+.terragrunt-cache/
+*.tfstate
+*.tfstate.*
+.terraform.lock.hcl

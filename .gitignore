@@ -97,4 +97,4 @@ dmypy.json
 .terragrunt-cache/
 *.tfstate
 *.tfstate.*
-.terraform.lock.hcl
+# Note: .terraform.lock.hcl files should be committed (they're small and lock provider versions)

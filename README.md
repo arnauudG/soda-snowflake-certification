@@ -106,6 +106,8 @@ Soda Quality Checks    Soda Quality Checks    Soda Quality Checks
 - **Snowflake account** with appropriate permissions
 - **Soda Cloud account** (required for data extraction and visualization)
 - **Python 3.11+** (for local script execution)
+- **AWS CLI** (for Soda Agent infrastructure deployment)
+- **AWS Account** with appropriate permissions for EKS, S3, DynamoDB, and VPC
 
 ### 🏗️ Soda Agent Infrastructure
 
@@ -170,6 +172,21 @@ cp .env.example .env
 # Edit .env with your actual credentials
 ```
 
+#### **AWS Configuration (Required for Soda Agent Infrastructure)**
+```bash
+# Configure AWS CLI with your credentials
+aws configure
+
+# Enter your AWS credentials when prompted:
+# AWS Access Key ID: your_access_key
+# AWS Secret Access Key: your_secret_key
+# Default region name: eu-west-1
+# Default output format: json
+
+# Verify AWS configuration
+aws sts get-caller-identity
+```
+
 **Required Environment Variables:**
 ```bash
 # Snowflake Configuration
@@ -185,6 +202,15 @@ SODA_CLOUD_HOST=https://cloud.soda.io
 SODA_CLOUD_API_KEY_ID=your_api_key_id
 SODA_CLOUD_API_KEY_SECRET=your_api_key_secret
 SODA_CLOUD_ORGANIZATION_ID=your_org_id
+
+# AWS Configuration (for Soda Agent Infrastructure)
+AWS_ACCESS_KEY_ID=your_aws_access_key
+AWS_SECRET_ACCESS_KEY=your_aws_secret_key
+AWS_DEFAULT_REGION=eu-west-1
+
+# Optional: Soda Agent Configuration
+SODA_AGENT_API_KEY_ID=your_soda_agent_key_id
+SODA_AGENT_API_KEY_SECRET=your_soda_agent_key_secret
 ```
 
 ### **🔧 Environment Variables Loader**
@@ -196,6 +222,8 @@ The project includes an enhanced automated environment variable loader that:
 - **Intelligent Display** - Shows non-sensitive variables with values, hides sensitive ones
 - **Automatic Detection** - Automatically detects and masks sensitive variables by naming patterns
 - **Flexible Configuration** - Works with any variables defined in your .env file
+
+**Note**: The environment loader is now fully dynamic and will work with any variables you define in your `.env` file. You can add additional variables as needed, and they will be automatically loaded and validated.
 
 #### **Automatic Loading (Recommended)**
 Environment variables are automatically loaded when you run:

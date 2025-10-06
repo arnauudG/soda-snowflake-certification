@@ -525,6 +525,8 @@ sample datasets:
 ```
 
 ### dbt Configuration
+- **Environment**: Configured for `dev` environment only (Soda agent operational for dev)
+- **Target**: All dbt operations use `--target dev` by default
 - **Quote Identifiers**: `quote_identifiers: true` for case sensitivity
 - **Uppercase Naming**: Consistent uppercase table and column names across all layers
 - **Layer Separation**: Clear separation between RAW, STAGING, and MARTS

@@ -24,14 +24,15 @@ clean-targets:         # directories to be removed by `dbt clean`
 # Full documentation: https://docs.getdbt.com/reference/model-configs
 models:
   soda_certification:
-    # Config indicated by + and applies to all files under models/example/
+    # Staging models - explicitly set to STAGING schema
     staging:
       +materialized: table
-      +schema: STAGING
+      +schema: "STAGING"
       +tags: ["staging", "silver"]
+    # Mart models - explicitly set to MART schema
     mart:
       +materialized: table
-      +schema: MART
+      +schema: "MART"
       +tags: ["mart", "gold"]
 
 # Variables for the project

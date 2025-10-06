@@ -15,17 +15,3 @@ soda_certification:
       client_session_keep_alive: False
       query_tag: "dbt_dev"
       quote_identifiers: true
-    prod:
-      type: snowflake
-      account: "{{ env_var('SNOWFLAKE_ACCOUNT') }}"
-      user: "{{ env_var('SNOWFLAKE_USER') }}"
-      authenticator: snowflake
-      password: "{{ env_var('SNOWFLAKE_PASSWORD') }}"
-      role: "{{ env_var('SNOWFLAKE_ROLE', 'ACCOUNTADMIN') }}"
-      database: "SODA_CERTIFICATION"
-      warehouse: "COMPUTE_WH"
-      schema: "DBT_PROD"
-      threads: 4
-      client_session_keep_alive: False
-      query_tag: "dbt_prod"
-      quote_identifiers: true

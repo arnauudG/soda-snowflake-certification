@@ -124,7 +124,7 @@ with DAG(
 
     dbt_run_staging = BashOperator(
         task_id="dbt_run_staging",
-        bash_command=BASH_PREFIX + "cd dbt && dbt run --select staging --target prod --profiles-dir . 2>/dev/null || true",
+        bash_command=BASH_PREFIX + "cd dbt && dbt run --select staging --target dev --profiles-dir . 2>/dev/null || true",
         doc_md="""
         **Execute dbt Staging Models**
         
@@ -162,7 +162,7 @@ with DAG(
 
     dbt_run_mart = BashOperator(
         task_id="dbt_run_mart",
-        bash_command=BASH_PREFIX + "cd dbt && dbt run --select mart --target prod --profiles-dir . 2>/dev/null || true",
+        bash_command=BASH_PREFIX + "cd dbt && dbt run --select mart --target dev --profiles-dir . 2>/dev/null || true",
         doc_md="""
         **Execute dbt Mart Models**
         
@@ -212,7 +212,7 @@ with DAG(
 
     dbt_test = BashOperator(
         task_id="dbt_test",
-        bash_command=BASH_PREFIX + "cd dbt && dbt test --target prod --profiles-dir . 2>/dev/null || true",
+        bash_command=BASH_PREFIX + "cd dbt && dbt test --target dev --profiles-dir . 2>/dev/null || true",
         doc_md="""
         **Execute dbt Tests**
         

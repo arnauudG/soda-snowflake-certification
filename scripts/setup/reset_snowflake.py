@@ -36,7 +36,7 @@ def connect_snowflake():
     account = _normalize_account(os.getenv("SNOWFLAKE_ACCOUNT"))
     user = os.getenv("SNOWFLAKE_USER")
     password = os.getenv("SNOWFLAKE_PASSWORD")
-    warehouse = os.getenv("SNOWFLAKE_WAREHOUSE", "SODA_WH")
+    warehouse = os.getenv("SNOWFLAKE_WAREHOUSE", "COMPUTE_WH")
     role = os.getenv("SNOWFLAKE_ROLE")
 
     if not all([account, user, password]):

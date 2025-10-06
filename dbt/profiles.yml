@@ -9,7 +9,7 @@ soda_certification:
       password: "{{ env_var('SNOWFLAKE_PASSWORD') }}"
       role: "{{ env_var('SNOWFLAKE_ROLE', 'ACCOUNTADMIN') }}"
       database: "SODA_CERTIFICATION"
-      warehouse: "SODA_WH"
+      warehouse: "COMPUTE_WH"
       schema: "DBT_DEV"
       threads: 4
       client_session_keep_alive: False
@@ -23,7 +23,7 @@ soda_certification:
       password: "{{ env_var('SNOWFLAKE_PASSWORD') }}"
       role: "{{ env_var('SNOWFLAKE_ROLE', 'ACCOUNTADMIN') }}"
       database: "SODA_CERTIFICATION"
-      warehouse: "SODA_WH"
+      warehouse: "COMPUTE_WH"
       schema: "DBT_PROD"
       threads: 4
       client_session_keep_alive: False

@@ -48,7 +48,7 @@ class SnowflakeSetup:
             account  = _normalize_account(os.getenv('SNOWFLAKE_ACCOUNT'))
             user     = os.getenv('SNOWFLAKE_USER')
             password = os.getenv('SNOWFLAKE_PASSWORD')   # <-- PAT here
-            warehouse = os.getenv('SNOWFLAKE_WAREHOUSE', 'SODA_WH')
+            warehouse = os.getenv('SNOWFLAKE_WAREHOUSE', 'COMPUTE_WH')
             database  = os.getenv('SNOWFLAKE_DATABASE')
             schema    = os.getenv('SNOWFLAKE_SCHEMA')
             role      = os.getenv('SNOWFLAKE_ROLE')
@@ -92,7 +92,7 @@ class SnowflakeSetup:
             
             # Create warehouse (if needed)
             """
-            CREATE WAREHOUSE IF NOT EXISTS SODA_WH
+            CREATE WAREHOUSE IF NOT EXISTS COMPUTE_WH
                 WITH WAREHOUSE_SIZE = 'X-SMALL'
                 AUTO_SUSPEND = 60
                 AUTO_RESUME = TRUE

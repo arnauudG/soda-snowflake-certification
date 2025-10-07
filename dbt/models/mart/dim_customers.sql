@@ -1,6 +1,11 @@
 -- Customer dimension table (Gold layer)
 -- Business-ready customer data with enriched attributes
 
+{{ config(
+    materialized='table',
+    transient=false
+) }}
+
 with customers as (
     select * from {{ ref('stg_customers') }}
 ),

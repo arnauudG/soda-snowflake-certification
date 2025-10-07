@@ -1,6 +1,11 @@
 -- Orders fact table (Gold layer)
 -- Business-ready order data with all related dimensions
 
+{{ config(
+    materialized='table',
+    transient=false
+) }}
+
 with orders as (
     select * from {{ ref('stg_orders') }}
 ),

@@ -1,6 +1,14 @@
 -- Staging model for customers (Silver layer)
 -- Cleans and standardizes customer data from raw layer
 -- Optimized for large dataset (10,000+ customers)
+-- 
+-- This table contains cleaned customer data from the raw CUSTOMERS table
+-- with data quality improvements and standardization
+
+{{ config(
+    materialized='table',
+    transient=false
+) }}
 
 with source_data as (
     select * from {{ source('raw', 'CUSTOMERS') }}

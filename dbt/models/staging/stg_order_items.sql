@@ -2,6 +2,11 @@
 -- Cleans and standardizes order item data from raw layer
 -- Optimized for large dataset (50,000+ order items)
 
+{{ config(
+    materialized='table',
+    transient=false
+) }}
+
 with source_data as (
     select * from {{ source('raw', 'ORDER_ITEMS') }}
 ),

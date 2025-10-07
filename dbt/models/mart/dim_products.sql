@@ -3,7 +3,7 @@
 
 {{ config(
     materialized='table',
-    schema='mart'
+    transient=false
 ) }}
 
 SELECT 

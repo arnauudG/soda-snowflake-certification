@@ -10,7 +10,7 @@ soda_certification:
       role: "{{ env_var('SNOWFLAKE_ROLE', 'ACCOUNTADMIN') }}"
       database: "SODA_CERTIFICATION"
       warehouse: "COMPUTE_WH"
-      schema: "DBT_DEV"
+      schema: "PUBLIC"
       threads: 4
       client_session_keep_alive: False
       query_tag: "dbt_dev"

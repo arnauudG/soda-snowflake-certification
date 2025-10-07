@@ -2,6 +2,11 @@
 -- Cleans and standardizes product data from raw layer
 -- Optimized for large dataset (1,000+ products)
 
+{{ config(
+    materialized='table',
+    transient=false
+) }}
+
 with source_data as (
     select * from {{ source('raw', 'PRODUCTS') }}
 ),

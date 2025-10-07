@@ -131,6 +131,7 @@ with DAG(
         - Runs dbt staging models (stg_customers, stg_orders, stg_products, stg_order_items)
         - Transforms raw data into cleaned, standardized format
         - Applies data quality improvements
+        - Creates models in STAGING schema via project config
         """,
     )
 
@@ -169,6 +170,7 @@ with DAG(
         - Runs dbt mart models (dim_customers, fact_orders)
         - Creates business-ready analytics tables
         - Applies business logic and aggregations
+        - Creates models in MART schema via project config
         """,
     )
 
@@ -219,6 +221,7 @@ with DAG(
         - Runs all dbt tests to validate data quality
         - Tests referential integrity, uniqueness, and business rules
         - Ensures data consistency across all layers
+        - Uses dev target for tests (reads from all schemas)
         """,
     )
 

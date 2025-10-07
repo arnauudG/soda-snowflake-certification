@@ -29,11 +29,17 @@ models:
       +materialized: table
       +schema: "STAGING"
       +tags: ["staging", "silver"]
+      +meta:
+        owner: "data-team"
+        layer: "staging"
     # Mart models - explicitly set to MART schema
     mart:
       +materialized: table
       +schema: "MART"
       +tags: ["mart", "gold"]
+      +meta:
+        owner: "data-team"
+        layer: "mart"
 
 # Variables for the project
 vars:
@@ -62,3 +68,7 @@ quoting:
   database: false
   schema: false
   identifier: false
+
+# dbt Lineage Configuration
+# This creates metadata tables in Snowflake for lineage tracking
+# Lineage is automatically created when models are run

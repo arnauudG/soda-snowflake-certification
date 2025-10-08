@@ -531,6 +531,10 @@ sample datasets:
 - **Uppercase Naming**: Consistent uppercase table and column names across all layers
 - **Layer Separation**: Clear separation between RAW, STAGING, and MARTS
 - **Standardized Schema**: All tables use uppercase column names (CUSTOMER_ID, FIRST_NAME, etc.)
+- **Schema Configuration**: Project-level schema configuration with custom schema macro
+  - **Staging models**: Created in `STAGING` schema
+  - **Mart models**: Created in `MART` schema
+  - **Custom Schema Macro**: Prevents schema concatenation issues
 
 ### Smart Data Filtering
 - **Complete Data Access**: Fetches ALL Soda Cloud data for maximum flexibility
@@ -771,10 +775,11 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 ✅ **Documentation**: Complete setup and usage guides  
 ✅ **Uppercase Standardization**: Consistent naming across all layers  
 ✅ **API Integration**: Soda Cloud metadata extraction and reporting  
-✅ **Fresh Reset**: Clean environment with standardized naming  
+✅ **Schema Management**: Clean schema configuration with custom macro  
+✅ **Lineage Support**: dbt lineage configuration for metadata tracking  
 
 ---
 
 **Project Status**: ✅ Production Ready  
 **Last Updated**: December 2024  
-**Version**: 1.2.0
+**Version**: 1.3.0

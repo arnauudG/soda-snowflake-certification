@@ -24,6 +24,8 @@ checks for ORDER_ITEMS:
   # Schema validation
   - schema:
       name: "Order items table schema validation"
+      attributes:
+        dimension: Accuracy
       fail:
         when required column missing: [ORDER_ITEM_ID, ORDER_ID, PRODUCT_ID, QUANTITY, UNIT_PRICE, TOTAL_PRICE, DISCOUNT_PERCENT, CREATED_AT, UPDATED_AT]
         when forbidden column present: []
@@ -40,41 +42,61 @@ checks for ORDER_ITEMS:
   # Row count checks
   - row_count between 40000 and 60000:
       name: "Order items count within expected range"
+      attributes:
+        dimension: Accuracy
   
   # Completeness checks (relaxed for raw data)
   - missing_count(ORDER_ITEM_ID) = 0:
       name: "No missing order item IDs"
+      attributes:
+        dimension: Completeness
   
   - missing_count(ORDER_ID) < 1000:
       name: "Minimal missing order IDs"
+      attributes:
+        dimension: Completeness
   
   - missing_count(PRODUCT_ID) < 500:
       name: "Minimal missing product IDs"
+      attributes:
+        dimension: Completeness
   
   - missing_count(QUANTITY) < 200:
       name: "Minimal missing quantities"
+      attributes:
+        dimension: Completeness
   
   # Uniqueness checks
   - duplicate_count(ORDER_ITEM_ID) = 0:
       name: "Order item IDs are unique"
+      attributes:
+        dimension: Uniqueness
   
   # Validity checks
   - invalid_count(QUANTITY) < 500:
       name: "Invalid quantity values"
       valid min: -10
       valid max: 1000
+      attributes:
+        dimension: Validity
   
   # Range checks
   - min(QUANTITY) >= -10:
       name: "Negative quantities within raw tolerance"
+      attributes:
+        dimension: Accuracy
   
   - max(QUANTITY) <= 1000:
       name: "Maximum quantity within business limits"
+      attributes:
+        dimension: Accuracy
   
   # Failed row samples for detailed analysis
   - failed rows:
       name: "Sample failed order item records for analysis"
       samples limit: 50
+      attributes:
+        dimension: Accuracy
       fail query: |
         SELECT ORDER_ITEM_ID, ORDER_ID, PRODUCT_ID, QUANTITY, UNIT_PRICE
         FROM ORDER_ITEMS

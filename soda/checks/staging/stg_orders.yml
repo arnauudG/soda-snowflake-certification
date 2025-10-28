@@ -36,10 +36,14 @@ checks for STG_ORDERS:
   - row_count between 15000 and 25000:
       name: "Staging order count within expected range"
       samples limit: 3000
+      attributes:
+        dimension: Accuracy
   
   # Schema validation
   - schema:
       name: "Staging order table schema validation"
+      attributes:
+        dimension: Accuracy
       fail:
         when required column missing: [ORDER_ID, CUSTOMER_ID, TOTAL_AMOUNT, ORDER_STATUS, DATA_QUALITY_SCORE]
         when forbidden column present: [DUPLICATE_ORDER_ID, TEST_COLUMN]
@@ -48,47 +52,67 @@ checks for STG_ORDERS:
   - missing_count(ORDER_ID) = 0:
       name: "No missing order IDs in staging"
       samples limit: 3000
+      attributes:
+        dimension: Completeness
   
   - missing_count(TOTAL_AMOUNT) < 1000:
       name: "Total amount completeness in staging"
       samples limit: 3000
+      attributes:
+        dimension: Completeness
   
   # No negative amounts in staging with sampling
   - min(TOTAL_AMOUNT) >= 0:
       name: "No negative amounts in staging"
       samples limit: 3000
+      attributes:
+        dimension: Accuracy
   
   # Data quality score checks with sampling
   - avg(DATA_QUALITY_SCORE) > 85:
       name: "Average data quality score above 85"
       samples limit: 3000
+      attributes:
+        dimension: Accuracy
   
   # Uniqueness checks (stricter than raw) with sampling
   - duplicate_count(ORDER_ID) = 0:
       name: "Order IDs are unique in staging"
       samples limit: 3000
+      attributes:
+        dimension: Uniqueness
   
   # Validity checks (stricter than raw) with sampling
   - min(TOTAL_AMOUNT) > 0:
       name: "All order amounts are positive in staging"
       samples limit: 3000
+      attributes:
+        dimension: Validity
   
   - max(TOTAL_AMOUNT) <= 10000:
       name: "All order amounts are within business range"
       samples limit: 3000
+      attributes:
+        dimension: Accuracy
   
   - invalid_count(ORDER_STATUS) < 1000:
       name: "Most order statuses are valid in staging"
       valid values: ['pending', 'processing', 'shipped', 'delivered', 'cancelled', 'returned']
       samples limit: 3000
+      attributes:
+        dimension: Validity
   
   # Freshness checks
   - freshness(CREATED_AT) < 1d:
       name: "Staging order data is fresh"
+      attributes:
+        dimension: Timeliness
   
   # Failed row samples for detailed analysis
   - failed rows:
       samples limit: 150
+      attributes:
+        dimension: Accuracy
       fail query: |
         SELECT ORDER_ID, CUSTOMER_ID, TOTAL_AMOUNT, ORDER_STATUS, DATA_QUALITY_SCORE
         FROM STG_ORDERS

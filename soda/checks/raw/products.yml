@@ -24,6 +24,8 @@ checks for PRODUCTS:
   # Schema validation
   - schema:
       name: "Product table schema validation"
+      attributes:
+        dimension: Accuracy
       fail:
         when required column missing: [PRODUCT_ID, PRODUCT_NAME, CATEGORY, SUBCATEGORY, PRICE, CURRENCY, DESCRIPTION, BRAND, SKU, WEIGHT, DIMENSIONS, CREATED_AT, UPDATED_AT]
         when forbidden column present: []
@@ -44,47 +46,69 @@ checks for PRODUCTS:
   # Row count checks
   - row_count between 800 and 1200:
       name: "Product count within expected range"
+      attributes:
+        dimension: Accuracy
   
   # Completeness checks (relaxed for raw data)
   - missing_count(PRODUCT_ID) = 0:
       name: "No missing product IDs"
+      attributes:
+        dimension: Completeness
   
   - missing_count(PRODUCT_NAME) < 50:
       name: "Minimal missing product names"
+      attributes:
+        dimension: Completeness
   
   - missing_count(PRICE) < 100:
       name: "Minimal missing prices"
+      attributes:
+        dimension: Completeness
   
   # Uniqueness checks
   - duplicate_count(PRODUCT_ID) = 0:
       name: "Product IDs are unique"
+      attributes:
+        dimension: Uniqueness
   
   # Validity checks
   - invalid_count(PRICE) < 100:
       name: "Invalid price values"
       valid min: -50
       valid max: 10000
+      attributes:
+        dimension: Validity
   
   # Range checks
   - min(PRICE) >= -50:
       name: "Negative prices within raw tolerance"
+      attributes:
+        dimension: Accuracy
   
   - max(PRICE) <= 10000:
       name: "Maximum price within business limits"
+      attributes:
+        dimension: Accuracy
   
   # Additional validity checks for product data
   - invalid_count(CATEGORY) < 50:
       name: "Invalid category values"
       valid values: ['Electronics', 'Clothing', 'Books', 'Home & Garden', 'Sports', 'Toys', 'Health', 'Automotive']
+      attributes:
+        dimension: Validity
   
   - invalid_count(BRAND) < 30:
       name: "Invalid brand values"
       valid regex: '^.{2,50}$'
+      attributes:
+        dimension: Validity
   
   # Failed row samples for detailed analysis
   - failed rows:
       name: "Sample failed product records for analysis"
       samples limit: 50
+      attributes:
+        dimension: Accuracy
       fail query: |
         SELECT PRODUCT_ID, PRODUCT_NAME, PRICE, SKU, WEIGHT
         FROM PRODUCTS

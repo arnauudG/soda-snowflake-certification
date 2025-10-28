@@ -33,10 +33,14 @@ checks for DIM_CUSTOMERS:
   - row_count between 8000 and 12000:
       name: "Mart customer count within expected range"
       samples limit: 2000
+      attributes:
+        dimension: Accuracy
   
   # Schema validation
   - schema:
       name: "Mart customer dimension schema validation"
+      attributes:
+        dimension: Accuracy
       fail:
         when required column missing: [CUSTOMER_ID, FIRST_NAME, LAST_NAME, EMAIL, DATA_QUALITY_SCORE]
         when forbidden column present: [DUPLICATE_ID, TEST_COLUMN]
@@ -45,55 +49,79 @@ checks for DIM_CUSTOMERS:
   - missing_count(CUSTOMER_ID) = 0:
       name: "No missing customer IDs in mart"
       samples limit: 2000
+      attributes:
+        dimension: Completeness
   
   - missing_count(FIRST_NAME) = 0:
       name: "No missing first names in mart"
       samples limit: 2000
+      attributes:
+        dimension: Completeness
   
   - missing_count(LAST_NAME) = 0:
       name: "No missing last names in mart"
       samples limit: 2000
+      attributes:
+        dimension: Completeness
   
   - missing_count(EMAIL) < 1000:
       name: "Most emails present in mart"
       samples limit: 2000
+      attributes:
+        dimension: Completeness
   
   # Uniqueness checks (strict) with sampling
   - duplicate_count(CUSTOMER_ID) = 0:
       name: "Customer IDs are unique in mart"
       samples limit: 2000
+      attributes:
+        dimension: Uniqueness
   
   - duplicate_count(EMAIL) = 0:
       name: "Emails are unique in mart"
       samples limit: 2000
+      attributes:
+        dimension: Uniqueness
   
   # Data quality score (high) with sampling
   - min(DATA_QUALITY_SCORE) > 80:
       name: "All customers have high data quality score"
       samples limit: 2000
+      attributes:
+        dimension: Accuracy
   
   - avg(DATA_QUALITY_SCORE) > 90:
       name: "Average data quality score is high"
       samples limit: 2000
+      attributes:
+        dimension: Accuracy
   
   # Validity checks (strict) with sampling
   - invalid_count(EMAIL) = 0:
       name: "All emails are valid in mart"
       valid regex: '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
       samples limit: 2000
+      attributes:
+        dimension: Validity
   
   - invalid_count(PHONE) = 0:
       name: "All phone numbers are valid in mart"
       valid regex: '^[0-9\-\+\(\)\s]+$'
       samples limit: 2000
+      attributes:
+        dimension: Validity
   
   # Freshness checks
   - freshness(CREATED_AT) < 1d:
       name: "Mart customer data is fresh"
+      attributes:
+        dimension: Timeliness
   
   # Failed row samples for detailed analysis
   - failed rows:
       samples limit: 50
+      attributes:
+        dimension: Accuracy
       fail query: |
         SELECT CUSTOMER_ID, FIRST_NAME, LAST_NAME, EMAIL, PHONE, DATA_QUALITY_SCORE
         FROM DIM_CUSTOMERS

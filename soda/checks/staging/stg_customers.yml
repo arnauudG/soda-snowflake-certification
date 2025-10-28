@@ -29,10 +29,14 @@ checks for STG_CUSTOMERS:
   - row_count between 8000 and 12000:
       name: "Staging customer count within expected range"
       samples limit: 2000
+      attributes:
+        dimension: Accuracy
   
   # Schema validation
   - schema:
       name: "Staging customer table schema validation"
+      attributes:
+        dimension: Accuracy
       fail:
         when required column missing: [CUSTOMER_ID, FIRST_NAME, LAST_NAME, EMAIL, DATA_QUALITY_SCORE]
         when forbidden column present: [DUPLICATE_ID, TEST_COLUMN]
@@ -41,42 +45,60 @@ checks for STG_CUSTOMERS:
   - missing_count(CUSTOMER_ID) = 0:
       name: "No missing customer IDs in staging"
       samples limit: 2000
+      attributes:
+        dimension: Completeness
   
   - missing_count(FIRST_NAME) < 50:
       name: "Minimal missing first names in staging"
       samples limit: 2000
+      attributes:
+        dimension: Completeness
   
   - missing_count(EMAIL) < 1000:
       name: "Email completeness in staging"
       samples limit: 2000
+      attributes:
+        dimension: Completeness
   
   # Data quality score checks with sampling
   - avg(DATA_QUALITY_SCORE) > 80:
       name: "Average data quality score above 80"
       samples limit: 2000
+      attributes:
+        dimension: Accuracy
   
   # Uniqueness checks (stricter than raw) with sampling
   - duplicate_count(CUSTOMER_ID) = 0:
       name: "Customer IDs are unique in staging"
       samples limit: 2000
+      attributes:
+        dimension: Uniqueness
   
   - duplicate_count(EMAIL) < 100:
       name: "Email duplicates reduced in staging"
       samples limit: 2000
+      attributes:
+        dimension: Uniqueness
   
   # Validity checks (stricter than raw) with sampling
   - invalid_count(EMAIL) < 200:
       name: "Invalid email formats reduced in staging"
       valid regex: '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
       samples limit: 2000
+      attributes:
+        dimension: Validity
   
   # Freshness checks
   - freshness(CREATED_AT) < 1d:
       name: "Staging customer data is fresh"
+      attributes:
+        dimension: Timeliness
   
   # Failed row samples for detailed analysis
   - failed rows:
       samples limit: 100
+      attributes:
+        dimension: Accuracy
       fail query: |
         SELECT CUSTOMER_ID, FIRST_NAME, LAST_NAME, EMAIL, PHONE, DATA_QUALITY_SCORE
         FROM STG_CUSTOMERS

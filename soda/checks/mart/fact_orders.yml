@@ -39,10 +39,14 @@ checks for FACT_ORDERS:
   - row_count between 15000 and 25000:
       name: "Mart order count within expected range"
       samples limit: 3000
+      attributes:
+        dimension: Accuracy
   
   # Schema validation
   - schema:
       name: "Mart order fact table schema validation"
+      attributes:
+        dimension: Accuracy
       fail:
         when required column missing: [ORDER_ID, CUSTOMER_ID, ORDER_TOTAL_AMOUNT, ORDER_STATUS]
         when forbidden column present: [DUPLICATE_ORDER_ID, TEST_COLUMN]
@@ -51,28 +55,40 @@ checks for FACT_ORDERS:
   - missing_count(ORDER_ID) = 0:
       name: "No missing order IDs in mart"
       samples limit: 3000
+      attributes:
+        dimension: Completeness
   
   - missing_count(CUSTOMER_ID) = 0:
       name: "No missing customer IDs in mart"
       samples limit: 3000
+      attributes:
+        dimension: Completeness
   
   - missing_count(ORDER_TOTAL_AMOUNT) < 1000:
       name: "Total amounts mostly present in mart"
       samples limit: 3000
+      attributes:
+        dimension: Completeness
   
   # Uniqueness checks (strict) with sampling
   - duplicate_count(ORDER_ID) = 0:
       name: "Order IDs are unique in mart"
       samples limit: 3000
+      attributes:
+        dimension: Uniqueness
   
   # Validity checks (strict) with sampling
   - min(ORDER_TOTAL_AMOUNT) > 0:
       name: "All order amounts are positive in mart"
       samples limit: 3000
+      attributes:
+        dimension: Validity
   
   - max(ORDER_TOTAL_AMOUNT) <= 10000:
       name: "All order amounts are within business range"
       samples limit: 3000
+      attributes:
+        dimension: Accuracy
   
   # Referential integrity check omitted (custom SQL validation can be added later)
 
@@ -80,6 +96,8 @@ checks for FACT_ORDERS:
   - avg(ORDER_TOTAL_AMOUNT) between 40 and 700:
       name: "Average order amount within business range"
       samples limit: 3000
+      attributes:
+        dimension: Accuracy
   
   # Freshness checks
   # Omitted freshness check to avoid failures on synthetic data timestamps

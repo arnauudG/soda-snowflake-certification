@@ -24,6 +24,8 @@ checks for DIM_PRODUCTS:
   # Schema validation
   - schema:
       name: "Product dimension schema validation"
+      attributes:
+        dimension: Accuracy
       fail:
         when required column missing: [PRODUCT_ID, PRODUCT_NAME, CATEGORY, SUBCATEGORY, PRICE, CURRENCY, DESCRIPTION, BRAND, SKU, WEIGHT, DIMENSIONS, CREATED_AT, UPDATED_AT]
         when forbidden column present: []
@@ -44,63 +46,95 @@ checks for DIM_PRODUCTS:
   # Row count checks
   - row_count between 800 and 1200:
       name: "Product dimension count within expected range"
+      attributes:
+        dimension: Accuracy
   
   # Completeness checks (strict for mart layer)
   - missing_count(PRODUCT_ID) = 0:
       name: "No missing product IDs in mart"
+      attributes:
+        dimension: Completeness
   
   - missing_count(PRODUCT_NAME) = 0:
       name: "No missing product names in mart"
+      attributes:
+        dimension: Completeness
   
   - missing_count(PRICE) = 0:
       name: "No missing prices in mart"
+      attributes:
+        dimension: Completeness
   
   - missing_count(CATEGORY) = 0:
       name: "No missing categories in mart"
+      attributes:
+        dimension: Completeness
   
   - missing_count(BRAND) = 0:
       name: "No missing brands in mart"
+      attributes:
+        dimension: Completeness
   
   # Uniqueness checks
   - duplicate_count(PRODUCT_ID) = 0:
       name: "Product IDs are unique in mart"
+      attributes:
+        dimension: Uniqueness
   
   - duplicate_count(SKU) = 0:
       name: "SKUs are unique in mart"
+      attributes:
+        dimension: Uniqueness
   
   # Validity checks (strict for mart layer)
   - invalid_count(PRICE) = 0:
       name: "No invalid prices in mart"
       valid min: 0
       valid max: 10000
+      attributes:
+        dimension: Validity
   
   - invalid_count(CATEGORY) = 0:
       name: "No invalid categories in mart"
       valid values: ['Electronics', 'Clothing', 'Books', 'Home & Garden', 'Sports', 'Toys', 'Health', 'Automotive']
+      attributes:
+        dimension: Validity
   
   - invalid_count(BRAND) = 0:
       name: "No invalid brands in mart"
       valid regex: '^.{2,50}$'
+      attributes:
+        dimension: Validity
   
   # Range checks (strict for mart layer)
   - min(PRICE) >= 0:
       name: "All prices are non-negative in mart"
+      attributes:
+        dimension: Accuracy
   
   - max(PRICE) <= 10000:
       name: "All prices are within business limits in mart"
+      attributes:
+        dimension: Accuracy
   
   # Data quality score checks
   - row_count > 0:
       name: "Product dimension has data"
+      attributes:
+        dimension: Accuracy
   
   # Freshness checks
   - freshness(CREATED_AT) < 30:
       name: "Product dimension data is fresh"
+      attributes:
+        dimension: Timeliness
   
   # Failed row samples for detailed analysis
   - failed rows:
       name: "Sample failed product dimension records for analysis"
       samples limit: 50
+      attributes:
+        dimension: Accuracy
       fail query: |
         SELECT PRODUCT_ID, PRODUCT_NAME, PRICE, CATEGORY, BRAND, SKU
         FROM DIM_PRODUCTS

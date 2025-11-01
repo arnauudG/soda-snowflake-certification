@@ -35,7 +35,7 @@ class SodaCloudDump:
         self.soda_apikey_secret = os.getenv('SODA_CLOUD_API_KEY_SECRET')
         
         # Output directory for CSV files
-        self.output_dir = 'soda_dump_output'
+        self.output_dir = 'superset/data'
         
         # Initialize data containers
         self.datasets = []

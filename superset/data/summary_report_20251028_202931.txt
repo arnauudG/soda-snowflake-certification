@@ -1,16 +1,16 @@
 Soda Cloud API Data Dump Summary Report
 Soda Certification Project - Specific Data Sources
 ============================================================
-Generated: 2025-10-03 11:14:45
+Generated: 2025-10-28 20:29:31
 Soda Cloud URL: https://cloud.soda.io
 Data Sources: soda_certification_raw, soda_certification_staging, soda_certification_mart, soda_certification_quality
 
 DATASETS SUMMARY:
 --------------------
-Total datasets: 1007
+Total datasets: 1011
 Dataset columns: id, name, label, qualifiedName, lastUpdated, datasource, dataQualityStatus, healthStatus, checks, incidents, cloudUrl, owners, tags, attributes
 
 CHECKS SUMMARY:
 --------------------
-Total checks: 547
+Total checks: 745
 Check columns: id, name, evaluationStatus, definition, datasets, attributes, incidents, cloudUrl, createdAt, group, lastCheckResultValue, lastCheckRunTime, lastUpdated, owner, agreements, column

@@ -74,7 +74,7 @@ python3 scripts/soda_dump_api.py
 if [ $? -eq 0 ]; then
     ok "Soda Cloud API data dump completed successfully!"
     echo ""
-    echo "📁 Output files are saved in the 'soda_dump_output' directory:"
+    echo "📁 Output files are saved in the 'superset/data' directory:"
     echo "  - datasets_latest.csv: Latest dataset information"
     echo "  - checks_latest.csv: Latest check information"
     echo "  - summary_report_*.txt: Summary report with statistics"

@@ -96,12 +96,6 @@ superset-reset: ## Reset Superset database and restart
 	@echo "[OK] Superset reset and restarted"
 
 
-superset-data: ## Complete Soda data workflow: organize + upload to Superset
-	@echo "🔄 Running complete Soda data workflow..."
-	@echo "1. Organizing data..."
-	@make organize-soda-data
-	@echo "2. Uploading to Superset..."
-	@make superset-upload-data
 	@echo "✅ Complete Soda data workflow finished!"
 
 dump-databases: ## Dump all databases (Superset, Airflow, Soda data)
@@ -223,12 +217,6 @@ clean-all: clean clean-logs ## Deep clean: artifacts, logs, and cache
 # SODA DATA MANAGEMENT
 # =============================================================================
 
-soda-data: ## Legacy: Complete Soda data workflow (use superset-upload-data instead)
-	@echo "🔄 Running complete Soda data workflow..."
-	@echo "1. Organizing data..."
-	@make organize-soda-data
-	@echo "2. Uploading to Superset..."
-	@make superset-upload-data
 	@echo "✅ Complete Soda data workflow finished!"
 
 organize-soda-data: ## Organize Soda dump data in user-friendly structure

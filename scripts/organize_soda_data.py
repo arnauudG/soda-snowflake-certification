@@ -10,91 +10,56 @@ from pathlib import Path
 from datetime import datetime
 
 def organize_soda_data():
-    """Organize Soda dump data into a friendly structure"""
+    """Simple pass-through: data is already in the right place"""
     
     # Define paths
     soda_dump_dir = Path("superset/data")
-    organized_dir = Path("superset/data/organized")
     
     if not soda_dump_dir.exists():
         print("❌ superset/data directory not found!")
         print("Please run 'make soda-dump' first to generate the data.")
         return False
     
-    # Always refresh latest data by copying most recent files
-    print("🔄 Updating to latest data...")
-    update_latest_data(soda_dump_dir)
+    # Data is already in the right place, just verify files exist
+    required_files = ["datasets_latest.csv", "checks_latest.csv"]
+    missing_files = []
     
-    # Create organized directory structure
-    organized_dir.mkdir(exist_ok=True)
+    for file in required_files:
+        if not (soda_dump_dir / file).exists():
+            missing_files.append(file)
     
-    # Create subdirectories
-    (organized_dir / "latest").mkdir(exist_ok=True)
-    (organized_dir / "historical").mkdir(exist_ok=True)
-    (organized_dir / "reports").mkdir(exist_ok=True)
-    (organized_dir / "analysis").mkdir(exist_ok=True)
+    if missing_files:
+        print(f"❌ Missing required files: {missing_files}")
+        return False
     
-    print("📁 Organizing Soda dump data...")
-    
-    # Copy latest files
-    latest_files = [
-        "datasets_latest.csv",
-        "checks_latest.csv"
-    ]
-    
-    for file in latest_files:
-        src = soda_dump_dir / file
-        if src.exists():
-            dst = organized_dir / "latest" / file
-            shutil.copy2(src, dst)
-            print(f"✅ Copied {file} to latest/")
-    
-    # Copy historical files
-    historical_files = [f for f in soda_dump_dir.glob("*_2025-*.csv") if "latest" not in f.name]
-    for file in historical_files:
-        dst = organized_dir / "historical" / file.name
-        shutil.copy2(file, dst)
-        print(f"✅ Copied {file.name} to historical/")
-    
-    # Copy reports
-    report_files = [f for f in soda_dump_dir.glob("*.txt")]
-    for file in report_files:
-        dst = organized_dir / "reports" / file.name
-        shutil.copy2(file, dst)
-        print(f"✅ Copied {file.name} to reports/")
-    
-    # Copy analysis files
-    analysis_files = [f for f in soda_dump_dir.glob("analysis_*.csv")]
-    for file in analysis_files:
-        dst = organized_dir / "analysis" / file.name
-        shutil.copy2(file, dst)
-        print(f"✅ Copied {file.name} to analysis/")
-    
-    # Create summary files
-    create_summary_files(organized_dir)
-    
-    # Clean up original files to reduce noise
-    print("\n🧹 Cleaning up original files...")
-    cleanup_original_files(soda_dump_dir)
-    
-    # Clean up temporary soda_dump_output folder
-    print("\n🧹 Cleaning up temporary soda_dump_output folder...")
-    cleanup_temp_folder()
-    
-    print(f"\n🎉 Data organized successfully!")
-    print(f"📁 Organized data location: {organized_dir}")
-    print(f"\n📊 Directory structure:")
-    print(f"  latest/     - Most recent datasets and checks")
-    print(f"  historical/ - Timestamped historical data")
-    print(f"  reports/    - Summary reports and analysis")
-    print(f"  analysis/   - Analysis and summary files")
+    print("✅ Data ready for Superset upload!")
+    print(f"📁 Data location: {soda_dump_dir}")
     
     return True
 
 def update_latest_data(soda_dump_dir):
     """Update latest CSV files with the most recent data"""
     
-    # Find the most recent datasets and checks files
+    # First check if there are new files in soda_dump_output
+    soda_dump_output_dir = Path("soda_dump_output")
+    if soda_dump_output_dir.exists():
+        # Find the most recent datasets and checks files in soda_dump_output
+        datasets_files = list(soda_dump_output_dir.glob("datasets_*.csv"))
+        checks_files = list(soda_dump_output_dir.glob("checks_*.csv"))
+        
+        if datasets_files and checks_files:
+            # Get the most recent files (by modification time)
+            latest_datasets = max(datasets_files, key=lambda x: x.stat().st_mtime)
+            latest_checks = max(checks_files, key=lambda x: x.stat().st_mtime)
+            
+            # Copy to superset/data directory
+            shutil.copy2(latest_datasets, soda_dump_dir / "datasets_latest.csv")
+            shutil.copy2(latest_checks, soda_dump_dir / "checks_latest.csv")
+            print(f"✅ Updated datasets_latest.csv from {latest_datasets.name}")
+            print(f"✅ Updated checks_latest.csv from {latest_checks.name}")
+            return
+    
+    # Fallback: Find the most recent datasets and checks files in superset/data
     datasets_files = list(soda_dump_dir.glob("datasets_*.csv"))
     checks_files = list(soda_dump_dir.glob("checks_*.csv"))
     

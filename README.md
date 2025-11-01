@@ -84,15 +84,15 @@ Soda Quality Checks    Soda Quality Checks    Soda Quality Checks
 ├── superset/                         # Superset visualization setup
 │   ├── docker-compose.yml           # Superset services with dedicated database
 │   ├── superset_config.py           # Superset configuration
-│   ├── data/                        # Soda Cloud data and organized structure
+│   ├── data/                        # Soda Cloud data
 │   │   ├── datasets_latest.csv      # Latest dataset metadata
 │   │   ├── checks_latest.csv        # Latest check results metadata
 │   │   ├── analysis_summary.csv     # Analysis summary
-│   │   ├── organized/               # Organized data (user-friendly structure)
-│   │   │   ├── latest/              # Most recent datasets and checks
-│   │   │   ├── historical/          # Timestamped historical data
-│   │   │   ├── reports/             # Summary reports and analysis
-│   │   │   └── analysis/            # Analysis and summary files
+│   │   ├── datasets_YYYY-MM-DD.csv  # Daily dataset snapshots
+│   │   ├── checks_YYYY-MM-DD.csv    # Daily check snapshots
+│   │   ├── datasets_YYYYMMDD_HHMMSS.csv # Timestamped dataset files
+│   │   ├── checks_YYYYMMDD_HHMMSS.csv   # Timestamped check files
+│   │   ├── summary_report_YYYYMMDD_HHMMSS.txt # Summary reports
 │   │   └── upload_soda_data_docker.py # Upload script (copied during execution)
 │   └── README.md                    # Superset documentation
 ├── Makefile                         # Project automation and commands
@@ -395,15 +395,15 @@ Soda Cloud Platform → CSV Files → Organized Data → Superset Database → D
 #### 1. **Extract from Soda Cloud** (`make soda-dump`)
 - Connects to Soda Cloud API using your credentials
 - Fetches **ALL** datasets and checks from your account
-- Saves data as CSV files in `soda_dump_output/`
-- Includes historical data and latest snapshots
+- Saves data as CSV files directly to `superset/data/`
+- Includes timestamped files, daily snapshots, and `_latest` files
 
 #### 2. **Organize Data** (`make organize-soda-data`)
-- Takes raw CSV files and organizes them into user-friendly structure
+- Validates that data exists in `superset/data/` directory
 - Always updates `*_latest.csv` files with the most recent data
-- Maintains historical data in separate folders
-- Creates organized structure in `superset/data/organized/`
-- **Automatically cleans up** temporary `soda_dump_output` folder
+- Maintains historical data with timestamped filenames
+- Verifies required files are present
+- **Automatically cleans up** temporary `soda_dump_output` folder if it exists
 
 #### 3. **Upload to Superset** (`make superset-upload-data`)
 - Uploads organized data to PostgreSQL database
@@ -452,15 +452,14 @@ make soda-agent-destroy ENV=dev    # Destroy infrastructure
 
 ```
 superset/data/
-├── datasets_latest.csv      # Latest dataset information
-├── checks_latest.csv        # Latest check results
-├── datasets_YYYY-MM-DD.csv # Daily dataset snapshots
-├── checks_YYYY-MM-DD.csv    # Daily check snapshots
-└── organized/               # Organized data structure
-    ├── latest/              # Most recent data
-    ├── historical/           # Timestamped historical data
-    ├── reports/             # Summary reports
-    └── analysis/            # Analysis files
+├── datasets_latest.csv                    # Latest dataset information
+├── checks_latest.csv                      # Latest check results
+├── analysis_summary.csv                   # Analysis summary
+├── datasets_YYYY-MM-DD.csv                # Daily dataset snapshots
+├── checks_YYYY-MM-DD.csv                  # Daily check snapshots
+├── datasets_YYYYMMDD_HHMMSS.csv            # Timestamped dataset files
+├── checks_YYYYMMDD_HHMMSS.csv              # Timestamped check files
+└── summary_report_YYYYMMDD_HHMMSS.txt     # Summary reports
 ```
 
 ### Database Tables Created

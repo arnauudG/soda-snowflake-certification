@@ -174,7 +174,7 @@ class SodaCloudDump:
         return True
     
     @staticmethod
-    def find_latest_file(pattern, output_dir='soda_dump_output'):
+    def find_latest_file(pattern, output_dir='superset/data'):
         """Find the latest file matching a pattern in the output directory."""
         if not os.path.exists(output_dir):
             return None
@@ -213,7 +213,7 @@ class SodaCloudDump:
             return latest_file
     
     @staticmethod
-    def get_latest_datasets_file(output_dir='soda_dump_output'):
+    def get_latest_datasets_file(output_dir='superset/data'):
         """Get the path to the latest datasets CSV file."""
         logger = logging.getLogger(__name__)
         
@@ -233,7 +233,7 @@ class SodaCloudDump:
         return None
     
     @staticmethod
-    def get_latest_checks_file(output_dir='soda_dump_output'):
+    def get_latest_checks_file(output_dir='superset/data'):
         """Get the path to the latest checks CSV file."""
         logger = logging.getLogger(__name__)
         
@@ -409,8 +409,8 @@ def main():
             print(f"📁 Check the '{dump.output_dir}' directory for output files")
             
             # Print file locations for easy access
-            datasets_file = SodaCloudDump.get_latest_datasets_file()
-            checks_file = SodaCloudDump.get_latest_checks_file()
+            datasets_file = SodaCloudDump.get_latest_datasets_file(dump.output_dir)
+            checks_file = SodaCloudDump.get_latest_checks_file(dump.output_dir)
             
             if datasets_file:
                 print(f"📊 Latest datasets file: {datasets_file}")

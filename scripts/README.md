@@ -27,12 +27,14 @@ The Soda Cloud API integration provides automated extraction of dataset and chec
 ## 📊 Data Organization & Upload
 
 ### **Data Organization Script**
-- **`organize_soda_data.py`**: Organizes raw Soda dump data into a user-friendly structure
+- **`organize_soda_data.py`**: Validates and updates Soda dump data in `superset/data/`
 - **Features**: 
-  - Creates organized directory structure (`latest/`, `historical/`, `reports/`, `analysis/`)
-  - Updates `*_latest.csv` files with most recent data
-  - Cleans up temporary files automatically
-  - Generates summary reports
+  - Validates that required files exist in `superset/data/`
+  - Updates `*_latest.csv` files with most recent timestamped data
+  - Automatically finds and uses latest files from `soda_dump_output/` if present
+  - Falls back to finding latest files in `superset/data/` itself
+  - Cleans up temporary `soda_dump_output/` folder automatically
+  - Updates `analysis_summary.csv` if available
 
 ### **Data Upload Script**
 - **`upload_soda_data_docker.py`**: Uploads organized Soda data to Superset PostgreSQL database
@@ -76,8 +78,13 @@ make soda-dump
 ```
 
 #### **Output Files:**
-- `soda_dump_output/datasets_latest.csv` - Dataset metadata
-- `soda_dump_output/checks_latest.csv` - Check results metadata
+- `superset/data/datasets_latest.csv` - Latest dataset metadata
+- `superset/data/checks_latest.csv` - Latest check results metadata
+- `superset/data/datasets_YYYY-MM-DD.csv` - Daily dataset snapshots
+- `superset/data/checks_YYYY-MM-DD.csv` - Daily check snapshots
+- `superset/data/datasets_YYYYMMDD_HHMMSS.csv` - Timestamped dataset files
+- `superset/data/checks_YYYYMMDD_HHMMSS.csv` - Timestamped check files
+- `superset/data/summary_report_YYYYMMDD_HHMMSS.txt` - Summary reports
 
 ## 🛠️ Environment Setup Scripts
 
@@ -261,9 +268,9 @@ sys.path.append('scripts')
 from soda_dump_api import SodaCloudDump
 import pandas as pd
 
-# Find latest files dynamically
-datasets_file = SodaCloudDump.get_latest_datasets_file()
-checks_file = SodaCloudDump.get_latest_checks_file()
+# Find latest files dynamically (defaults to superset/data/)
+datasets_file = SodaCloudDump.get_latest_datasets_file('superset/data')
+checks_file = SodaCloudDump.get_latest_checks_file('superset/data')
 
 # Load all data
 datasets_df = pd.read_csv(datasets_file)
@@ -288,9 +295,9 @@ filtered_datasets = datasets_df[datasets_df['datasource_name'].isin(soda_certifi
 - ✅ **Error Handling**: Gracefully handles missing files
 
 ### **Available Methods:**
-- `SodaCloudDump.get_latest_datasets_file()` - Find latest datasets CSV
-- `SodaCloudDump.get_latest_checks_file()` - Find latest checks CSV
-- `SodaCloudDump.find_latest_file(pattern)` - Find latest file by pattern
+- `SodaCloudDump.get_latest_datasets_file(output_dir='superset/data')` - Find latest datasets CSV
+- `SodaCloudDump.get_latest_checks_file(output_dir='superset/data')` - Find latest checks CSV
+- `SodaCloudDump.find_latest_file(pattern, output_dir='superset/data')` - Find latest file by pattern
 
 ## 🎯 Success Metrics
 

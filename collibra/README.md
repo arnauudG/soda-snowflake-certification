@@ -25,22 +25,27 @@ Edit `config.yml` with your Collibra asset IDs:
 ```yaml
 database_id: "your-database-uuid-here"
 
+# Optional: Database Connection ID (will be resolved automatically if not provided)
+# database_connection_id: "your-database-connection-uuid-here"
+
 raw:
-  schema_connection_ids:
-    - "your-raw-schema-connection-uuid-here"
+  schema_connection_ids:  # Note: These are schema asset IDs, not connection IDs
+    - "your-raw-schema-asset-uuid-here"
 
 staging:
-  schema_connection_ids:
-    - "your-staging-schema-connection-uuid-here"
+  schema_connection_ids:  # Note: These are schema asset IDs, not connection IDs
+    - "your-staging-schema-asset-uuid-here"
 
 mart:
-  schema_connection_ids:
-    - "your-mart-schema-connection-uuid-here"
+  schema_connection_ids:  # Note: These are schema asset IDs, not connection IDs
+    - "your-mart-schema-asset-uuid-here"
 ```
 
 **How to find these IDs:**
 - **Database ID**: Navigate to your Database asset in Collibra and copy its UUID from the URL or asset details
-- **Schema Connection IDs**: Navigate to each Schema Connection asset in Collibra and copy their UUIDs
+- **Schema Asset IDs**: Navigate to each Schema asset in Collibra (not Schema Connection) and copy their UUIDs
+
+**Important:** The system automatically resolves schema asset IDs to schema connection IDs using the Collibra API. You only need to provide the schema asset IDs in the config file.
 
 ## Usage
 

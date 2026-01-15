@@ -11,6 +11,7 @@ import sys
 import yaml
 import logging
 from pathlib import Path
+from typing import Optional
 
 # Add project root to path
 PROJECT_ROOT = Path(__file__).parent.parent
@@ -39,6 +40,24 @@ def load_config():
     return config
 
 
+def get_database_connection_id(config: dict, sync_client: CollibraMetadataSync) -> Optional[str]:
+    """Get database connection ID from config or resolve it."""
+    # Check if explicitly provided in config
+    if 'database_connection_id' in config and config['database_connection_id']:
+        return config['database_connection_id']
+    
+    # Otherwise, resolve from database asset ID
+    database_id = config.get('database_id')
+    if not database_id:
+        return None
+    
+    try:
+        return sync_client.get_database_connection_id(database_id)
+    except Exception as e:
+        logger.warning(f"Could not resolve database connection ID: {e}")
+        return None
+
+
 def sync_raw_metadata(**context):
     """Airflow task function to sync RAW layer metadata."""
     logger.info("Starting Collibra metadata sync for RAW layer")
@@ -46,16 +65,26 @@ def sync_raw_metadata(**context):
     try:
         config = load_config()
         database_id = config['database_id']
-        schema_ids = config.get('raw', {}).get('schema_connection_ids', [])
+        # Config contains schema asset IDs, not connection IDs
+        schema_asset_ids = config.get('raw', {}).get('schema_connection_ids', [])
         
-        if not schema_ids:
-            logger.warning("No schema connection IDs configured for RAW layer. Skipping sync.")
+        if not schema_asset_ids:
+            logger.warning("No schema asset IDs configured for RAW layer. Skipping sync.")
             return
         
         sync_client = CollibraMetadataSync()
+        
+        # Resolve schema asset IDs to connection IDs
+        database_connection_id = get_database_connection_id(config, sync_client)
+        schema_connection_ids = sync_client.resolve_schema_connection_ids(
+            database_id=database_id,
+            schema_asset_ids=schema_asset_ids,
+            database_connection_id=database_connection_id
+        )
+        
         result = sync_client.sync_and_wait(
             database_id=database_id,
-            schema_connection_ids=schema_ids,
+            schema_connection_ids=schema_connection_ids,  # Use resolved connection IDs
             max_wait_time=3600,  # 1 hour timeout
             poll_interval=10     # Check every 10 seconds
         )
@@ -75,16 +104,26 @@ def sync_staging_metadata(**context):
     try:
         config = load_config()
         database_id = config['database_id']
-        schema_ids = config.get('staging', {}).get('schema_connection_ids', [])
+        # Config contains schema asset IDs, not connection IDs
+        schema_asset_ids = config.get('staging', {}).get('schema_connection_ids', [])
         
-        if not schema_ids:
-            logger.warning("No schema connection IDs configured for STAGING layer. Skipping sync.")
+        if not schema_asset_ids:
+            logger.warning("No schema asset IDs configured for STAGING layer. Skipping sync.")
             return
         
         sync_client = CollibraMetadataSync()
+        
+        # Resolve schema asset IDs to connection IDs
+        database_connection_id = get_database_connection_id(config, sync_client)
+        schema_connection_ids = sync_client.resolve_schema_connection_ids(
+            database_id=database_id,
+            schema_asset_ids=schema_asset_ids,
+            database_connection_id=database_connection_id
+        )
+        
         result = sync_client.sync_and_wait(
             database_id=database_id,
-            schema_connection_ids=schema_ids,
+            schema_connection_ids=schema_connection_ids,  # Use resolved connection IDs
             max_wait_time=3600,  # 1 hour timeout
             poll_interval=10     # Check every 10 seconds
         )
@@ -104,16 +143,26 @@ def sync_mart_metadata(**context):
     try:
         config = load_config()
         database_id = config['database_id']
-        schema_ids = config.get('mart', {}).get('schema_connection_ids', [])
+        # Config contains schema asset IDs, not connection IDs
+        schema_asset_ids = config.get('mart', {}).get('schema_connection_ids', [])
         
-        if not schema_ids:
-            logger.warning("No schema connection IDs configured for MART layer. Skipping sync.")
+        if not schema_asset_ids:
+            logger.warning("No schema asset IDs configured for MART layer. Skipping sync.")
             return
         
         sync_client = CollibraMetadataSync()
+        
+        # Resolve schema asset IDs to connection IDs
+        database_connection_id = get_database_connection_id(config, sync_client)
+        schema_connection_ids = sync_client.resolve_schema_connection_ids(
+            database_id=database_id,
+            schema_asset_ids=schema_asset_ids,
+            database_connection_id=database_connection_id
+        )
+        
         result = sync_client.sync_and_wait(
             database_id=database_id,
-            schema_connection_ids=schema_ids,
+            schema_connection_ids=schema_connection_ids,  # Use resolved connection IDs
             max_wait_time=3600,  # 1 hour timeout
             poll_interval=10     # Check every 10 seconds
         )

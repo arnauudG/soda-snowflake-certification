@@ -1,33 +1,40 @@
 # Collibra Metadata Synchronization Configuration
 # 
-# This file contains the database and schema connection IDs for metadata synchronization.
+# This file contains the database and schema asset IDs for metadata synchronization.
+# The system will automatically resolve schema asset IDs to schema connection IDs.
 # Update these values with your actual Collibra asset IDs.
 
 # Database Asset ID in Collibra
 # This is the UUID of the Database asset that contains your schemas
-database_id: "your-database-uuid-here"
+database_id: "0199e6fb-06b2-7bc1-9c5c-de9744076851"
 
-# Schema Connection IDs by Layer
-# Each layer can have one or more schema connection IDs
-# If a layer has multiple schemas, list all their connection IDs
+# Optional: Database Connection ID
+# If provided, this will be used directly instead of resolving from database asset
+# If not provided, the system will attempt to resolve it from the database asset
+# database_connection_id: "your-database-connection-uuid-here"
 
-# RAW Layer Schema Connection ID(s)
+# Schema Asset IDs by Layer
+# Each layer can have one or more schema asset IDs
+# These will be automatically resolved to schema connection IDs
+# If a layer has multiple schemas, list all their asset IDs
+
+# RAW Layer Schema Asset ID(s)
 raw:
-  schema_connection_ids:
-    - "your-raw-schema-connection-uuid-here"
+  schema_connection_ids:  # Note: This field name is kept for compatibility, but contains asset IDs
+    - "0199e6fd-3eae-7ce5-9acf-b3daddbb07f1"
 
-# STAGING Layer Schema Connection ID(s)
+# STAGING Layer Schema Asset ID(s)
 staging:
-  schema_connection_ids:
-    - "your-staging-schema-connection-uuid-here"
+  schema_connection_ids:  # Note: This field name is kept for compatibility, but contains asset IDs
+    - "0199e6fd-4b67-7c6f-a25d-c958461f9f01"
 
-# MART Layer Schema Connection ID(s)
+# MART Layer Schema Asset ID(s)
 mart:
-  schema_connection_ids:
-    - "your-mart-schema-connection-uuid-here"
+  schema_connection_ids:  # Note: This field name is kept for compatibility, but contains asset IDs
+    - "0199e6fc-d638-77ba-8378-8e32281b74c0"
 
-# Optional: QUALITY Layer Schema Connection ID(s)
-# quality:
-#   schema_connection_ids:
-#     - "your-quality-schema-connection-uuid-here"
+# Optional: QUALITY Layer Schema Asset ID(s)
+quality:
+  schema_connection_ids:  # Note: This field name is kept for compatibility, but contains asset IDs
+    - "0199e6fc-d58b-709a-ab7c-002a7afd7dc7"
 

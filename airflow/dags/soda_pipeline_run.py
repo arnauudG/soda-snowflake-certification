@@ -1,11 +1,16 @@
 from datetime import datetime, timedelta
 import os
+import sys
+from pathlib import Path
 from airflow import DAG
 from airflow.operators.bash import BashOperator
 from airflow.operators.python import PythonOperator
 from airflow.operators.empty import EmptyOperator
 import subprocess
-import os
+
+# Add project root to Python path for Collibra imports
+PROJECT_ROOT = Path("/opt/airflow")
+sys.path.insert(0, str(PROJECT_ROOT))
 
 # Absolute project root (Docker container path)
 PROJECT_ROOT = "/opt/airflow"
@@ -108,6 +113,23 @@ with DAG(
         """,
     )
 
+    def sync_raw_metadata_task(**context):
+        """Wrapper function to import and call Collibra sync for RAW layer."""
+        from collibra.airflow_helper import sync_raw_metadata
+        return sync_raw_metadata(**context)
+    
+    collibra_sync_raw = PythonOperator(
+        task_id="collibra_sync_raw",
+        python_callable=sync_raw_metadata_task,
+        doc_md="""
+        **Collibra Metadata Sync - RAW Layer**
+        
+        - Triggers metadata synchronization in Collibra for RAW schema
+        - Waits for synchronization job to complete
+        - Updates Collibra catalog with latest RAW layer metadata
+        """,
+    )
+
     raw_layer_end = EmptyOperator(
         task_id="raw_layer_end",
         doc_md="✅ RAW layer processing completed"
@@ -147,6 +169,23 @@ with DAG(
         """,
     )
 
+    def sync_staging_metadata_task(**context):
+        """Wrapper function to import and call Collibra sync for STAGING layer."""
+        from collibra.airflow_helper import sync_staging_metadata
+        return sync_staging_metadata(**context)
+    
+    collibra_sync_staging = PythonOperator(
+        task_id="collibra_sync_staging",
+        python_callable=sync_staging_metadata_task,
+        doc_md="""
+        **Collibra Metadata Sync - STAGING Layer**
+        
+        - Triggers metadata synchronization in Collibra for STAGING schema
+        - Waits for synchronization job to complete
+        - Updates Collibra catalog with latest STAGING layer metadata
+        """,
+    )
+
     staging_layer_end = EmptyOperator(
         task_id="staging_layer_end",
         doc_md="✅ STAGING layer processing completed"
@@ -183,6 +222,23 @@ with DAG(
         - Strictest quality thresholds
         - Ensures business-ready data quality
         - Expected: Minimal failures (production-ready)
+        """,
+    )
+
+    def sync_mart_metadata_task(**context):
+        """Wrapper function to import and call Collibra sync for MART layer."""
+        from collibra.airflow_helper import sync_mart_metadata
+        return sync_mart_metadata(**context)
+    
+    collibra_sync_mart = PythonOperator(
+        task_id="collibra_sync_mart",
+        python_callable=sync_mart_metadata_task,
+        doc_md="""
+        **Collibra Metadata Sync - MART Layer**
+        
+        - Triggers metadata synchronization in Collibra for MART schema
+        - Waits for synchronization job to complete
+        - Updates Collibra catalog with latest MART layer metadata
         """,
     )
 
@@ -255,9 +311,9 @@ with DAG(
     # TASK DEPENDENCIES - LAYERED APPROACH
     # =============================================================================
     
-    # Complete layered pipeline with individual layer visibility
-    pipeline_start >> raw_layer_start >> soda_scan_raw >> raw_layer_end
-    raw_layer_end >> staging_layer_start >> dbt_run_staging >> soda_scan_staging >> staging_layer_end
-    staging_layer_end >> mart_layer_start >> dbt_run_mart >> soda_scan_mart >> mart_layer_end
+    # Complete layered pipeline with individual layer visibility and Collibra sync
+    pipeline_start >> raw_layer_start >> soda_scan_raw >> collibra_sync_raw >> raw_layer_end
+    raw_layer_end >> staging_layer_start >> dbt_run_staging >> soda_scan_staging >> collibra_sync_staging >> staging_layer_end
+    staging_layer_end >> mart_layer_start >> dbt_run_mart >> soda_scan_mart >> collibra_sync_mart >> mart_layer_end
     mart_layer_end >> quality_layer_start >> [soda_scan_quality, dbt_test] >> quality_layer_end
     quality_layer_end >> cleanup >> pipeline_end

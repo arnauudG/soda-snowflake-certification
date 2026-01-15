@@ -1,0 +1,33 @@
+# Collibra Metadata Synchronization Configuration
+# 
+# This file contains the database and schema connection IDs for metadata synchronization.
+# Update these values with your actual Collibra asset IDs.
+
+# Database Asset ID in Collibra
+# This is the UUID of the Database asset that contains your schemas
+database_id: "your-database-uuid-here"
+
+# Schema Connection IDs by Layer
+# Each layer can have one or more schema connection IDs
+# If a layer has multiple schemas, list all their connection IDs
+
+# RAW Layer Schema Connection ID(s)
+raw:
+  schema_connection_ids:
+    - "your-raw-schema-connection-uuid-here"
+
+# STAGING Layer Schema Connection ID(s)
+staging:
+  schema_connection_ids:
+    - "your-staging-schema-connection-uuid-here"
+
+# MART Layer Schema Connection ID(s)
+mart:
+  schema_connection_ids:
+    - "your-mart-schema-connection-uuid-here"
+
+# Optional: QUALITY Layer Schema Connection ID(s)
+# quality:
+#   schema_connection_ids:
+#     - "your-quality-schema-connection-uuid-here"
+

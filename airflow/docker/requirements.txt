@@ -3,6 +3,9 @@ pandas>=2.2.2,<2.4
 pyarrow>=15.0.0,<22.0.0
 setuptools
 Faker
+# Collibra integration dependencies
+requests>=2.31.0
+pyyaml>=6.0
 # Soda Library for Snowflake (with template support)
 # Install with: pip install -i https://pypi.cloud.soda.io soda-snowflake==1.12.24
 # Note: soda-snowflake is installed separately from Soda's private PyPI with pinned version

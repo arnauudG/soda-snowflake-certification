@@ -4,7 +4,7 @@ This directory contains the Collibra integration for automatic metadata synchron
 
 ## Overview
 
-The Collibra metadata synchronization integration automatically triggers metadata sync jobs in Collibra after each data layer is processed (RAW, STAGING, MART). This ensures that the Collibra catalog is kept up-to-date with the latest schema and table metadata from Snowflake.
+The Collibra metadata synchronization integration automatically triggers metadata sync jobs in Collibra after each data layer is processed (RAW, STAGING, MART, QUALITY). This ensures that the Collibra catalog is kept up-to-date with the latest schema and table metadata from Snowflake.
 
 ## Orchestration Philosophy: Quality Gates Metadata Sync
 
@@ -54,6 +54,10 @@ staging:
 mart:
   schema_connection_ids:  # Note: These are schema asset IDs, not connection IDs
     - "your-mart-schema-asset-uuid-here"
+
+quality:
+  schema_connection_ids:  # Note: These are schema asset IDs, not connection IDs
+    - "your-quality-schema-asset-uuid-here"
 ```
 
 **How to find these IDs:**
@@ -107,12 +111,15 @@ The metadata synchronization is automatically integrated into the Airflow pipeli
 **MART Layer**:
 1. Build (dbt) → Quality checks (Soda) → **Gates** → Metadata sync (Collibra)
 
+**QUALITY Layer**:
+1. Quality checks (Soda) + Tests (dbt) → **Gates** → Metadata sync (Collibra)
+
 Each sync task:
 - **Only executes after quality checks pass** (quality-gated)
 - Triggers the synchronization job in Collibra
-- Waits for the job to complete (with timeout)
-- Logs progress and status
-- Fails the pipeline if sync fails
+- Returns immediately (sync completes in Collibra background)
+- Logs sync trigger and job ID
+- Fails the pipeline if sync trigger fails
 
 **Important**: Metadata sync is gated by quality validation. This ensures Collibra only contains validated, committed data that has passed quality checks.
 
@@ -128,68 +135,60 @@ Main class for interacting with Collibra metadata synchronization API.
 - Triggers metadata synchronization for a database
 - Returns job ID and sync details
 
-**`get_job_status(job_id)`**
+**`get_job_status(job_id)`** (Optional - for advanced use cases)
 - Gets the current status of a synchronization job
 - Returns job status information
+- Note: Job status tracking is not used in the Airflow pipeline
 
-**`wait_for_job_completion(job_id, max_wait_time=3600, poll_interval=10)`**
+**`wait_for_job_completion(job_id, max_wait_time=3600, poll_interval=10)`** (Optional - for advanced use cases)
 - Waits for a job to complete
 - Polls job status at specified intervals
 - Raises exception if job fails or times out
+- Note: Not used in the Airflow pipeline - syncs complete in background
 
-**`sync_and_wait(database_id, schema_connection_ids=None, max_wait_time=3600, poll_interval=10)`**
+**`sync_and_wait(database_id, schema_connection_ids=None, max_wait_time=3600, poll_interval=10)`** (Optional - for advanced use cases)
 - Convenience method that triggers sync and waits for completion
 - Returns final job status
-
-## Job Status
-
-Collibra jobs can have the following statuses:
-- **RUNNING**: Job is currently executing
-- **COMPLETED**: Job finished successfully
-- **FAILED**: Job encountered an error
-- **CANCELLED**: Job was cancelled
+- Note: Not used in the Airflow pipeline - syncs complete in background
 
 ## Error Handling
 
 The integration includes comprehensive error handling:
 - **HTTP Errors**: Logged with response details
-- **Timeout Errors**: Raised if job doesn't complete within max_wait_time
-- **Job Failures**: Raised with error message from Collibra
+- **409 Conflicts**: Handled gracefully (sync already in progress)
 - **Authentication Errors**: Raised if credentials are invalid
+- **Missing Job ID**: Handled gracefully (sync triggered but no job ID returned)
 
-## Timeout Configuration
-
-Default timeout is 1 hour (3600 seconds). You can adjust this in the Airflow DAG or when calling the functions directly.
-
-For large databases with many tables, you may need to increase the timeout.
+**Note**: The pipeline does not wait for sync completion. Syncs are triggered and complete in Collibra's background. If you need to track job status, use the optional `get_job_status()` and `wait_for_job_completion()` methods.
 
 ## Monitoring
 
 All synchronization operations are logged with:
-- Job IDs for tracking
-- Status updates during execution
-- Completion times
-- Error messages if failures occur
+- Job IDs when available (for tracking in Collibra UI)
+- Sync trigger confirmation
+- Error messages if trigger fails
 
-Check Airflow task logs for detailed synchronization progress.
+**Note**: Syncs complete in Collibra's background. Check Collibra UI for job status and completion. Check Airflow task logs for sync trigger confirmation.
 
 ## Troubleshooting
 
-### Job Timeout
-If jobs are timing out:
-- Increase `max_wait_time` in the Airflow DAG
+### Sync Not Completing
+If syncs are not completing in Collibra:
 - Check Collibra job status manually in the UI
-- Verify database and schema sizes
+- Verify database and schema connection IDs are correct
+- Check Collibra logs for detailed error messages
+- Ensure user has permissions to trigger metadata sync
 
 ### Authentication Errors
 - Verify credentials in `.env` file
 - Check Collibra base URL is correct
 - Ensure user has permissions to trigger metadata sync
 
-### Job Failures
-- Check Collibra job details in the UI
-- Verify database and schema connection IDs are correct
-- Check Collibra logs for detailed error messages
+### Sync Trigger Failures
+- Check Airflow task logs for error details
+- Verify Collibra credentials are correct
+- Ensure database and schema IDs are valid
+- Check if sync is already in progress (409 conflict is handled gracefully)
 
 ## Integration with Pipeline
 
@@ -207,12 +206,16 @@ STAGING Layer:
 MART Layer:
   dbt_run_mart → soda_scan_mart → collibra_sync_mart → mart_layer_end
   (Build → Validate → Govern, strictest standards)
+
+QUALITY Layer:
+  [soda_scan_quality, dbt_test] → collibra_sync_quality → quality_layer_end
+  (Quality monitoring → Metadata sync)
 ```
 
-**Quality Gating**: Each sync task only executes after quality checks pass. The pipeline waits for:
-1. Quality validation to complete
-2. Metadata sync job to complete
-3. Then proceeds to the next layer
+**Quality Gating**: Each sync task only executes after quality checks pass. The pipeline:
+1. Waits for quality validation to complete
+2. Triggers metadata sync (completes in Collibra background)
+3. Proceeds to the next layer immediately
 
 This ensures Collibra only syncs validated data, making it a historical record of accepted states.
 

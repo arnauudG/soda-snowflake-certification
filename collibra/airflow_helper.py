@@ -114,14 +114,12 @@ def sync_raw_metadata(**context):
             database_connection_id=database_connection_id
         )
         
-        result = sync_client.sync_and_wait(
+        result = sync_client.trigger_metadata_sync(
             database_id=database_id,
-            schema_connection_ids=schema_connection_ids,  # Use resolved connection IDs
-            max_wait_time=3600,  # 1 hour timeout
-            poll_interval=10     # Check every 10 seconds
+            schema_connection_ids=schema_connection_ids  # Use resolved connection IDs
         )
         
-        logger.info(f"RAW layer metadata sync completed: {result}")
+        logger.info(f"RAW layer metadata sync triggered: {result}")
         return result
         
     except Exception as e:
@@ -153,14 +151,12 @@ def sync_staging_metadata(**context):
             database_connection_id=database_connection_id
         )
         
-        result = sync_client.sync_and_wait(
+        result = sync_client.trigger_metadata_sync(
             database_id=database_id,
-            schema_connection_ids=schema_connection_ids,  # Use resolved connection IDs
-            max_wait_time=3600,  # 1 hour timeout
-            poll_interval=10     # Check every 10 seconds
+            schema_connection_ids=schema_connection_ids  # Use resolved connection IDs
         )
         
-        logger.info(f"STAGING layer metadata sync completed: {result}")
+        logger.info(f"STAGING layer metadata sync triggered: {result}")
         return result
         
     except Exception as e:
@@ -192,17 +188,52 @@ def sync_mart_metadata(**context):
             database_connection_id=database_connection_id
         )
         
-        result = sync_client.sync_and_wait(
+        result = sync_client.trigger_metadata_sync(
             database_id=database_id,
-            schema_connection_ids=schema_connection_ids,  # Use resolved connection IDs
-            max_wait_time=3600,  # 1 hour timeout
-            poll_interval=10     # Check every 10 seconds
+            schema_connection_ids=schema_connection_ids  # Use resolved connection IDs
         )
         
-        logger.info(f"MART layer metadata sync completed: {result}")
+        logger.info(f"MART layer metadata sync triggered: {result}")
         return result
         
     except Exception as e:
         logger.error(f"Failed to sync MART layer metadata: {e}")
+        raise
+
+
+def sync_quality_metadata(**context):
+    """Airflow task function to sync QUALITY layer metadata."""
+    logger.info("Starting Collibra metadata sync for QUALITY layer")
+    
+    try:
+        config = load_config()
+        database_id = config['database_id']
+        # Config contains schema asset IDs, not connection IDs
+        schema_asset_ids = config.get('quality', {}).get('schema_connection_ids', [])
+        
+        if not schema_asset_ids:
+            logger.warning("No schema asset IDs configured for QUALITY layer. Skipping sync.")
+            return
+        
+        sync_client = CollibraMetadataSync()
+        
+        # Resolve schema asset IDs to connection IDs
+        database_connection_id = get_database_connection_id(config, sync_client)
+        schema_connection_ids = sync_client.resolve_schema_connection_ids(
+            database_id=database_id,
+            schema_asset_ids=schema_asset_ids,
+            database_connection_id=database_connection_id
+        )
+        
+        result = sync_client.trigger_metadata_sync(
+            database_id=database_id,
+            schema_connection_ids=schema_connection_ids  # Use resolved connection IDs
+        )
+        
+        logger.info(f"QUALITY layer metadata sync triggered: {result}")
+        return result
+        
+    except Exception as e:
+        logger.error(f"Failed to sync QUALITY layer metadata: {e}")
         raise
 

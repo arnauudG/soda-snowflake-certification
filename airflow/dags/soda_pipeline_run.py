@@ -106,7 +106,7 @@ with DAG(
     - **Layer 1**: `soda_scan_raw` → `collibra_sync_raw` (quality gates sync)
     - **Layer 2**: `dbt_run_staging` → `soda_scan_staging` → `collibra_sync_staging` (gated)
     - **Layer 3**: `dbt_run_mart` → `soda_scan_mart` → `collibra_sync_mart` (gated, strictest)
-    - **Layer 4**: `soda_scan_quality` + `dbt_test` - Quality monitoring + tests
+    - **Layer 4**: `soda_scan_quality` + `dbt_test` → `collibra_sync_quality` (gated)
     - **cleanup**: Clean up temporary artifacts
     """,
 ):
@@ -167,7 +167,6 @@ with DAG(
         
         - **Only executes after quality checks pass**
         - Triggers metadata synchronization in Collibra for RAW schema
-        - Waits for synchronization job to complete
         - Updates Collibra catalog with validated RAW layer metadata
         - Ensures Collibra reflects commitments, not aspirations
         """,
@@ -231,7 +230,6 @@ with DAG(
         
         - **Only executes after quality checks pass**
         - Triggers metadata synchronization in Collibra for STAGING schema
-        - Waits for synchronization job to complete
         - Updates Collibra catalog with validated STAGING layer metadata
         - **Phase 3**: Sync only what passed the layer's acceptance criteria
         - Ensures Collibra reflects commitments, not aspirations
@@ -297,7 +295,6 @@ with DAG(
         
         - **Only executes after quality checks pass**
         - Triggers metadata synchronization in Collibra for MART schema
-        - Waits for synchronization job to complete
         - Updates Collibra catalog with validated MART layer metadata
         - **Phase 3**: Sync only production-ready, validated data
         - Metadata sync is a badge of trust for Gold layer
@@ -341,6 +338,24 @@ with DAG(
         - Tests referential integrity, uniqueness, and business rules
         - Ensures data consistency across all layers
         - Uses dev target for tests (reads from all schemas)
+        """,
+    )
+
+    def sync_quality_metadata_task(**context):
+        """Wrapper function to import and call Collibra sync for QUALITY layer."""
+        from collibra.airflow_helper import sync_quality_metadata
+        return sync_quality_metadata(**context)
+    
+    collibra_sync_quality = PythonOperator(
+        task_id="collibra_sync_quality",
+        python_callable=sync_quality_metadata_task,
+        doc_md="""
+        **Collibra Metadata Sync - QUALITY Layer (Gated by Quality)**
+        
+        - **Only executes after quality checks pass**
+        - Triggers metadata synchronization in Collibra for QUALITY schema
+        - Updates Collibra catalog with quality check results metadata
+        - **Phase 4**: Sync quality monitoring and results
         """,
     )
 
@@ -388,6 +403,7 @@ with DAG(
     # RAW:    Quality Check → Metadata Sync (gated)
     # STAGING: Build → Quality Check → Metadata Sync (gated)
     # MART:   Build → Quality Check → Metadata Sync (gated)
+    # QUALITY: Quality Check + Tests → Metadata Sync (gated)
     
     # RAW Layer: Quality gates metadata sync
     pipeline_start >> raw_layer_start >> soda_scan_raw >> collibra_sync_raw >> raw_layer_end
@@ -398,6 +414,6 @@ with DAG(
     # MART Layer: Build → Validate → Govern (strictest standards)
     staging_layer_end >> mart_layer_start >> dbt_run_mart >> soda_scan_mart >> collibra_sync_mart >> mart_layer_end
     
-    # Quality Layer: Final monitoring
-    mart_layer_end >> quality_layer_start >> [soda_scan_quality, dbt_test] >> quality_layer_end
+    # Quality Layer: Final monitoring → Metadata sync (gated)
+    mart_layer_end >> quality_layer_start >> [soda_scan_quality, dbt_test] >> collibra_sync_quality >> quality_layer_end
     quality_layer_end >> cleanup >> pipeline_end

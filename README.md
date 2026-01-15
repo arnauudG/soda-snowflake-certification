@@ -57,6 +57,10 @@ Soda Quality Checks (MARTS) [VALIDATION PHASE]
     ↓
 Collibra Metadata Sync (MART Schema) [GOVERNANCE PHASE - GATED BY QUALITY]
     ↓
+Soda Quality Checks (QUALITY) + dbt Tests [VALIDATION PHASE]
+    ↓
+Collibra Metadata Sync (QUALITY Schema) [GOVERNANCE PHASE - GATED BY QUALITY]
+    ↓
 Soda Cloud Dashboard
     ↓
 Collibra Integration
@@ -95,11 +99,11 @@ Each layer follows: **Build → Validate → Govern**
 ### Data Governance Integration (Collibra)
 
 **Metadata Synchronization (Quality-Gated)**
-- Automatic metadata sync after each pipeline layer (RAW, STAGING, MART)
+- Automatic metadata sync after each pipeline layer (RAW, STAGING, MART, QUALITY)
 - **Quality checks gate metadata sync**: Only validated data enters Collibra
 - Schema and table metadata automatically updated in Collibra catalog
 - Real-time synchronization of schema changes and new tables
-- Job monitoring with automatic wait-for-completion
+- Syncs triggered after quality validation, complete in Collibra background
 - **Orchestration philosophy**: Build → Validate → Govern sequence ensures Collibra reflects commitments, not aspirations
 
 **Quality-to-Governance Synchronization**
@@ -130,9 +134,9 @@ Each layer follows: **Build → Validate → Govern**
 
 **Metadata Sync Features**
 - Automatic resolution of schema asset IDs to schema connection IDs
-- Configurable per-layer synchronization
-- Job status monitoring with timeout handling
-- Error handling and retry logic
+- Configurable per-layer synchronization (RAW, STAGING, MART, QUALITY)
+- Syncs triggered and complete in Collibra background
+- Error handling for conflicts and authentication issues
 
 ### Data Quality Integration (Soda)
 
@@ -533,7 +537,7 @@ This platform demonstrates:
 - **Automated Synchronization**: Quality results automatically pushed to Collibra
 - **Metadata Synchronization**: Schema and table metadata automatically synced after each layer
 - **Standardized Framework**: Six quality dimensions across all checks
-- **Multi-Layer Monitoring**: Quality checks at RAW, STAGING, and MARTS layers
+- **Multi-Layer Monitoring**: Quality checks at RAW, STAGING, MART, and QUALITY layers
 - **Governance Integration**: Quality metrics linked to data assets in Collibra
 - **Unified Visibility**: Single view across all data management domains
 - **Production Ready**: Enterprise-grade integration platform

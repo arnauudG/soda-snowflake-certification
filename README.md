@@ -212,10 +212,17 @@ All quality checks are categorized using standardized dimensions:
 git clone <repository-url>
 cd Soda-Certification
 
-# Create .env file with your credentials
+# Create .env file with your credentials (single file for entire project)
 cp .env.example .env
 # Edit .env with your actual credentials
 ```
+
+**Important**: You only need **one `.env` file** in the project root. This file is used by:
+- Docker Compose (Airflow, Superset)
+- Local scripts
+- All services in the project
+
+The `.env` file is automatically loaded and mounted into Docker containers.
 
 **Required Environment Variables:**
 ```bash

@@ -36,20 +36,32 @@ airflow/
 
 ### 2. Soda Pipeline Run DAG (`soda_pipeline_run.py`)
 
-**Purpose**: Regular data quality monitoring and processing with integrated governance synchronization
+**Purpose**: Regular data quality monitoring and processing with quality-gated metadata synchronization
+
+**Orchestration Philosophy: Quality Gates Metadata Sync**
+
+Each layer follows the sequence: **Build → Validate → Govern**
+- **dbt build** → "this model exists"
+- **Soda checks** → "this model is acceptable"
+- **Collibra sync** → "this model is governable and discoverable"
+
+Quality checks **gate** metadata synchronization. Metadata sync only happens after quality validation, ensuring Collibra reflects commitments, not aspirations.
 
 **Layered Approach**:
-1. **RAW Layer**: Data quality checks on source data
-2. **STAGING Layer**: dbt transformations + quality checks
-3. **MART Layer**: dbt models + quality checks
+1. **RAW Layer**: Quality checks → Metadata sync (gated by quality)
+2. **STAGING Layer**: Build → Quality checks → Metadata sync (gated)
+3. **MART Layer**: Build → Quality checks → Metadata sync (gated, strictest standards)
 4. **QUALITY Layer**: Final validation and monitoring
 
 **Tasks**:
-- **`soda_scan_raw`**: RAW layer quality checks
-- **`dbt_run_staging`**: Execute staging models
-- **`soda_scan_staging`**: STAGING layer quality checks
-- **`dbt_run_mart`**: Execute mart models
-- **`soda_scan_mart`**: MART layer quality checks
+- **`soda_scan_raw`**: RAW layer quality checks (gates metadata sync)
+- **`collibra_sync_raw`**: Collibra metadata sync for RAW schema (only after quality passes)
+- **`dbt_run_staging`**: Execute staging models (build phase)
+- **`soda_scan_staging`**: STAGING layer quality checks (validation phase, gates sync)
+- **`collibra_sync_staging`**: Collibra metadata sync for STAGING schema (governance phase)
+- **`dbt_run_mart`**: Execute mart models (build phase)
+- **`soda_scan_mart`**: MART layer quality checks (validation phase, gates sync)
+- **`collibra_sync_mart`**: Collibra metadata sync for MART schema (governance phase, badge of trust)
 - **`soda_scan_quality`**: Quality monitoring
 - **`dbt_test`**: Execute dbt tests
 - **`cleanup_artifacts`**: Clean up temporary files
@@ -57,7 +69,9 @@ airflow/
 **Integration Points**:
 - Quality results automatically synchronized to Soda Cloud
 - Quality metrics automatically pushed to Collibra (if configured)
-- Governance assets updated with latest quality information
+- Metadata automatically synchronized to Collibra **only after quality validation**
+- Governance assets updated with validated quality information and metadata
+- Collibra becomes a historical record of accepted states
 
 ## Usage
 
@@ -128,25 +142,40 @@ COLLIBRA_PASSWORD=your_password
 init_start → reset_snowflake → setup_snowflake → init_end
 ```
 
-### Main Pipeline Flow
+### Main Pipeline Flow - Quality-Gated Metadata Sync
+
 ```
 pipeline_start
     ↓
-raw_layer_start → soda_scan_raw → raw_layer_end
+RAW Layer:
+    raw_layer_start → soda_scan_raw → collibra_sync_raw → raw_layer_end
+    (Quality gates metadata sync)
     ↓
-staging_layer_start → dbt_run_staging → soda_scan_staging → staging_layer_end
+STAGING Layer:
+    staging_layer_start → dbt_run_staging → soda_scan_staging → collibra_sync_staging → staging_layer_end
+    (Build → Validate → Govern)
     ↓
-mart_layer_start → dbt_run_mart → soda_scan_mart → mart_layer_end
+MART Layer:
+    mart_layer_start → dbt_run_mart → soda_scan_mart → collibra_sync_mart → mart_layer_end
+    (Build → Validate → Govern, strictest standards)
     ↓
-quality_layer_start → [soda_scan_quality, dbt_test] → quality_layer_end
+QUALITY Layer:
+    quality_layer_start → [soda_scan_quality, dbt_test] → quality_layer_end
     ↓
 cleanup_artifacts → pipeline_end
 ```
 
+**Orchestration Philosophy**:
+- **Quality gates metadata sync**: Metadata sync only happens after quality validation
+- **Sequential phase transitions**: Build → Validate → Govern (no parallelism across semantic boundaries)
+- **Parallelism within phases**: Multiple dbt models or checks can run in parallel within the same phase
+- **Collibra reflects commitments**: Only validated data enters governance catalog
+
 **Integration Flow**:
 - Quality results → Soda Cloud (automatic)
 - Quality metrics → Collibra (automatic, if configured)
-- Governance assets updated with quality information
+- Metadata sync → Collibra (automatic, **only after quality validation**)
+- Governance assets updated with validated quality information and metadata
 
 ## Data Quality Layers
 
@@ -220,6 +249,14 @@ make airflow-logs
 - **Cause**: Incorrect Collibra credentials or asset type IDs
 - **Solution**: Verify Collibra configuration and asset type IDs in configuration file
 
+#### Collibra Metadata Sync Issues
+- **Cause**: Schema asset IDs not resolving to connection IDs, or sync job failures
+- **Solution**: 
+  - Verify schema asset IDs in `collibra/config.yml`
+  - Check that schemas have been synchronized at least once in Collibra
+  - Review Collibra job status in Collibra UI
+  - Check Airflow task logs for detailed error messages
+
 ### Debug Commands
 ```bash
 # Check Airflow status
@@ -271,9 +308,14 @@ make airflow-validate-env
 
 ### Collibra Integration
 - **Governance Sync**: Quality results automatically synchronized to Collibra
+- **Metadata Sync**: Schema and table metadata automatically synchronized after each layer
 - **Asset Mapping**: Quality metrics linked to data assets
-- **Configuration**: Collibra integration configured in Soda configuration files
+- **Configuration**: 
+  - Quality sync configured in `soda/soda-collibra-integration-configuration/configuration-collibra.yml`
+  - Metadata sync configured in `collibra/config.yml`
 - **Selective Sync**: Only datasets marked for sync are synchronized
+- **Automatic Resolution**: Schema asset IDs automatically resolved to schema connection IDs
+- **Job Monitoring**: Metadata sync jobs monitored with automatic wait-for-completion
 
 ### Snowflake Integration
 - **Connection**: Uses environment-based connection
@@ -292,6 +334,8 @@ make airflow-validate-env
 - **Performance**: Optimized execution and resource usage
 - **Maintainability**: Clean, modular DAG design
 - **Governance Integration**: Quality metrics automatically available in governance catalog
+- **Metadata Sync**: Automatic metadata synchronization after each pipeline layer
+- **Job Monitoring**: Automatic wait-for-completion with timeout handling
 
 ---
 

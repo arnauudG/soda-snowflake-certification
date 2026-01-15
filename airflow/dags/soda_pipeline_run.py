@@ -38,45 +38,74 @@ with DAG(
     catchup=False,
     tags=["soda", "dbt", "data-quality", "pipeline", "regular"],
     doc_md="""
-    # Soda Pipeline Run DAG - Layered Approach
+    # Soda Pipeline Run DAG - Quality-Gated Metadata Sync
     
-    This DAG handles **layered data processing** with quality checks at each stage.
-    Use this DAG for daily/weekly pipeline runs after initialization is complete.
+    This DAG implements **quality-gated metadata synchronization** where quality checks
+    gate metadata sync operations. Collibra only syncs data that has passed quality
+    validation, ensuring the catalog reflects commitments, not aspirations.
+    
+    ## Orchestration Philosophy
+    
+    Each layer follows the sequence: **Build → Validate → Govern**
+    
+    - **dbt build** → "this model exists"
+    - **Soda checks** → "this model is acceptable"  
+    - **Collibra sync** → "this model is governable and discoverable"
+    
+    Quality checks **gate** metadata synchronization. Metadata sync only happens after
+    quality validation, ensuring Collibra becomes a historical record of accepted states,
+    not a live mirror of Snowflake's chaos.
     
     ## What This DAG Does
-    - **Layer 1**: RAW data quality checks + advanced template checks
-    - **Layer 2**: dbt staging models + staging quality checks
-    - **Layer 3**: dbt mart models + mart quality checks  
-    - **Layer 4**: Quality monitoring + dbt tests
+    
+    - **RAW Layer**: Quality checks → Metadata sync (gated)
+    - **STAGING Layer**: Build → Quality checks → Metadata sync (gated)
+    - **MART Layer**: Build → Quality checks → Metadata sync (gated, strictest standards)
+    - **QUALITY Layer**: Final validation + dbt tests
     - **Sends results to Soda Cloud** for monitoring
+    - **Synchronizes metadata to Collibra** only for validated data
     - **Cleans up artifacts** and temporary files
     
     ## Layered Processing Flow
-    1. **RAW Layer**: Quality checks + advanced template checks on source data
-    2. **STAGING Layer**: Transform data + quality checks
-    3. **MART Layer**: Business logic + quality checks
+    
+    1. **RAW Layer**: Quality checks → Metadata sync (gated by quality)
+    2. **STAGING Layer**: Transform data → Quality checks → Metadata sync (gated)
+    3. **MART Layer**: Business logic → Quality checks → Metadata sync (gated, strictest)
     4. **QUALITY Layer**: Final validation + dbt tests
     
+    ## Quality Gating Benefits
+    
+    - **Collibra reflects commitments**: Only validated data enters governance
+    - **Lineage reflects approved flows**: Historical record of accepted states
+    - **Ownership discussions on validated assets**: Governance happens on trusted data
+    - **No retroactive corrections needed**: Catalog stays clean and meaningful
+    
     ## Advanced Features
+    
     - **Soda Library**: Full template support with advanced analytics
     - **Template Checks**: Statistical analysis, anomaly detection, business logic validation
     - **Enhanced Monitoring**: Data distribution analysis and trend monitoring
+    - **Quality-Gated Sync**: Metadata sync only after quality validation
     
     ## When to Use
+    
     - ✅ **Daily/weekly pipeline runs**
     - ✅ **Regular data processing**
     - ✅ **Scheduled execution**
     - ✅ **After initialization is complete**
     
     ## Prerequisites
+    
     - ⚠️ **Must run `soda_initialization` first** (one-time setup)
     - ⚠️ **Snowflake must be initialized** with sample data
     - ⚠️ **Environment variables must be configured**
+    - ⚠️ **Collibra configuration** in `collibra/config.yml`
     
     ## Layer Tasks
-    - **Layer 1**: `soda_scan_raw` + `soda_scan_raw_templates` - RAW data quality checks + advanced template checks
-    - **Layer 2**: `dbt_run_staging` + `soda_scan_staging` - Staging models + checks
-    - **Layer 3**: `dbt_run_mart` + `soda_scan_mart` - Mart models + checks
+    
+    - **Layer 1**: `soda_scan_raw` → `collibra_sync_raw` (quality gates sync)
+    - **Layer 2**: `dbt_run_staging` → `soda_scan_staging` → `collibra_sync_staging` (gated)
+    - **Layer 3**: `dbt_run_mart` → `soda_scan_mart` → `collibra_sync_mart` (gated, strictest)
     - **Layer 4**: `soda_scan_quality` + `dbt_test` - Quality monitoring + tests
     - **cleanup**: Clean up temporary artifacts
     """,
@@ -94,22 +123,34 @@ with DAG(
     # =============================================================================
     # LAYER 1: RAW DATA + RAW CHECKS
     # =============================================================================
+    # 
+    # Orchestration Philosophy: Quality Gates Metadata Sync
+    # 
+    # Each layer follows the sequence: Build → Validate → Govern
+    # - dbt build → "this model exists"
+    # - Soda checks → "this model is acceptable"
+    # - Collibra sync → "this model is governable and discoverable"
+    #
+    # Quality checks gate metadata synchronization. Collibra only syncs data that
+    # has passed quality validation, ensuring the catalog reflects commitments,
+    # not aspirations. This makes Collibra a historical record of accepted states.
     
     raw_layer_start = EmptyOperator(
         task_id="raw_layer_start",
-        doc_md="🔄 Starting RAW layer processing"
+        doc_md="Starting RAW layer processing"
     )
 
     soda_scan_raw = BashOperator(
         task_id="soda_scan_raw",
         bash_command=BASH_PREFIX + "soda scan -d soda_certification_raw -c soda/configuration/configuration_raw.yml -T soda/checks/templates/data_quality_templates.yml soda/checks/raw || true",
         doc_md="""
-        **RAW Layer Quality Checks**
+        **RAW Layer Quality Checks - Quality Gate**
         
         - Initial data quality assessment
         - Relaxed thresholds for source data
         - Identifies data issues before transformation
         - Includes all raw tables: customers, products, orders, order_items
+        - **Gates metadata sync**: Only validated data proceeds to Collibra
         """,
     )
 
@@ -122,11 +163,13 @@ with DAG(
         task_id="collibra_sync_raw",
         python_callable=sync_raw_metadata_task,
         doc_md="""
-        **Collibra Metadata Sync - RAW Layer**
+        **Collibra Metadata Sync - RAW Layer (Gated by Quality)**
         
+        - **Only executes after quality checks pass**
         - Triggers metadata synchronization in Collibra for RAW schema
         - Waits for synchronization job to complete
-        - Updates Collibra catalog with latest RAW layer metadata
+        - Updates Collibra catalog with validated RAW layer metadata
+        - Ensures Collibra reflects commitments, not aspirations
         """,
     )
 
@@ -138,22 +181,26 @@ with DAG(
     # =============================================================================
     # LAYER 2: STAGING MODELS + STAGING CHECKS
     # =============================================================================
+    # 
+    # Sequence: Build → Validate → Govern
+    # Quality checks gate metadata sync to ensure only acceptable data enters governance
     
     staging_layer_start = EmptyOperator(
         task_id="staging_layer_start",
-        doc_md="🔄 Starting STAGING layer processing"
+        doc_md="Starting STAGING layer processing"
     )
 
     dbt_run_staging = BashOperator(
         task_id="dbt_run_staging",
         bash_command=BASH_PREFIX + "cd dbt && dbt run --select staging --target dev --profiles-dir . 2>/dev/null || true",
         doc_md="""
-        **Execute dbt Staging Models**
+        **Execute dbt Staging Models - Build Phase**
         
         - Runs dbt staging models (stg_customers, stg_orders, stg_products, stg_order_items)
         - Transforms raw data into cleaned, standardized format
         - Applies data quality improvements
         - Creates models in STAGING schema via project config
+        - **Phase 1**: Materialize models in Snowflake
         """,
     )
 
@@ -161,11 +208,13 @@ with DAG(
         task_id="soda_scan_staging",
         bash_command=BASH_PREFIX + "soda scan -d soda_certification_staging -c soda/configuration/configuration_staging.yml -T soda/checks/templates/data_quality_templates.yml soda/checks/staging || true",
         doc_md="""
-        **STAGING Layer Quality Checks**
+        **STAGING Layer Quality Checks - Validation Phase**
         
         - Stricter quality thresholds than RAW
         - Shows data improvement after transformation
         - Expected: Fewer failures than RAW layer
+        - **Gates metadata sync**: Only validated data proceeds to Collibra
+        - **Phase 2**: Validate freshness, volume, schema, business rules
         """,
     )
 
@@ -178,11 +227,14 @@ with DAG(
         task_id="collibra_sync_staging",
         python_callable=sync_staging_metadata_task,
         doc_md="""
-        **Collibra Metadata Sync - STAGING Layer**
+        **Collibra Metadata Sync - STAGING Layer (Gated by Quality)**
         
+        - **Only executes after quality checks pass**
         - Triggers metadata synchronization in Collibra for STAGING schema
         - Waits for synchronization job to complete
-        - Updates Collibra catalog with latest STAGING layer metadata
+        - Updates Collibra catalog with validated STAGING layer metadata
+        - **Phase 3**: Sync only what passed the layer's acceptance criteria
+        - Ensures Collibra reflects commitments, not aspirations
         """,
     )
 
@@ -194,22 +246,27 @@ with DAG(
     # =============================================================================
     # LAYER 3: MART MODELS + MART CHECKS
     # =============================================================================
+    # 
+    # Sequence: Build → Validate → Govern
+    # Strictest quality standards for business-ready data
+    # Metadata sync is a badge of trust for Gold layer
     
     mart_layer_start = EmptyOperator(
         task_id="mart_layer_start",
-        doc_md="🏆 Starting MART layer processing"
+        doc_md="Starting MART layer processing"
     )
 
     dbt_run_mart = BashOperator(
         task_id="dbt_run_mart",
         bash_command=BASH_PREFIX + "cd dbt && dbt run --select mart --target dev --profiles-dir . 2>/dev/null || true",
         doc_md="""
-        **Execute dbt Mart Models**
+        **Execute dbt Mart Models - Build Phase**
         
         - Runs dbt mart models (dim_customers, fact_orders)
         - Creates business-ready analytics tables
         - Applies business logic and aggregations
         - Creates models in MART schema via project config
+        - **Phase 1**: Materialize business-ready models in Snowflake
         """,
     )
 
@@ -217,11 +274,13 @@ with DAG(
         task_id="soda_scan_mart",
         bash_command=BASH_PREFIX + "soda scan -d soda_certification_mart -c soda/configuration/configuration_mart.yml -T soda/checks/templates/data_quality_templates.yml soda/checks/mart || true",
         doc_md="""
-        **MART Layer Quality Checks**
+        **MART Layer Quality Checks - Validation Phase**
         
         - Strictest quality thresholds
         - Ensures business-ready data quality
         - Expected: Minimal failures (production-ready)
+        - **Gates metadata sync**: Only production-ready data proceeds to Collibra
+        - **Phase 2**: Validate business logic, referential integrity, strict quality
         """,
     )
 
@@ -234,11 +293,15 @@ with DAG(
         task_id="collibra_sync_mart",
         python_callable=sync_mart_metadata_task,
         doc_md="""
-        **Collibra Metadata Sync - MART Layer**
+        **Collibra Metadata Sync - MART Layer (Gated by Quality)**
         
+        - **Only executes after quality checks pass**
         - Triggers metadata synchronization in Collibra for MART schema
         - Waits for synchronization job to complete
-        - Updates Collibra catalog with latest MART layer metadata
+        - Updates Collibra catalog with validated MART layer metadata
+        - **Phase 3**: Sync only production-ready, validated data
+        - Metadata sync is a badge of trust for Gold layer
+        - Ensures Collibra reflects commitments, not aspirations
         """,
     )
 
@@ -308,12 +371,33 @@ with DAG(
     )
 
     # =============================================================================
-    # TASK DEPENDENCIES - LAYERED APPROACH
+    # TASK DEPENDENCIES - QUALITY-GATED METADATA SYNC
     # =============================================================================
+    #
+    # Orchestration Philosophy: Quality Gates Metadata Sync
+    #
+    # Each layer follows: Build → Validate → Govern
+    # - Quality checks MUST complete before metadata sync
+    # - This ensures Collibra only contains validated, committed data
+    # - Collibra becomes a historical record of accepted states
+    #
+    # Parallelism is fine WITHIN a phase (e.g., multiple dbt models, multiple checks)
+    # But phase transitions stay sequential to maintain semantic clarity
+    #
+    # Layer Sequencing:
+    # RAW:    Quality Check → Metadata Sync (gated)
+    # STAGING: Build → Quality Check → Metadata Sync (gated)
+    # MART:   Build → Quality Check → Metadata Sync (gated)
     
-    # Complete layered pipeline with individual layer visibility and Collibra sync
+    # RAW Layer: Quality gates metadata sync
     pipeline_start >> raw_layer_start >> soda_scan_raw >> collibra_sync_raw >> raw_layer_end
+    
+    # STAGING Layer: Build → Validate → Govern
     raw_layer_end >> staging_layer_start >> dbt_run_staging >> soda_scan_staging >> collibra_sync_staging >> staging_layer_end
+    
+    # MART Layer: Build → Validate → Govern (strictest standards)
     staging_layer_end >> mart_layer_start >> dbt_run_mart >> soda_scan_mart >> collibra_sync_mart >> mart_layer_end
+    
+    # Quality Layer: Final monitoring
     mart_layer_end >> quality_layer_start >> [soda_scan_quality, dbt_test] >> quality_layer_end
     quality_layer_end >> cleanup >> pipeline_end

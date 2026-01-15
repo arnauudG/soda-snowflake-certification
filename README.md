@@ -41,21 +41,40 @@ Data Quality (Soda) ────→ Data Governance (Collibra)
 ```
 RAW Layer (Snowflake)
     ↓
-dbt Transformations (STAGING)
+Soda Quality Checks (RAW) [VALIDATION PHASE]
     ↓
-dbt Models (MARTS)
+Collibra Metadata Sync (RAW Schema) [GOVERNANCE PHASE - GATED BY QUALITY]
     ↓
-Soda Quality Checks (All Layers)
+dbt Transformations (STAGING) [BUILD PHASE]
+    ↓
+Soda Quality Checks (STAGING) [VALIDATION PHASE]
+    ↓
+Collibra Metadata Sync (STAGING Schema) [GOVERNANCE PHASE - GATED BY QUALITY]
+    ↓
+dbt Models (MARTS) [BUILD PHASE]
+    ↓
+Soda Quality Checks (MARTS) [VALIDATION PHASE]
+    ↓
+Collibra Metadata Sync (MART Schema) [GOVERNANCE PHASE - GATED BY QUALITY]
     ↓
 Soda Cloud Dashboard
     ↓
 Collibra Integration
     ├──→ Quality Metrics → Data Assets (Tables)
     ├──→ Check Results → Column Assets
-    └──→ Quality Dimensions → Governance Framework
+    ├──→ Quality Dimensions → Governance Framework
+    └──→ Metadata Sync → Schema & Table Updates (Only Validated Data)
     ↓
 Superset Visualization
 ```
+
+**Orchestration Philosophy: Quality Gates Metadata Sync**
+
+Each layer follows: **Build → Validate → Govern**
+- Quality checks **gate** metadata synchronization
+- Collibra only syncs data that has passed quality validation
+- This ensures Collibra reflects **commitments**, not **aspirations**
+- Collibra becomes a historical record of accepted states
 
 ## Key Integrations
 
@@ -75,6 +94,14 @@ Superset Visualization
 
 ### Data Governance Integration (Collibra)
 
+**Metadata Synchronization (Quality-Gated)**
+- Automatic metadata sync after each pipeline layer (RAW, STAGING, MART)
+- **Quality checks gate metadata sync**: Only validated data enters Collibra
+- Schema and table metadata automatically updated in Collibra catalog
+- Real-time synchronization of schema changes and new tables
+- Job monitoring with automatic wait-for-completion
+- **Orchestration philosophy**: Build → Validate → Govern sequence ensures Collibra reflects commitments, not aspirations
+
 **Quality-to-Governance Synchronization**
 - Automatic mapping of quality checks to Collibra data assets
 - Quality metrics linked to tables and columns in Collibra catalog
@@ -92,6 +119,7 @@ Superset Visualization
 - Domain mapping: Quality results organized by governance domains
 - Relationship management: Automatic creation of relationships between assets and quality metrics
 - Ownership tracking: Quality metrics linked to asset owners
+- Schema asset ID resolution: Automatically resolves schema asset IDs to schema connection IDs
 
 **Quality Metrics in Collibra**
 - Check evaluation status (pass/fail)
@@ -99,6 +127,12 @@ Superset Visualization
 - Check definitions and configurations
 - Diagnostic metrics (rows tested, passed, failed, passing fraction)
 - Links to Soda Cloud for detailed analysis
+
+**Metadata Sync Features**
+- Automatic resolution of schema asset IDs to schema connection IDs
+- Configurable per-layer synchronization
+- Job status monitoring with timeout handling
+- Error handling and retry logic
 
 ### Data Quality Integration (Soda)
 
@@ -152,6 +186,11 @@ All quality checks are categorized using standardized dimensions:
 │   │   └── mart/                     # Business-ready models
 ├── airflow/                          # Workflow orchestration
 │   └── dags/                        # Pipeline DAGs
+├── collibra/                         # Collibra integration
+│   ├── metadata_sync.py            # Metadata synchronization module
+│   ├── airflow_helper.py            # Airflow integration functions
+│   ├── config.yml                   # Metadata sync configuration
+│   └── README.md                    # Collibra integration documentation
 ├── superset/                         # Visualization
 │   └── data/                        # Soda Cloud data exports
 └── scripts/                          # Utility scripts
@@ -235,7 +274,14 @@ make superset-upload-data
 
 ### Setup
 
-The Collibra integration is configured in `soda/soda-collibra-integration-configuration/configuration-collibra.yml`.
+The Collibra integration consists of two parts:
+
+1. **Quality Metrics Sync**: Configured in `soda/soda-collibra-integration-configuration/configuration-collibra.yml`
+2. **Metadata Sync**: Configured in `collibra/config.yml`
+
+### Quality Metrics Synchronization
+
+**Configuration File**: `soda/soda-collibra-integration-configuration/configuration-collibra.yml`
 
 **Key Configuration Options:**
 
@@ -262,7 +308,7 @@ The Collibra integration is configured in `soda/soda-collibra-integration-config
 - Diagnostic metrics (rows tested, passed, failed, passing fraction)
 - Links to Soda Cloud
 
-### Marking Datasets for Collibra Sync
+**Marking Datasets for Collibra Sync**
 
 To sync a dataset to Collibra, add the sync attribute in your Soda check file:
 
@@ -274,12 +320,57 @@ discover datasets:
         push_to_collibra_dic: true
 ```
 
-### Domain Mapping
+**Domain Mapping**
 
 Quality results can be organized by Collibra domains:
 - Configure domain mapping via `soda_collibra_domain_dataset_attribute_name`
 - Set default domain via `soda_collibra_default_domain`
 - Quality assets are created in appropriate governance domains
+
+### Metadata Synchronization
+
+**Configuration File**: `collibra/config.yml`
+
+**Configuration Structure:**
+
+```yaml
+database_id: "your-database-asset-uuid"
+
+# Optional: Database Connection ID (resolved automatically if not provided)
+# database_connection_id: "your-database-connection-uuid"
+
+raw:
+  schema_connection_ids:  # These are schema asset IDs
+    - "your-raw-schema-asset-uuid"
+
+staging:
+  schema_connection_ids:  # These are schema asset IDs
+    - "your-staging-schema-asset-uuid"
+
+mart:
+  schema_connection_ids:  # These are schema asset IDs
+    - "your-mart-schema-asset-uuid"
+```
+
+**How It Works:**
+1. System automatically resolves schema asset IDs to schema connection IDs
+2. **Quality checks gate metadata sync**: Metadata sync only happens after quality validation passes
+3. After each layer's quality validation, metadata sync is triggered for that layer's schema
+4. System waits for sync job to complete before proceeding to next layer
+5. Schema and table metadata is updated in Collibra catalog
+6. **Only validated data enters governance**: Collibra reflects commitments, not aspirations
+
+**Orchestration Sequence (per layer):**
+- **Build Phase**: dbt materializes models in Snowflake
+- **Validation Phase**: Soda checks validate freshness, volume, schema, business rules
+- **Decision Point**: If blocking checks fail → stop promotion; if non-blocking checks fail → annotate but continue
+- **Governance Phase**: Collibra metadata sync (only what passed the layer's acceptance criteria)
+
+**Finding Asset IDs:**
+- **Database Asset ID**: Navigate to Database asset in Collibra, copy UUID from URL or asset details
+- **Schema Asset IDs**: Navigate to each Schema asset (not Schema Connection) in Collibra, copy UUIDs
+
+**For detailed metadata sync documentation, see**: [Collibra Integration README](collibra/README.md)
 
 ## Data Quality Dimensions
 
@@ -357,6 +448,7 @@ make clean                  # Clean up artifacts
 
 - **[Soda Configuration](soda/README.md)** - Detailed Soda setup, quality checks, and Collibra integration
 - **[Airflow Setup](airflow/README.md)** - Workflow orchestration details
+- **[Collibra Integration](collibra/README.md)** - Metadata synchronization and governance integration
 - **[dbt Configuration](dbt/README.md)** - Data transformation setup
 - **[Superset Setup](superset/README.md)** - Visualization configuration
 - **[Scripts Documentation](scripts/README.md)** - Utility scripts guide
@@ -383,6 +475,8 @@ This platform demonstrates:
 - Quality metrics automatically available in governance catalog
 - Quality dimensions integrated into governance framework
 - Real-time visibility into data asset quality
+- Automatic metadata synchronization after each pipeline layer
+- Always up-to-date schema and table information in catalog
 
 **For Data Consumers**
 - Quality information accessible alongside data assets
@@ -409,6 +503,13 @@ This platform demonstrates:
 - Ensure datasets are marked with `push_to_collibra_dic` attribute
 - Verify Collibra asset type IDs match your instance configuration
 
+**Collibra Metadata Sync**
+- Verify `collibra/config.yml` has correct database and schema asset IDs
+- Ensure schemas have been synchronized at least once in Collibra (required for connection ID resolution)
+- Check Collibra job status in Collibra UI if sync jobs fail
+- Review Airflow task logs for detailed error messages
+- Verify database connection ID can be resolved from database asset ID
+
 **Snowflake Connection**
 - Verify credentials in `.env`
 - Check warehouse is running
@@ -423,6 +524,7 @@ This platform demonstrates:
 
 - **Complete Integration**: Seamless connection between engineering, governance, and quality
 - **Automated Synchronization**: Quality results automatically pushed to Collibra
+- **Metadata Synchronization**: Schema and table metadata automatically synced after each layer
 - **Standardized Framework**: Six quality dimensions across all checks
 - **Multi-Layer Monitoring**: Quality checks at RAW, STAGING, and MARTS layers
 - **Governance Integration**: Quality metrics linked to data assets in Collibra

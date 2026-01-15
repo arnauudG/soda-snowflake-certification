@@ -10,7 +10,9 @@ This directory contains the comprehensive Soda data quality monitoring configura
 - **Sample Data Collection**: 100 sample rows per dataset for analysis
 - **Failed Row Sampling**: Detailed failure analysis with custom SQL queries
 - **API Integration**: Automated metadata extraction for external reporting
-- **Collibra Integration**: Automatic synchronization of quality results to governance catalog
+- **Collibra Integration**: 
+  - Automatic synchronization of quality results to governance catalog
+  - Automatic metadata synchronization after each pipeline layer
 - **Uppercase Standardization**: Consistent naming across all layers
 
 ### Quality Coverage
@@ -55,10 +57,13 @@ Soda Cloud (Results Storage)
 Collibra Integration (Automatic Sync)
     ├──→ Quality Metrics → Table Assets
     ├──→ Check Results → Column Assets
-    └──→ Quality Dimensions → Governance Framework
+    ├──→ Quality Dimensions → Governance Framework
+    └──→ Metadata Sync → Schema & Table Updates
     ↓
 Collibra Data Catalog (Unified View)
 ```
+
+**Note**: Metadata synchronization is handled separately in the `collibra/` directory and runs automatically after each pipeline layer. See [Collibra Integration README](../collibra/README.md) for details.
 
 ### Key Features
 

@@ -1,91 +1,109 @@
 # Soda Data Quality Certification Project
 
-A comprehensive data quality pipeline demonstrating Soda Library integration with Airflow, dbt, and Snowflake for end-to-end data quality management.
+A comprehensive demonstration of enterprise-grade data quality monitoring using Soda Library, showcasing best practices for data quality management across a complete data pipeline.
 
-## 🎯 Project Overview
+## 🎯 What This Project Demonstrates
 
-This project showcases a complete data quality pipeline with:
-- **Soda Library** for data quality checks and profiling
-- **Apache Airflow** for workflow orchestration
-- **dbt** for data transformations
-- **Snowflake** as the data warehouse
-- **Apache Superset** for data visualization and dashboards
-- **Docker** for containerized deployment
-- **Soda Cloud API** for metadata extraction and reporting
+This project is a **complete data quality certification framework** that demonstrates how to:
 
-## 🏗️ Architecture
+- **Monitor data quality** across multiple layers of a data pipeline (RAW → STAGING → MARTS)
+- **Standardize quality dimensions** using industry-standard data quality metrics
+- **Automate quality checks** with comprehensive validation rules
+- **Visualize quality metrics** through dashboards and reporting
+- **Integrate quality monitoring** into existing data pipelines
 
-### Data Pipeline Layers
+### Core Value Proposition
+
+**Data Quality Dimensions**: All quality checks are categorized using six standardized dimensions:
+- **Accuracy**: Data correctness, schema validation, and business rule compliance
+- **Completeness**: Missing value detection and data coverage
+- **Consistency**: Referential integrity and cross-table validation
+- **Uniqueness**: Duplicate detection and prevention
+- **Validity**: Format validation and constraint checking
+- **Timeliness**: Data freshness and recency monitoring
+
+## 📊 Data Quality Approach
+
+### Multi-Layer Quality Monitoring
+
+The project implements a **layered quality strategy** where data quality standards become progressively stricter as data moves through the pipeline:
+
+```
+RAW Layer (Source Data)
+  ↓ Quality Checks: Relaxed thresholds for initial assessment
+  ↓ Focus: Identify data issues at source
+  
+STAGING Layer (Transformed Data)
+  ↓ Quality Checks: Stricter validation after transformation
+  ↓ Focus: Validate data cleaning and business rules
+  
+MARTS Layer (Business-Ready Data)
+  ↓ Quality Checks: Strictest requirements for production use
+  ↓ Focus: Ensure business-ready data quality
+```
+
+### Quality Check Coverage
+
+**50+ automated quality checks** across all layers covering:
+- Schema validation and structure integrity
+- Completeness and missing value detection
+- Uniqueness and duplicate prevention
+- Format and constraint validation
+- Referential integrity checks
+- Business rule validation
+- Data freshness monitoring
+
+### Quality Metrics by Layer
+
+| Layer | Tables | Quality Focus | Threshold Strategy |
+|-------|--------|---------------|-------------------|
+| **RAW** | 4 tables | Initial assessment | Relaxed (tolerate some issues) |
+| **STAGING** | 4 tables | Transformation validation | Stricter (validate cleaning) |
+| **MARTS** | 2 tables | Business readiness | Strictest (production quality) |
+
+## 🏗️ Architecture Overview
+
+### Data Pipeline Flow
+
 ```
 RAW Layer (Snowflake) → STAGING Layer (dbt) → MARTS Layer (dbt)
      ↓                        ↓                      ↓
 Soda Quality Checks    Soda Quality Checks    Soda Quality Checks
+     ↓                        ↓                      ↓
+Soda Cloud Dashboard   Soda Cloud Dashboard   Soda Cloud Dashboard
+     ↓                        ↓                      ↓
+Superset Visualization  Superset Visualization  Superset Visualization
 ```
 
 ### Technology Stack
-- **Orchestration**: Apache Airflow 2.8+
+
+- **Data Quality**: Soda Library 1.0.5 with Soda Cloud integration
+- **Orchestration**: Apache Airflow 2.8+ for workflow management
+- **Transformations**: dbt Core 1.10.11 for data modeling
 - **Data Warehouse**: Snowflake
-- **Transformations**: dbt Core 1.10.11
-- **Data Quality**: Soda Library 1.0.5
-- **Visualization**: Apache Superset
+- **Visualization**: Apache Superset for dashboards
 - **Containerization**: Docker & Docker Compose
-- **Language**: Python 3.11
 
-## 📁 Project Structure
+## 📈 Key Features
 
-```
-├── airflow/                          # Airflow Docker configuration
-│   ├── docker/                      # Docker configuration
-│   │   ├── docker-compose.yml       # Multi-container setup
-│   │   ├── Dockerfile               # Custom Airflow image
-│   │   └── requirements.txt         # Python dependencies
-│   ├── dags/                        # Airflow DAGs
-│   │   ├── soda_initialization.py   # Data initialization DAG
-│   │   └── soda_pipeline_run.py     # Main pipeline DAG
-│   └── plugins/                     # Airflow plugins
-├── dbt/                              # dbt project configuration
-│   ├── models/
-│   │   ├── raw/                      # Raw data sources
-│   │   ├── staging/                  # Staging transformations
-│   │   └── mart/                     # Business-ready models
-│   ├── dbt_project.yml              # dbt project configuration
-│   └── profiles.yml                 # dbt profiles for Snowflake
-├── scripts/                          # Utility scripts
-│   ├── organize_soda_data.py        # Organize Soda data in friendly structure
-│   ├── upload_soda_data_docker.py   # Upload Soda data to Superset database
-│   ├── soda_dump_api.py             # Soda Cloud API data extraction
-│   ├── run_soda_dump.sh             # Soda Cloud data dump runner
-│   ├── requirements_dump.txt         # API extraction dependencies
-├── load_env.sh                       # Environment variables loader
-│   └── setup/                       # Environment setup
-│       ├── requirements.txt         # Python dependencies
-│       ├── setup_snowflake.py       # Snowflake table creation
-│       └── reset_snowflake.py       # Snowflake cleanup
-├── soda/                             # Soda data quality configuration
-│   ├── checks/                      # SodaCL check definitions
-│   │   ├── raw/                     # RAW layer quality checks
-│   │   ├── staging/                 # STAGING layer quality checks
-│   │   ├── mart/                    # MART layer quality checks
-│   │   ├── quality/                 # Quality check results
-│   │   └── templates/               # Reusable check templates
-│   ├── configuration/               # Soda connection configurations
-│   └── README.md                    # Soda configuration documentation
-├── superset/                         # Superset visualization setup
-│   ├── docker-compose.yml           # Superset services with dedicated database
-│   ├── superset_config.py           # Superset configuration
-│   ├── data/                        # Soda Cloud data
-│   │   ├── datasets_latest.csv      # Latest dataset metadata
-│   │   ├── checks_latest.csv        # Latest check results metadata
-│   │   ├── analysis_summary.csv     # Analysis summary
-│   │   ├── datasets_YYYY-MM-DD.csv  # Daily dataset snapshots
-│   │   ├── checks_YYYY-MM-DD.csv    # Daily check snapshots
-│   │   ├── datasets_YYYYMMDD_HHMMSS.csv # Timestamped dataset files
-│   │   ├── checks_YYYYMMDD_HHMMSS.csv   # Timestamped check files
-│   │   └── summary_report_YYYYMMDD_HHMMSS.txt # Summary reports
-│   └── README.md                    # Superset documentation
-├── Makefile                         # Project automation and commands
-└── README.md                        # This file
-```
+### Comprehensive Quality Monitoring
+- **Standardized Dimensions**: All checks use six data quality dimensions
+- **Layer-Specific Standards**: Progressive quality requirements by layer
+- **Automated Validation**: 50+ checks across schema, completeness, uniqueness, validity, consistency, and timeliness
+- **Failed Row Sampling**: Detailed analysis of quality issues
+
+### Soda Cloud Integration
+- **Dataset Discovery**: Automatic table and column discovery
+- **Column Profiling**: Comprehensive statistical analysis
+- **Sample Data Collection**: 100 sample rows per dataset
+- **Centralized Monitoring**: All results in Soda Cloud dashboard
+- **API Integration**: Automated metadata extraction for reporting
+
+### Visualization & Reporting
+- **Superset Dashboards**: Interactive visualization of quality metrics
+- **Historical Tracking**: Trend analysis over time
+- **Custom Reports**: Flexible data extraction and analysis
+- **Real-time Monitoring**: Live quality metrics and alerts
 
 ## 🚀 Quick Start
 
@@ -95,16 +113,8 @@ Soda Quality Checks    Soda Quality Checks    Soda Quality Checks
 - **Soda Cloud account** (required for data extraction and visualization)
 - **Python 3.11+** (for local script execution)
 
-## 🎯 What This Project Does
-This project demonstrates a complete data quality pipeline with:
-1. **Data Pipeline**: Raw → Staging → Marts (using dbt)
-2. **Quality Monitoring**: Soda Library checks at each layer
-3. **Orchestration**: Apache Airflow for workflow management
-4. **Visualization**: Apache Superset for dashboards
-5. **Cloud Integration**: Soda Cloud for centralized monitoring
-6. **Data Extraction**: Automated Soda Cloud metadata extraction
-
 ### 1. Environment Setup
+
 ```bash
 # Clone the repository
 git clone <repository-url>
@@ -132,279 +142,59 @@ SODA_CLOUD_API_KEY_SECRET=your_api_key_secret
 SODA_CLOUD_ORGANIZATION_ID=your_org_id
 ```
 
-### **🔧 Environment Variables Loader**
-
-The project includes an enhanced automated environment variable loader that:
-
-- **Dynamic Loading** - Loads all variables from .env file without predefined requirements
-- **Smart Validation** - Checks for empty values and provides clear feedback
-- **Intelligent Display** - Shows non-sensitive variables with values, hides sensitive ones
-- **Automatic Detection** - Automatically detects and masks sensitive variables by naming patterns
-- **Flexible Configuration** - Works with any variables defined in your .env file
-
-**Note**: The environment loader is now fully dynamic and will work with any variables you define in your `.env` file. You can add additional variables as needed, and they will be automatically loaded and validated.
-
-#### **Automatic Loading (Recommended)**
-Environment variables are automatically loaded when you run:
-```bash
-make airflow-up      # Loads env vars before starting Airflow
-make superset-up     # Loads env vars before starting Superset  
-make all-up          # Loads env vars before starting all services
-```
-
-#### **Manual Loading**
-You can also manually load environment variables:
-```bash
-# Load environment variables from .env file
-source load_env.sh
-
-# Or make it executable and run directly
-chmod +x load_env.sh
-./load_env.sh
-```
-
-**Features:**
-- ✅ **Automatic validation** - Checks for required variables
-- ✅ **Security** - Hides sensitive values in output
-- ✅ **User-friendly** - Color-coded status messages
-- ✅ **Error handling** - Clear guidance for missing variables
-
 ### 2. Start Services
+
 ```bash
 # Start all services (Airflow + Superset)
 make all-up
-
-# Or start services separately
-make airflow-up      # Start Airflow only
-make superset-up     # Start Superset only
 
 # Verify services are running
 make airflow-status
 make superset-status
 ```
 
-### 3. Initialize Data
+### 3. Initialize and Run Pipeline
+
 ```bash
-# Run initialization DAG to create tables and load data
-make airflow-trigger-init
-```
-
-### 4. Run Data Quality Pipeline
-```bash
-# Execute the main pipeline
-make airflow-trigger-pipeline
-```
-
-### 5. Extract and Visualize Soda Cloud Data
-```bash
-# Complete workflow: extract + organize + upload to Superset
-make superset-upload-data
-
-# Or run individual steps:
-make soda-dump                 # Extract from Soda Cloud
-make organize-soda-data        # Organize data structure
-make superset-upload-data      # Upload to Superset (includes dump + organize)
-```
-
-### 6. Visualize Data Quality Results
-```bash
-# Access Superset UI at http://localhost:8089 (admin/admin)
-# The data is automatically uploaded to PostgreSQL tables:
-# - soda.datasets_latest (latest dataset information)
-# - soda.checks_latest (latest check results)
-# - soda.analysis_summary (analysis summary)
-
-# Create dashboards and visualizations from the uploaded data
-# Your dashboards and charts are automatically preserved!
-```
-
-### 7. Complete Workflow Example
-```bash
-# Complete end-to-end workflow
-make all-up                    # Start all services
-make airflow-trigger-init      # Initialize data
-make airflow-trigger-pipeline  # Run quality checks
-make superset-upload-data      # Extract + organize + upload to Superset
-# Access Superset at http://localhost:8089
-```
-
-## 👋 First Time User Guide
-
-### **Step-by-Step Setup for New Users**
-
-#### **1. Prerequisites Check**
-```bash
-# Verify Docker is running
-docker --version
-docker-compose --version
-
-# Verify Python is available
-python3 --version
-```
-
-#### **2. Environment Configuration**
-```bash
-# Create your .env file
-cp .env.example .env
-
-# Edit .env with your actual credentials
-nano .env  # or use your preferred editor
-```
-
-#### **3. First Run - Complete Setup**
-```bash
-# Start all services
-make all-up
-
-# Wait for services to be ready (about 2-3 minutes)
-# Check status
-make airflow-status
-make superset-status
-
-# Initialize the data pipeline
+# Initialize data (creates tables and loads sample data)
 make airflow-trigger-init
 
-# Run the complete data quality pipeline
+# Run complete data quality pipeline
 make airflow-trigger-pipeline
 
-# Extract and visualize Soda Cloud data (complete workflow)
+# Extract and visualize Soda Cloud data
 make superset-upload-data
 ```
 
-#### **4. Access Your Dashboards**
-- **Airflow UI**: http://localhost:8080 (admin/admin)
-- **Superset UI**: http://localhost:8089 (admin/admin)
+### 4. Access Dashboards
 
-#### **5. Verify Everything Works**
-```bash
-# Check all services are running
-make airflow-status
-make superset-status
+- **Airflow UI**: http://localhost:8080 (admin/admin) - Monitor pipeline execution
+- **Superset UI**: http://localhost:8089 (admin/admin) - View quality dashboards
+- **Soda Cloud**: Your organization dashboard - Centralized quality monitoring
 
-# Check data was created
-# - Airflow: Look for successful DAG runs
-# - Superset: Check for uploaded Soda data tables
-```
-
-### **What You'll See**
-1. **Airflow**: Two DAGs running successfully
-2. **Snowflake**: Database with sample data and quality checks
-3. **Soda Cloud**: Quality results uploaded to your organization
-4. **Superset**: Data quality dashboards ready to create
-
-### **Data Persistence**
-Your work is automatically preserved:
-- **Superset Dashboards**: Automatically saved using Docker volumes
-- **Database Data**: PostgreSQL data persisted across restarts
-- **Configuration**: All settings and connections preserved
-- **No Data Loss**: Restart services without losing your work!
-
-## 🔄 Soda Cloud Data Workflow
-
-### Overview
-The project includes a complete data extraction and visualization workflow that fetches data from your Soda Cloud platform and makes it available in Superset for analysis and dashboards.
-
-### Data Flow
-```
-Soda Cloud Platform → CSV Files → Organized Data → Superset Database → Dashboards
-```
-
-### Step-by-Step Workflow
-
-#### 1. **Extract from Soda Cloud** (`make soda-dump`)
-- Connects to Soda Cloud API using your credentials
-- Fetches **ALL** datasets and checks from your account
-- Saves data as CSV files directly to `superset/data/`
-- Includes timestamped files, daily snapshots, and `_latest` files
-
-#### 2. **Organize Data** (`make organize-soda-data`)
-- Validates that data exists in `superset/data/` directory
-- Always updates `*_latest.csv` files with the most recent data
-- Maintains historical data with timestamped filenames
-- Verifies required files are present
-- **Automatically cleans up** temporary `soda_dump_output` folder if it exists
-
-#### 3. **Upload to Superset** (`make superset-upload-data`)
-- Uploads organized data to PostgreSQL database
-- Creates dedicated tables: `soda.datasets_latest`, `soda.checks_latest`, and `soda.analysis_summary`
-- Stores historical data in separate tables
-- Refreshes latest tables with new data each time
-- **Automatically cleans up** temporary `soda_dump_output` folder
-
-#### 4. **Complete Workflow** (`make superset-upload-data`)
-- Combines organize + upload in one command
-- Perfect for regular data updates
-
-### Required Configuration
-
-Add these variables to your `.env` file:
-
-```bash
-# Soda Cloud API Credentials
-SODA_CLOUD_API_KEY_ID=your_api_key_id
-SODA_CLOUD_API_KEY_SECRET=your_api_key_secret
-SODA_CLOUD_HOST=https://cloud.us.soda.io  # or https://cloud.soda.io for EU
-```
-
-### Available Commands
-
-```bash
-# Complete workflow (recommended)
-make superset-upload-data
-
-# Individual steps
-make soda-dump           # Extract from Soda Cloud
-make organize-soda-data  # Organize data
-make superset-upload-data # Upload to Superset
-
-# Clean restart options
-make superset-clean-restart  # Complete clean restart
-make superset-reset-data     # Reset only data
+## 📁 Project Structure
 
 ```
-
-### Data Organization Structure
-
+├── soda/                             # Soda data quality configuration
+│   ├── checks/                      # Quality checks by layer
+│   │   ├── raw/                     # RAW layer checks
+│   │   ├── staging/                 # STAGING layer checks
+│   │   ├── mart/                    # MART layer checks
+│   │   └── quality/                 # Quality monitoring
+│   └── configuration/               # Soda connection configs
+├── dbt/                              # Data transformations
+│   ├── models/
+│   │   ├── raw/                      # Raw data sources
+│   │   ├── staging/                  # Staging transformations
+│   │   └── mart/                     # Business-ready models
+├── airflow/                          # Workflow orchestration
+│   └── dags/                        # Pipeline DAGs
+├── superset/                         # Visualization
+│   └── data/                        # Soda Cloud data exports
+└── scripts/                          # Utility scripts
 ```
-superset/data/
-├── datasets_latest.csv                    # Latest dataset information
-├── checks_latest.csv                      # Latest check results
-├── analysis_summary.csv                   # Analysis summary
-├── datasets_YYYY-MM-DD.csv                # Daily dataset snapshots
-├── checks_YYYY-MM-DD.csv                  # Daily check snapshots
-├── datasets_YYYYMMDD_HHMMSS.csv            # Timestamped dataset files
-├── checks_YYYYMMDD_HHMMSS.csv              # Timestamped check files
-└── summary_report_YYYYMMDD_HHMMSS.txt     # Summary reports
-```
 
-### Database Tables Created
-
-- **`soda.checks_latest`** - Latest check results (always refreshed)
-- **`soda.dataset_latest`** - Latest dataset information (always refreshed)
-- **`soda.*_historical`** - Historical data files
-- **`soda.analysis_summary`** - Analysis and summary data
-
-### Key Features
-
-✅ **Complete Data Fetch**: Gets ALL data from Soda Cloud (not filtered)  
-✅ **API Rate Limiting**: Respectful API usage with delays  
-✅ **Historical Tracking**: Maintains all historical data  
-✅ **Latest Updates**: Always updates to most recent data  
-✅ **Clean Restart**: Can completely reset and re-upload data  
-✅ **Error Handling**: Robust error handling and retry logic  
-
-## 📊 Data Quality Features
-
-### Comprehensive Quality Checks
-- **Schema Validation**: Ensures table structure integrity (Accuracy dimension)
-- **Completeness Checks**: Validates data completeness across layers (Completeness dimension)
-- **Uniqueness Checks**: Prevents duplicate records (Uniqueness dimension)
-- **Validity Checks**: Ensures data format compliance (Validity dimension)
-- **Consistency Checks**: Validates referential integrity and cross-table consistency (Consistency dimension)
-- **Business Logic Checks**: Validates business rules (Accuracy dimension)
-- **Freshness Checks**: Monitors data recency (Timeliness dimension)
-
-### Data Quality Dimensions
+## 📊 Data Quality Dimensions
 
 All Soda checks are standardized with six data quality dimensions:
 
@@ -419,134 +209,7 @@ All Soda checks are standardized with six data quality dimensions:
 
 All checks include an `attributes` section with the appropriate `dimension` field for proper categorization in Soda Cloud and reporting tools.
 
-### Advanced Soda Features
-- **Dataset Discovery**: Automatic table and column discovery
-- **Column Profiling**: Detailed statistical analysis
-- **Sample Data Collection**: 100 sample rows per dataset
-- **Failed Row Sampling**: Detailed failure analysis
-- **Anomaly Detection**: Foundation for automated monitoring (2025)
-
-### Layer-Specific Quality Standards
-- **RAW Layer**: Relaxed thresholds for initial data assessment
-- **STAGING Layer**: Stricter validation after transformation
-- **MARTS Layer**: Business-ready data with strictest requirements
-
-## 🔧 Configuration
-
-### Soda Cloud Integration
-All Soda check files include:
-```yaml
-# Dataset discovery
-discover datasets:
-  datasets:
-    - include TABLE_NAME
-
-# Column profiling
-profile columns:
-  columns:
-    - TABLE_NAME.%
-    - exclude TABLE_NAME.CREATED_AT
-    - exclude TABLE_NAME.UPDATED_AT
-
-# Sample data collection
-sample datasets:
-  datasets:
-    - include TABLE_NAME
-```
-
-### dbt Configuration
-- **Environment**: Configured for `dev` environment only
-- **Target**: All dbt operations use `--target dev` by default
-- **Quote Identifiers**: `quote_identifiers: true` for case sensitivity
-- **Uppercase Naming**: Consistent uppercase table and column names across all layers
-- **Layer Separation**: Clear separation between RAW, STAGING, and MARTS
-- **Standardized Schema**: All tables use uppercase column names (CUSTOMER_ID, FIRST_NAME, etc.)
-- **Schema Configuration**: Project-level schema configuration with custom schema macro
-  - **Staging models**: Created in `STAGING` schema
-  - **Mart models**: Created in `MART` schema
-  - **Custom Schema Macro**: Prevents schema concatenation issues
-
-### Smart Data Filtering
-- **Complete Data Access**: Fetches ALL Soda Cloud data for maximum flexibility
-- **Intelligent Filtering**: Notebook automatically filters for project-specific data
-- **Flexible Analysis**: Can analyze different data sources by changing filter criteria
-- **Dynamic File Discovery**: Always finds the latest data without hardcoding timestamps
-
-### Airflow DAGs
-- **Initialization DAG**: Sets up Snowflake tables and loads sample data
-- **Pipeline DAG**: Executes data quality checks and transformations
-
-## 📈 Monitoring & Observability
-
-### Soda Cloud Dashboard
-- Real-time data quality metrics
-- Historical trend analysis
-- Failed row samples for investigation
-- Column profiling insights
-
-### Soda Cloud API Integration
-- **Complete Data Access**: Fetches ALL datasets and checks from Soda Cloud
-- **Smart Filtering**: Intelligent filtering for project-specific data sources
-- **Metadata Extraction**: Automated extraction of dataset and check metadata
-- **CSV Export**: Structured data export for external reporting tools
-- **Sigma Dashboard**: Ready-to-use data for Sigma dashboard creation
-- **API Rate Limiting**: Optimized for efficient data extraction
-- **Dynamic File Finding**: No hardcoded timestamps, always finds latest data
-
-### Airflow UI
-- DAG execution monitoring
-- Task-level logging
-- Pipeline performance metrics
-- Error tracking and debugging
-
-### Superset Visualization
-- Interactive dashboards for data quality metrics
-- Real-time visualization of Soda check results
-- Custom charts and reports
-- Data exploration and analysis tools
-
-## 🛠️ Available Commands
-
-```bash
-# Service Management
-make all-up                  # Start all services (Airflow + Superset)
-make airflow-up             # Start Airflow services only
-make superset-up            # Start Superset services only
-make airflow-down           # Stop Airflow services
-make superset-down          # Stop Superset services
-make airflow-status         # Check Airflow status
-make superset-status        # Check Superset status
-
-# Pipeline Execution
-make airflow-trigger-init   # Run initialization DAG
-make airflow-trigger-pipeline # Run main pipeline DAG
-
-# Soda Data Management
-make superset-upload-data   # Complete workflow: extract + organize + upload to Superset
-make soda-dump              # Extract Soda Cloud metadata to CSV
-make organize-soda-data     # Organize Soda data in user-friendly structure (always updates to latest)
-make soda-data              # Legacy: organize + upload to Superset
-make superset-clean-restart # Clean restart Superset (removes all data)
-make superset-reset-data    # Reset only Superset data (keep containers)
-make superset-reset-schema  # Reset only soda schema (fixes table structure issues)
-
-# Database Management
-make dump-databases         # Dump all databases (Superset, Airflow, Soda data)
-make dump-superset         # Dump Superset database only
-make dump-airflow          # Dump Airflow database only
-make dump-soda             # Dump Soda data only
-
-# Development
-make airflow-logs           # View Airflow logs
-make superset-logs          # View Superset logs
-make airflow-rebuild        # Rebuild Airflow containers
-make clean                  # Clean up artifacts and temporary files
-make clean-logs             # Clean up old Airflow logs
-make clean-all              # Deep clean: artifacts, logs, and cache
-
-```
-
-## 📋 Data Quality Checks by Layer
+## 🔍 Quality Checks by Layer
 
 ### RAW Layer (4 tables)
 - **CUSTOMERS**: 10,000+ customer records
@@ -554,156 +217,101 @@ make clean-all              # Deep clean: artifacts, logs, and cache
 - **ORDERS**: 20,000+ order transactions
 - **ORDER_ITEMS**: 50,000+ order line items
 
+**Quality Focus**: Initial assessment with relaxed thresholds to identify source data issues.
+
 ### STAGING Layer (4 tables)
 - **STG_CUSTOMERS**: Cleaned customer data with quality flags
 - **STG_PRODUCTS**: Standardized product information
 - **STG_ORDERS**: Validated order transactions
 - **STG_ORDER_ITEMS**: Processed order line items
 
+**Quality Focus**: Validation after transformation with stricter requirements.
+
 ### MARTS Layer (2 tables)
 - **DIM_CUSTOMERS**: Customer dimension with segmentation
 - **FACT_ORDERS**: Order fact table with business metrics
 
-## 🔍 Quality Metrics
+**Quality Focus**: Business-ready data with strictest quality requirements.
 
-### Check Categories
-- **Schema Validation** (Accuracy): Table structure integrity
-- **Row Count** (Accuracy): Volume validation
-- **Completeness** (Completeness): Missing value detection
-- **Uniqueness** (Uniqueness): Duplicate prevention
-- **Validity** (Validity): Format and constraint validation
-- **Consistency** (Consistency): Referential integrity validation
-- **Range Checks** (Accuracy): Min/max/avg statistical validation
-- **Business Logic** (Accuracy): Domain-specific rules
-- **Freshness** (Timeliness): Data recency monitoring
+## 🛠️ Available Commands
 
-All checks are properly categorized with standardized dimensions for consistent reporting and analysis in Soda Cloud.
+### Service Management
+```bash
+make all-up                  # Start all services
+make airflow-up             # Start Airflow only
+make superset-up            # Start Superset only
+make airflow-down           # Stop Airflow
+make superset-down          # Stop Superset
+make airflow-status         # Check Airflow status
+make superset-status        # Check Superset status
+```
 
-### Sampling Strategy
-- **Individual Checks**: 50-5,000 samples based on table size
-- **Failed Rows**: Detailed failure analysis
-- **Dataset Samples**: 100 rows per table for analysis
+### Pipeline Execution
+```bash
+make airflow-trigger-init   # Initialize data
+make airflow-trigger-pipeline # Run quality pipeline
+```
+
+### Data Quality Management
+```bash
+make superset-upload-data   # Extract + organize + upload to Superset
+make soda-dump              # Extract from Soda Cloud
+make organize-soda-data       # Organize data structure
+```
+
+### Development
+```bash
+make airflow-logs           # View Airflow logs
+make superset-logs          # View Superset logs
+make clean                  # Clean up artifacts
+```
+
+## 📚 Documentation
+
+- **[Soda Configuration](soda/README.md)** - Detailed Soda setup and quality checks
+- **[Airflow Setup](airflow/README.md)** - Workflow orchestration details
+- **[dbt Configuration](dbt/README.md)** - Data transformation setup
+- **[Superset Setup](superset/README.md)** - Visualization configuration
+- **[Scripts Documentation](scripts/README.md)** - Utility scripts guide
+
+## 🎯 Use Cases
+
+This project demonstrates:
+
+1. **Enterprise Data Quality Framework**: Standardized approach to data quality monitoring
+2. **Multi-Layer Quality Strategy**: Progressive quality standards across data pipeline
+3. **Automated Quality Checks**: Comprehensive validation rules and monitoring
+4. **Quality Dimension Standardization**: Industry-standard quality metrics
+5. **Integration Best Practices**: Seamless integration with existing data tools
+6. **Visualization & Reporting**: Quality metrics dashboards and analysis
 
 ## 🚨 Troubleshooting
 
 ### Common Issues
 
-#### **Soda Cloud Data Extraction**
-1. **API Credentials**: Verify `SODA_CLOUD_API_KEY_ID` and `SODA_CLOUD_API_KEY_SECRET` in `.env`
-2. **API Host**: Check `SODA_CLOUD_HOST` is correct (US: `https://cloud.us.soda.io`, EU: `https://cloud.soda.io`)
-3. **Network**: Ensure internet connectivity to Soda Cloud
-4. **Rate Limits**: If getting rate limit errors, the script includes built-in delays
+**Soda Cloud Connection**
+- Verify API credentials in `.env`
+- Check `SODA_CLOUD_HOST` is correct
+- Ensure network connectivity
 
-#### **Data Organization & Upload**
-1. **Missing Data**: Run `make soda-dump` first to extract data from Soda Cloud
-2. **Upload Errors**: Check Superset container is running with `make superset-status`
-3. **Database Connection**: Verify Superset database is healthy
-4. **File Permissions**: Ensure `superset/data/` directory is writable
+**Snowflake Connection**
+- Verify credentials in `.env`
+- Check warehouse is running
+- Ensure proper permissions
 
-#### **General Issues**
-1. **Snowflake Connection**: Verify credentials in `.env`
-2. **Docker**: Check container logs with `make airflow-logs` or `make superset-logs`
-3. **dbt**: Validate profiles with `make dbt-debug`
-
-### Log Locations
-- Airflow logs: `airflow/airflow-logs/`
-- dbt logs: Available in Airflow UI
-- Soda logs: Integrated with Airflow task logs
-- Superset logs: `make superset-logs`
-
-## 🎯 Complete Workflow Examples
-
-### **Daily Data Quality Workflow**
-```bash
-# 1. Start all services
-make all-up
-
-# 2. Run data quality pipeline
-make airflow-trigger-pipeline
-
-# 3. Extract and visualize Soda Cloud data
-make superset-upload-data
-
-# 4. Access dashboards
-# - Airflow: http://localhost:8080
-# - Superset: http://localhost:8089
-```
-
-### **Fresh Start Workflow**
-```bash
-# 1. Clean restart everything
-make superset-clean-restart
-make airflow-down && make airflow-up
-
-# 2. Initialize data
-make airflow-trigger-init
-
-# 3. Run pipeline
-make airflow-trigger-pipeline
-
-# 4. Extract and visualize data
-make superset-upload-data
-```
-
-### **Data Update Workflow**
-```bash
-# 1. Extract fresh data from Soda Cloud
-make soda-dump
-
-# 2. Organize and upload to Superset
-make superset-upload-data
-
-# 3. Check results in Superset UI
-```
-
-### **Development Workflow**
-```bash
-# 1. Start services
-make all-up
-
-# 2. Check status
-make airflow-status
-make superset-status
-
-# 3. View logs if needed
-make airflow-logs
-make superset-logs
-
-# 4. Debug if needed
-make dbt-debug
-```
-
-## 📚 Documentation
-
-- [Soda Library Documentation](https://docs.soda.io/soda-library/)
-- [dbt Documentation](https://docs.getdbt.com/)
-- [Apache Airflow Documentation](https://airflow.apache.org/docs/)
-- [Snowflake Documentation](https://docs.snowflake.com/)
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Test thoroughly
-5. Submit a pull request
-
-## 📄 License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
+**Service Issues**
+- Check container logs: `make airflow-logs` or `make superset-logs`
+- Verify Docker is running
+- Check service status: `make airflow-status`
 
 ## 🎉 Success Metrics
 
-✅ **End-to-End Pipeline**: Complete data flow from RAW to MARTS  
-✅ **Data Quality**: Comprehensive checks across all layers  
-✅ **Profiling & Sampling**: Advanced Soda Cloud integration  
-✅ **Monitoring**: Real-time observability and alerting  
-✅ **Scalability**: Production-ready architecture  
-✅ **Documentation**: Complete setup and usage guides  
-✅ **Uppercase Standardization**: Consistent naming across all layers  
-✅ **API Integration**: Soda Cloud metadata extraction and reporting  
-✅ **Schema Management**: Clean schema configuration with custom macro  
-✅ **Lineage Support**: dbt lineage configuration for metadata tracking  
+✅ **Complete Quality Framework**: Standardized dimensions across all checks  
+✅ **Multi-Layer Monitoring**: Quality checks at RAW, STAGING, and MARTS layers  
+✅ **Automated Validation**: 50+ automated quality checks  
+✅ **Cloud Integration**: Soda Cloud for centralized monitoring  
+✅ **Visualization**: Superset dashboards for quality metrics  
+✅ **Production Ready**: Enterprise-grade quality monitoring framework  
 
 ---
 

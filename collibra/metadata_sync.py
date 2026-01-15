@@ -86,6 +86,9 @@ class CollibraMetadataSync:
         """
         Get the database connection ID from a database asset ID.
         
+        Uses the Collibra Catalog Database API which returns the databaseConnectionId
+        directly in the response.
+        
         Args:
             database_id: The UUID of the Database asset in Collibra
         
@@ -96,35 +99,35 @@ class CollibraMetadataSync:
             requests.exceptions.RequestException: If the API request fails
             ValueError: If database connection not found
         """
-        # Get database asset details to find connection ID
-        url = f"{self.base_url}/rest/2.0/assets/{database_id}"
+        # Use the Catalog Database API which returns databaseConnectionId directly
+        url = f"{self.base_url}/rest/catalogDatabase/v1/databases/{database_id}"
         
         try:
             response = self.session.get(url, timeout=30)
             response.raise_for_status()
             
-            asset = response.json()
-            # The connection ID is typically in a relation or attribute
-            # Try to find it in relations or attributes
-            relations = asset.get('relations', [])
-            for relation in relations:
-                if relation.get('type', {}).get('name') == 'Database Connection':
-                    target_id = relation.get('target', {}).get('id')
-                    if target_id:
-                        logger.info(f"Found database connection ID: {target_id}")
-                        return target_id
+            database = response.json()
+            # The databaseConnectionId is directly in the response
+            database_connection_id = database.get('databaseConnectionId')
             
-            # Alternative: check if there's a direct attribute
-            # This might vary by Collibra setup, so we'll try a common pattern
-            raise ValueError(
-                f"Could not find database connection ID for database {database_id}. "
-                "Please check your Collibra setup or provide database connection ID directly."
-            )
+            if database_connection_id:
+                logger.info(f"Found database connection ID: {database_connection_id}")
+                return database_connection_id
+            else:
+                raise ValueError(
+                    f"Database asset {database_id} does not have a databaseConnectionId. "
+                    "Please check your Collibra setup or provide database connection ID directly in config.yml."
+                )
             
         except requests.exceptions.HTTPError as e:
             logger.error(f"HTTP error getting database connection: {e}")
             if e.response is not None:
                 logger.error(f"Response: {e.response.text}")
+                if e.response.status_code == 404:
+                    raise ValueError(
+                        f"Database asset {database_id} not found in Collibra. "
+                        "Please verify the database ID in your config.yml file."
+                    )
             raise
         except requests.exceptions.RequestException as e:
             logger.error(f"Request error getting database connection: {e}")
@@ -284,10 +287,43 @@ class CollibraMetadataSync:
             }
             
         except requests.exceptions.HTTPError as e:
-            logger.error(f"HTTP error triggering metadata sync: {e}")
-            if e.response is not None:
-                logger.error(f"Response: {e.response.text}")
-            raise
+            # Handle 409 Conflict: sync already in progress
+            if e.response is not None and e.response.status_code == 409:
+                error_data = {}
+                try:
+                    error_data = e.response.json()
+                except:
+                    pass
+                
+                error_code = error_data.get('errorCode', '')
+                user_message = error_data.get('userMessage', '')
+                
+                if 'already being processed' in user_message.lower() or error_code == 'assetAlreadyInProcess':
+                    logger.warning(
+                        f"Metadata sync already in progress for database {database_id}. "
+                        "This may be due to a previous sync still running or a retry. "
+                        "Treating as success - sync will complete in background."
+                    )
+                    # Return a success response indicating sync is already running
+                    return {
+                        'jobId': None,  # We don't have a job ID for the existing sync
+                        'databaseId': database_id,
+                        'schemaConnectionIds': schema_connection_ids or [],
+                        'status': 'already_running',
+                        'message': 'Sync already in progress - will complete in background',
+                        'response': error_data
+                    }
+                else:
+                    # Other 409 errors - log and raise
+                    logger.error(f"409 Conflict (unexpected): {user_message}")
+                    logger.error(f"Response: {e.response.text}")
+                    raise
+            else:
+                # Other HTTP errors - log and raise
+                logger.error(f"HTTP error triggering metadata sync: {e}")
+                if e.response is not None:
+                    logger.error(f"Response: {e.response.text}")
+                raise
         except requests.exceptions.RequestException as e:
             logger.error(f"Request error triggering metadata sync: {e}")
             raise
@@ -413,7 +449,31 @@ class CollibraMetadataSync:
         
         # Trigger sync
         sync_result = self.trigger_metadata_sync(database_id, schema_connection_ids)
-        job_id = sync_result['jobId']
+        job_id = sync_result.get('jobId')
+        status = sync_result.get('status', 'triggered')
+        
+        # If sync is already running, we can't wait for a specific job
+        # Return success since sync is already in progress
+        if status == 'already_running':
+            logger.info(
+                "Metadata sync is already in progress. "
+                "Cannot wait for specific job completion, but sync will complete in background."
+            )
+            return {
+                'jobId': None,
+                'databaseId': database_id,
+                'schemaConnectionIds': schema_connection_ids or [],
+                'schemaAssetIds': schema_asset_ids or [],
+                'status': 'already_running',
+                'message': 'Sync already in progress - will complete in background',
+                'finalStatus': {'status': 'RUNNING', 'message': 'Sync already in progress'}
+            }
+        
+        # If no job ID was returned, something went wrong
+        if not job_id:
+            raise ValueError(
+                f"Failed to trigger metadata sync: {sync_result.get('message', 'Unknown error')}"
+            )
         
         # Wait for completion
         final_status = self.wait_for_job_completion(

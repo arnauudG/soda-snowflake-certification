@@ -64,6 +64,24 @@ mart:
 
 ## Usage
 
+### Testing the Module
+
+Before running in Airflow, you can test the Collibra integration:
+
+```bash
+# Run the test script (recommended first step)
+python3 collibra/test_metadata_sync.py
+```
+
+The test script will:
+- Verify environment variables are loaded
+- Test Collibra client initialization
+- Load and validate configuration
+- Test database connection ID resolution
+- Test schema connection listing
+- Test schema asset ID to connection ID resolution
+- Optionally trigger a metadata sync (dry run by default)
+
 ### Standalone Script
 
 You can run metadata synchronization manually:

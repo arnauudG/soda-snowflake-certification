@@ -267,3 +267,7 @@ superset-reset-schema: ## Reset only the soda schema (fixes table structure issu
 	@cd superset && docker-compose exec superset-db psql -U superset -d superset -c "DROP SCHEMA IF EXISTS soda CASCADE;"
 	@echo "✅ Soda schema reset complete"
 
+test-collibra: ## Test Collibra metadata sync module (verify configuration and credentials)
+	@echo "🧪 Testing Collibra metadata sync module..."
+	@python3 collibra/test_metadata_sync.py
+

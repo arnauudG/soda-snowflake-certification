@@ -115,6 +115,12 @@ The Docker setup:
 - Mounts the root `.env` file into containers at `/opt/airflow/.env` for `source .env` commands
 - You only need to maintain **one `.env` file** in the project root
 
+**After updating `.env` file**: You must restart Airflow containers for changes to take effect:
+```bash
+make airflow-down
+make airflow-up
+```
+
 Airflow automatically loads environment variables from the root `.env` file:
 
 ```bash

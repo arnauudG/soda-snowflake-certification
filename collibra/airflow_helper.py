@@ -12,16 +12,40 @@ import yaml
 import logging
 from pathlib import Path
 from typing import Optional
+from dotenv import load_dotenv
+
+# Configure logging first
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
 
 # Add project root to path
 PROJECT_ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from collibra.metadata_sync import CollibraMetadataSync
+# Load environment variables explicitly for Airflow
+# In Airflow container, .env is mounted at /opt/airflow/.env
+# Also check if variables are already set by Docker Compose env_file
+env_path = Path('/opt/airflow/.env')
+if env_path.exists():
+    load_dotenv(env_path, override=True)
+    logger.info(f"Loaded environment variables from {env_path}")
+elif os.getenv('COLLIBRA_BASE_URL'):
+    # Variables already set by Docker Compose env_file
+    logger.info("Using environment variables from Docker Compose")
+else:
+    # Fallback to default behavior
+    load_dotenv(override=True)
+    logger.info("Using default dotenv behavior for environment variables")
 
-# Configure logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-logger = logging.getLogger(__name__)
+# Debug: Log which Collibra variables are available (without showing values)
+collibra_vars = {
+    'COLLIBRA_BASE_URL': 'SET' if os.getenv('COLLIBRA_BASE_URL') else 'NOT SET',
+    'COLLIBRA_USERNAME': 'SET' if os.getenv('COLLIBRA_USERNAME') else 'NOT SET',
+    'COLLIBRA_PASSWORD': 'SET' if os.getenv('COLLIBRA_PASSWORD') else 'NOT SET',
+}
+logger.info(f"Collibra environment variables status: {collibra_vars}")
+
+from collibra.metadata_sync import CollibraMetadataSync
 
 
 def load_config():
@@ -61,6 +85,14 @@ def get_database_connection_id(config: dict, sync_client: CollibraMetadataSync) 
 def sync_raw_metadata(**context):
     """Airflow task function to sync RAW layer metadata."""
     logger.info("Starting Collibra metadata sync for RAW layer")
+    
+    # Verify environment variables are loaded
+    collibra_vars_check = {
+        'COLLIBRA_BASE_URL': 'SET' if os.getenv('COLLIBRA_BASE_URL') else 'NOT SET',
+        'COLLIBRA_USERNAME': 'SET' if os.getenv('COLLIBRA_USERNAME') else 'NOT SET',
+        'COLLIBRA_PASSWORD': 'SET' if os.getenv('COLLIBRA_PASSWORD') else 'NOT SET',
+    }
+    logger.info(f"Environment variables check: {collibra_vars_check}")
     
     try:
         config = load_config()

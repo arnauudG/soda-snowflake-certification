@@ -54,10 +54,8 @@ pipeline: venv ## Run standard pipeline (via Airflow)
 
 airflow-up: ## Start Airflow services with Docker
 	@echo "🚀 Starting Airflow services..."
-	@echo "📥 Loading environment variables..."
-	@bash -c "source load_env.sh"
-	@echo "🐳 Starting Docker containers..."
-	@cd airflow/docker && docker-compose up -d
+	@echo "📥 Loading environment variables and starting Docker containers..."
+	@bash -c "source load_env.sh && cd airflow/docker && docker-compose up -d"
 	@echo "⏳ Waiting for services to be ready..."
 	@sleep 30
 	@echo "▶️  Unpausing all Soda DAGs..."
@@ -70,10 +68,8 @@ airflow-up: ## Start Airflow services with Docker
 
 superset-up: ## Start Superset visualization service (separate setup)
 	@echo "📊 Starting Superset services..."
-	@echo "📥 Loading environment variables..."
-	@bash -c "source load_env.sh"
-	@echo "🐳 Starting Docker containers..."
-	@cd superset && docker-compose up -d
+	@echo "📥 Loading environment variables and starting Docker containers..."
+	@bash -c "source load_env.sh && cd superset && docker-compose up -d"
 	@echo "⏳ Waiting for Superset to be ready..."
 	@sleep 45
 	@echo "[OK] Superset started with Docker"
@@ -81,12 +77,8 @@ superset-up: ## Start Superset visualization service (separate setup)
 
 all-up: ## Start all services (Airflow + Superset)
 	@echo "🚀 Starting all services..."
-	@echo "📥 Loading environment variables..."
-	@bash -c "source load_env.sh"
-	@echo "🐳 Starting Airflow containers..."
-	@cd airflow/docker && docker-compose up -d
-	@echo "🐳 Starting Superset containers..."
-	@cd superset && docker-compose up -d
+	@echo "📥 Loading environment variables and starting Docker containers..."
+	@bash -c "source load_env.sh && cd airflow/docker && docker-compose up -d && cd ../../superset && docker-compose up -d"
 	@echo "⏳ Waiting for services to be ready..."
 	@sleep 45
 	@echo "▶️  Unpausing all Soda DAGs..."

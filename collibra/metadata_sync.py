@@ -11,14 +11,33 @@ import time
 import requests
 import logging
 from typing import List, Optional, Dict
+from pathlib import Path
 from dotenv import load_dotenv
 
-# Load environment variables
-load_dotenv()
-
-# Configure logging
+# Configure logging first
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
+
+# Load environment variables
+# Try multiple locations: current directory, /opt/airflow (Docker), and parent directories
+env_paths = [
+    Path('/opt/airflow/.env'),  # Airflow Docker container (priority)
+    Path('.env'),  # Current directory
+    Path(__file__).parent.parent / '.env',  # Project root (if running locally)
+]
+
+env_loaded = False
+for env_path in env_paths:
+    if env_path.exists():
+        load_dotenv(env_path, override=True)
+        logger.info(f"Loaded environment variables from {env_path}")
+        env_loaded = True
+        break
+
+if not env_loaded:
+    # Fallback: try default load_dotenv behavior
+    load_dotenv(override=True)
+    logger.info("Loaded environment variables using default dotenv behavior")
 
 
 class CollibraMetadataSync:
@@ -30,10 +49,24 @@ class CollibraMetadataSync:
         self.username = os.getenv('COLLIBRA_USERNAME')
         self.password = os.getenv('COLLIBRA_PASSWORD')
         
+        # Debug logging
+        logger.debug(f"COLLIBRA_BASE_URL: {'SET' if self.base_url else 'NOT SET'}")
+        logger.debug(f"COLLIBRA_USERNAME: {'SET' if self.username else 'NOT SET'}")
+        logger.debug(f"COLLIBRA_PASSWORD: {'SET' if self.password else 'NOT SET'}")
+        
         if not all([self.base_url, self.username, self.password]):
+            missing = []
+            if not self.base_url:
+                missing.append('COLLIBRA_BASE_URL')
+            if not self.username:
+                missing.append('COLLIBRA_USERNAME')
+            if not self.password:
+                missing.append('COLLIBRA_PASSWORD')
+            
             raise ValueError(
-                "Missing Collibra credentials. Please set COLLIBRA_BASE_URL, "
-                "COLLIBRA_USERNAME, and COLLIBRA_PASSWORD in your .env file"
+                f"Missing Collibra credentials: {', '.join(missing)}. "
+                "Please set COLLIBRA_BASE_URL, COLLIBRA_USERNAME, and COLLIBRA_PASSWORD "
+                "in your .env file or as environment variables."
             )
         
         # Remove trailing slash from base URL if present

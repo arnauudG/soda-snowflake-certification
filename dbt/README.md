@@ -155,11 +155,14 @@ dbt test --select test_data_quality --target dev --profiles-dir .
 - **Quality Checks**: Models are validated by Soda quality checks after transformation
 - **Layer-Specific Standards**: Quality requirements increase from STAGING to MART
 - **Quality Dimensions**: Models support quality dimension tracking
+- **Quality Gating**: Quality checks gate metadata synchronization to Collibra
 
 ### Governance Integration
-- **Metadata**: Model metadata can be synchronized to Collibra
+- **Metadata Synchronization**: Model metadata automatically synchronized to Collibra after quality validation
+- **Quality-Gated Sync**: Metadata sync only happens after quality checks pass (Build → Validate → Govern)
 - **Lineage**: Data lineage tracked for governance purposes
 - **Asset Mapping**: Models can be mapped to governance assets
+- **Orchestration**: dbt models run in the Build phase, followed by Validation (Soda) and Governance (Collibra) phases
 
 ## Best Practices
 

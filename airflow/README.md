@@ -107,7 +107,15 @@ make airflow-logs
 ## Configuration
 
 ### Environment Variables
-Airflow automatically loads environment variables from `.env` file:
+
+**Important**: Airflow uses the **root project `.env` file** (not a separate one in `airflow/docker/`).
+
+The Docker setup:
+- Loads environment variables from the root `.env` file via `env_file: ../../.env`
+- Mounts the root `.env` file into containers at `/opt/airflow/.env` for `source .env` commands
+- You only need to maintain **one `.env` file** in the project root
+
+Airflow automatically loads environment variables from the root `.env` file:
 
 ```bash
 # Snowflake Configuration

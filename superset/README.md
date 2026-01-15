@@ -95,6 +95,15 @@ Superset can visualize data from:
 - Snowflake data warehouse tables
 - Collibra governance metadata (if integrated)
 
+### Quality-Gated Metadata Sync
+
+The pipeline implements quality-gated metadata synchronization:
+- **Build Phase**: dbt models materialize data in Snowflake
+- **Validation Phase**: Soda quality checks validate the data
+- **Governance Phase**: Collibra metadata sync (only after quality validation)
+
+This ensures Superset visualizations reflect validated, committed data that has passed quality gates, not just data that exists in Snowflake.
+
 ### Quality Metrics Visualization
 
 The uploaded Soda data includes:

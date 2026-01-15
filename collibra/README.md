@@ -6,6 +6,21 @@ This directory contains the Collibra integration for automatic metadata synchron
 
 The Collibra metadata synchronization integration automatically triggers metadata sync jobs in Collibra after each data layer is processed (RAW, STAGING, MART). This ensures that the Collibra catalog is kept up-to-date with the latest schema and table metadata from Snowflake.
 
+## Orchestration Philosophy: Quality Gates Metadata Sync
+
+**Core Principle**: Quality checks gate metadata synchronization. Metadata sync only happens after quality validation, ensuring Collibra reflects commitments, not aspirations.
+
+**Sequence per Layer**: Build → Validate → Govern
+- **Build Phase**: dbt materializes models in Snowflake ("this model exists")
+- **Validation Phase**: Soda quality checks validate the data ("this model is acceptable")
+- **Governance Phase**: Collibra metadata sync ("this model is governable and discoverable")
+
+**Benefits**:
+- Collibra becomes a historical record of accepted states, not a live mirror of Snowflake's chaos
+- Lineage reflects approved flows
+- Ownership discussions happen on assets that passed validation
+- No retroactive corrections needed - catalog stays clean and meaningful
+
 ## Configuration
 
 ### 1. Environment Variables
@@ -63,17 +78,25 @@ python3 collibra/metadata_sync.py <database_id> <schema_id_1> <schema_id_2>
 
 ### Airflow Integration
 
-The metadata synchronization is automatically integrated into the Airflow pipeline:
+The metadata synchronization is automatically integrated into the Airflow pipeline with quality-gating:
 
-1. **After RAW layer**: Metadata sync for RAW schema
-2. **After STAGING layer**: Metadata sync for STAGING schema
-3. **After MART layer**: Metadata sync for MART schema
+**RAW Layer**:
+1. Quality checks (Soda) → **Gates** → Metadata sync (Collibra)
+
+**STAGING Layer**:
+1. Build (dbt) → Quality checks (Soda) → **Gates** → Metadata sync (Collibra)
+
+**MART Layer**:
+1. Build (dbt) → Quality checks (Soda) → **Gates** → Metadata sync (Collibra)
 
 Each sync task:
+- **Only executes after quality checks pass** (quality-gated)
 - Triggers the synchronization job in Collibra
 - Waits for the job to complete (with timeout)
 - Logs progress and status
 - Fails the pipeline if sync fails
+
+**Important**: Metadata sync is gated by quality validation. This ensures Collibra only contains validated, committed data that has passed quality checks.
 
 ## API Reference
 
@@ -152,18 +175,26 @@ If jobs are timing out:
 
 ## Integration with Pipeline
 
-The metadata synchronization is integrated into the Airflow DAG at these points:
+The metadata synchronization is integrated into the Airflow DAG with quality-gating at these points:
 
 ```
 RAW Layer:
   soda_scan_raw → collibra_sync_raw → raw_layer_end
+  (Quality gates metadata sync)
 
 STAGING Layer:
   dbt_run_staging → soda_scan_staging → collibra_sync_staging → staging_layer_end
+  (Build → Validate → Govern)
 
 MART Layer:
   dbt_run_mart → soda_scan_mart → collibra_sync_mart → mart_layer_end
+  (Build → Validate → Govern, strictest standards)
 ```
 
-Each sync task waits for completion before the pipeline proceeds to the next layer.
+**Quality Gating**: Each sync task only executes after quality checks pass. The pipeline waits for:
+1. Quality validation to complete
+2. Metadata sync job to complete
+3. Then proceeds to the next layer
+
+This ensures Collibra only syncs validated data, making it a historical record of accepted states.
 

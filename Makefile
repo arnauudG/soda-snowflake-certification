@@ -201,16 +201,20 @@ setup: venv deps ## Complete environment setup
 	@echo "🔧 Setting up environment..."
 	@if [ ! -f .env ]; then \
 		echo "⚠️  .env file not found!"; \
-		echo "   Please create .env file with your Snowflake credentials"; \
-		echo "   Required: SNOWFLAKE_ACCOUNT, SNOWFLAKE_USER, SNOWFLAKE_PASSWORD"; \
-		echo "   Optional: SODA_CLOUD_API_KEY_ID, SODA_CLOUD_API_KEY_SECRET"; \
+		echo "   Please create .env file with your credentials"; \
+		echo "   Copy from template: cp .env.example .env"; \
+		echo ""; \
+		echo "   Required variables:"; \
+		echo "   - Snowflake: SNOWFLAKE_ACCOUNT, SNOWFLAKE_USER, SNOWFLAKE_PASSWORD"; \
+		echo "   - Soda Cloud: SODA_CLOUD_API_KEY_ID, SODA_CLOUD_API_KEY_SECRET"; \
+		echo "   - Collibra: COLLIBRA_BASE_URL, COLLIBRA_USERNAME, COLLIBRA_PASSWORD"; \
 		exit 1; \
 	else \
 		echo "✅ .env file found"; \
 	fi
 	@echo "[OK] Environment setup completed"
 	@echo "[INFO] Next steps:"
-	@echo "  1. Ensure .env file has your credentials"
+	@echo "  1. Ensure .env file has all required credentials"
 	@echo "  2. Run: make airflow-up"
 	@echo "  3. Run: make airflow-trigger-init (first time setup)"
 	@echo "  4. Access Airflow UI: http://localhost:8080"

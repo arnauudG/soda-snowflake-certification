@@ -41,6 +41,13 @@ REQUIRED_VARS=(
     "SODA_CLOUD_API_KEY_SECRET"
 )
 
+# Optional variables (for Collibra integration)
+OPTIONAL_VARS=(
+    "COLLIBRA_BASE_URL"
+    "COLLIBRA_USERNAME"
+    "COLLIBRA_PASSWORD"
+)
+
 # Load variables from .env file
 while IFS= read -r line || [ -n "$line" ]; do
     # Skip empty lines and comments
@@ -84,12 +91,28 @@ echo -e "${GREEN}✅ All required environment variables are set${NC}"
 # Display non-sensitive variables
 echo -e "${BLUE}📋 Environment Summary:${NC}"
 echo "------------------------"
-for var in SNOWFLAKE_WAREHOUSE SNOWFLAKE_DATABASE SNOWFLAKE_SCHEMA SODA_CLOUD_HOST; do
+for var in SNOWFLAKE_WAREHOUSE SNOWFLAKE_DATABASE SNOWFLAKE_SCHEMA SODA_CLOUD_HOST COLLIBRA_BASE_URL; do
     var_value=$(eval echo \$$var)
     if [ ! -z "$var_value" ]; then
         echo -e "   ${GREEN}✓${NC} $var = $var_value"
     fi
 done
+
+# Check for optional Collibra variables
+COLLIBRA_CONFIGURED=true
+for var in "${OPTIONAL_VARS[@]}"; do
+    var_value=$(eval echo \$$var)
+    if [[ -z "$var_value" || "$var_value" =~ ^[[:space:]]*$ ]]; then
+        COLLIBRA_CONFIGURED=false
+        break
+    fi
+done
+
+if [ "$COLLIBRA_CONFIGURED" = true ]; then
+    echo -e "   ${GREEN}✓${NC} Collibra integration configured"
+else
+    echo -e "   ${YELLOW}⚠${NC}  Collibra integration not configured (optional)"
+fi
 
 echo -e "${GREEN}🎉 Environment validation successful!${NC}"
 echo -e "${BLUE}💡 Airflow services can now start safely${NC}"

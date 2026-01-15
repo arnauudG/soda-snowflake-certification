@@ -69,17 +69,6 @@ Soda Quality Checks    Soda Quality Checks    Soda Quality Checks
 │   │   ├── quality/                 # Quality check results
 │   │   └── templates/               # Reusable check templates
 │   ├── configuration/               # Soda connection configurations
-│   ├── soda-agent/                  # Soda Agent AWS Infrastructure
-│   │   ├── module/                  # Terraform modules
-│   │   │   ├── helm-soda-agent/     # Soda Agent Helm deployment
-│   │   │   └── ops-ec2-eks-access/ # EKS access configuration
-│   │   ├── env/                     # Environment-specific configurations
-│   │   │   ├── dev/eu-west-1/      # Development environment
-│   │   │   └── prod/eu-west-1/     # Production environment
-│   │   ├── bootstrap.sh             # One-time infrastructure bootstrap
-│   │   ├── deploy.sh               # Infrastructure deployment
-│   │   ├── destroy.sh              # Infrastructure destruction
-│   │   └── README.md               # Infrastructure documentation
 │   └── README.md                    # Soda configuration documentation
 ├── superset/                         # Superset visualization setup
 │   ├── docker-compose.yml           # Superset services with dedicated database
@@ -92,8 +81,7 @@ Soda Quality Checks    Soda Quality Checks    Soda Quality Checks
 │   │   ├── checks_YYYY-MM-DD.csv    # Daily check snapshots
 │   │   ├── datasets_YYYYMMDD_HHMMSS.csv # Timestamped dataset files
 │   │   ├── checks_YYYYMMDD_HHMMSS.csv   # Timestamped check files
-│   │   ├── summary_report_YYYYMMDD_HHMMSS.txt # Summary reports
-│   │   └── upload_soda_data_docker.py # Upload script (copied during execution)
+│   │   └── summary_report_YYYYMMDD_HHMMSS.txt # Summary reports
 │   └── README.md                    # Superset documentation
 ├── Makefile                         # Project automation and commands
 └── README.md                        # This file
@@ -106,51 +94,6 @@ Soda Quality Checks    Soda Quality Checks    Soda Quality Checks
 - **Snowflake account** with appropriate permissions
 - **Soda Cloud account** (required for data extraction and visualization)
 - **Python 3.11+** (for local script execution)
-- **AWS CLI** (for Soda Agent infrastructure deployment)
-- **AWS Account** with appropriate permissions for EKS, S3, DynamoDB, and VPC
-
-### 🏗️ Soda Agent Infrastructure
-
-The project includes infrastructure as code for deploying Soda Agent on AWS using Terraform and Terragrunt:
-
-### Infrastructure Components
-- **VPC with private/public subnets** across 3 AZs
-- **VPC Endpoints** for SSM, ECR, STS, CloudWatch Logs, and S3
-- **EKS Cluster** with managed node groups
-- **Ops Infrastructure** (EC2 instance, security groups, IAM roles)
-- **Soda Agent** deployed via Helm on EKS
-
-### Enhanced Infrastructure Features
-- **Smart Bootstrap Management** - Automatic detection and creation of bootstrap resources
-- **Flexible Destruction** - Choose to destroy infrastructure only or everything including bootstrap
-- **Status Checking** - Comprehensive bootstrap status reporting with resource details
-- **Automatic Bootstrap Creation** - Deploy script automatically creates bootstrap if missing
-- **Safety Confirmations** - Multiple confirmation prompts for destructive operations
-- **Terragrunt Skip Handling** - Intelligent handling of terragrunt skip parameters
-- **Error Handling** - Robust error handling with clear feedback
-
-### Available Environments
-- **Development** (`dev/eu-west-1/`) - For testing and development
-- **Production** (`prod/eu-west-1/`) - For production workloads
-
-### Infrastructure Commands
-```bash
-# Bootstrap infrastructure (one-time setup)
-make soda-agent-bootstrap ENV=dev
-
-# Deploy infrastructure (auto-creates bootstrap if missing)
-make soda-agent-deploy ENV=dev
-
-# Destroy infrastructure only
-make soda-agent-destroy ENV=dev
-
-# Destroy infrastructure AND bootstrap
-make soda-agent-destroy-all ENV=dev
-
-# Bootstrap management
-make soda-agent-bootstrap-status ENV=dev    # Check status
-make soda-agent-bootstrap-destroy ENV=dev # Destroy bootstrap only
-```
 
 ## 🎯 What This Project Does
 This project demonstrates a complete data quality pipeline with:
@@ -172,21 +115,6 @@ cp .env.example .env
 # Edit .env with your actual credentials
 ```
 
-#### **AWS Configuration (Required for Soda Agent Infrastructure)**
-```bash
-# Configure AWS CLI with your credentials
-aws configure
-
-# Enter your AWS credentials when prompted:
-# AWS Access Key ID: your_access_key
-# AWS Secret Access Key: your_secret_key
-# Default region name: eu-west-1
-# Default output format: json
-
-# Verify AWS configuration
-aws sts get-caller-identity
-```
-
 **Required Environment Variables:**
 ```bash
 # Snowflake Configuration
@@ -202,15 +130,6 @@ SODA_CLOUD_HOST=https://cloud.soda.io
 SODA_CLOUD_API_KEY_ID=your_api_key_id
 SODA_CLOUD_API_KEY_SECRET=your_api_key_secret
 SODA_CLOUD_ORGANIZATION_ID=your_org_id
-
-# AWS Configuration (for Soda Agent Infrastructure)
-AWS_ACCESS_KEY_ID=your_aws_access_key
-AWS_SECRET_ACCESS_KEY=your_aws_secret_key
-AWS_DEFAULT_REGION=eu-west-1
-
-# Optional: Soda Agent Configuration
-SODA_AGENT_API_KEY_ID=your_soda_agent_key_id
-SODA_AGENT_API_KEY_SECRET=your_soda_agent_key_secret
 ```
 
 ### **🔧 Environment Variables Loader**
@@ -442,10 +361,6 @@ make superset-upload-data # Upload to Superset
 make superset-clean-restart  # Complete clean restart
 make superset-reset-data     # Reset only data
 
-# Soda Agent Infrastructure
-make soda-agent-bootstrap ENV=dev  # Bootstrap infrastructure (one-time)
-make soda-agent-deploy ENV=dev     # Deploy infrastructure
-make soda-agent-destroy ENV=dev    # Destroy infrastructure
 ```
 
 ### Data Organization Structure
@@ -481,12 +396,28 @@ superset/data/
 ## 📊 Data Quality Features
 
 ### Comprehensive Quality Checks
-- **Schema Validation**: Ensures table structure integrity
-- **Completeness Checks**: Validates data completeness across layers
-- **Uniqueness Checks**: Prevents duplicate records
-- **Validity Checks**: Ensures data format compliance
-- **Business Logic Checks**: Validates business rules
-- **Freshness Checks**: Monitors data recency
+- **Schema Validation**: Ensures table structure integrity (Accuracy dimension)
+- **Completeness Checks**: Validates data completeness across layers (Completeness dimension)
+- **Uniqueness Checks**: Prevents duplicate records (Uniqueness dimension)
+- **Validity Checks**: Ensures data format compliance (Validity dimension)
+- **Consistency Checks**: Validates referential integrity and cross-table consistency (Consistency dimension)
+- **Business Logic Checks**: Validates business rules (Accuracy dimension)
+- **Freshness Checks**: Monitors data recency (Timeliness dimension)
+
+### Data Quality Dimensions
+
+All Soda checks are standardized with six data quality dimensions:
+
+| Dimension | Used For | Examples |
+|-----------|----------|----------|
+| **Accuracy** | Data correctness, schema validation, range checks | `schema`, `row_count`, `min()`, `max()`, `avg()` |
+| **Completeness** | Missing value detection | `missing_count()` |
+| **Consistency** | Referential integrity, cross-table validation | `invalid_count()` with referential checks |
+| **Uniqueness** | Duplicate detection | `duplicate_count()` |
+| **Validity** | Format and constraint validation | `invalid_count()` with regex/values |
+| **Timeliness** | Data freshness monitoring | `freshness()` |
+
+All checks include an `attributes` section with the appropriate `dimension` field for proper categorization in Soda Cloud and reporting tools.
 
 ### Advanced Soda Features
 - **Dataset Discovery**: Automatic table and column discovery
@@ -524,7 +455,7 @@ sample datasets:
 ```
 
 ### dbt Configuration
-- **Environment**: Configured for `dev` environment only (Soda agent operational for dev)
+- **Environment**: Configured for `dev` environment only
 - **Target**: All dbt operations use `--target dev` by default
 - **Quote Identifiers**: `quote_identifiers: true` for case sensitivity
 - **Uppercase Naming**: Consistent uppercase table and column names across all layers
@@ -613,13 +544,6 @@ make clean                  # Clean up artifacts and temporary files
 make clean-logs             # Clean up old Airflow logs
 make clean-all              # Deep clean: artifacts, logs, and cache
 
-# Soda Agent Infrastructure
-make soda-agent-bootstrap ENV=dev        # Bootstrap infrastructure (one-time)
-make soda-agent-deploy ENV=dev           # Deploy infrastructure
-make soda-agent-destroy ENV=dev           # Destroy infrastructure
-make soda-agent-bootstrap-destroy ENV=dev # Destroy bootstrap infrastructure
-make soda-agent-bootstrap-status ENV=dev # Check bootstrap status
-make soda-agent-bootstrap-unlock ENV=dev # Force unlock bootstrap state
 ```
 
 ## 📋 Data Quality Checks by Layer
@@ -643,13 +567,17 @@ make soda-agent-bootstrap-unlock ENV=dev # Force unlock bootstrap state
 ## 🔍 Quality Metrics
 
 ### Check Categories
-- **Schema Validation**: Table structure integrity
-- **Row Count**: Volume validation
-- **Completeness**: Missing value detection
-- **Uniqueness**: Duplicate prevention
-- **Validity**: Format and range validation
-- **Business Logic**: Domain-specific rules
-- **Freshness**: Data recency monitoring
+- **Schema Validation** (Accuracy): Table structure integrity
+- **Row Count** (Accuracy): Volume validation
+- **Completeness** (Completeness): Missing value detection
+- **Uniqueness** (Uniqueness): Duplicate prevention
+- **Validity** (Validity): Format and constraint validation
+- **Consistency** (Consistency): Referential integrity validation
+- **Range Checks** (Accuracy): Min/max/avg statistical validation
+- **Business Logic** (Accuracy): Domain-specific rules
+- **Freshness** (Timeliness): Data recency monitoring
+
+All checks are properly categorized with standardized dimensions for consistent reporting and analysis in Soda Cloud.
 
 ### Sampling Strategy
 - **Individual Checks**: 50-5,000 samples based on table size

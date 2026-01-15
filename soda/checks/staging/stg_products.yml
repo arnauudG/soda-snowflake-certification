@@ -88,7 +88,7 @@ checks for STG_PRODUCTS:
       name: "All prices are positive in staging"
       samples limit: 1000
       attributes:
-        dimension: Validity
+        dimension: Accuracy
   
   - max(PRICE) <= 10000:
       name: "All prices are within business range"

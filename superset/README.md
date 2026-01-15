@@ -49,7 +49,6 @@ Superset automatically loads and validates environment variables when started wi
 
 **Optional Variables:**
 - `SODA_CLOUD_HOST`, `SODA_CLOUD_REGION`
-- `SODA_AGENT_API_KEY_ID`, `SODA_AGENT_API_KEY_SECRET`
 
 For complete setup instructions, see the main project README.
 

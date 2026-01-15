@@ -87,7 +87,7 @@ checks for STG_ORDERS:
       name: "All order amounts are positive in staging"
       samples limit: 3000
       attributes:
-        dimension: Validity
+        dimension: Accuracy
   
   - max(TOTAL_AMOUNT) <= 10000:
       name: "All order amounts are within business range"

@@ -30,7 +30,47 @@ def connect_to_db():
         print(f"❌ Error connecting to database: {e}")
         sys.exit(1)
 
-def upload_csv_to_table(csv_file, table_name, conn, is_latest=False):
+def quote_table_name(table_name):
+    """Quote table name properly for PostgreSQL (handles schema.table format)"""
+    if '.' in table_name:
+        schema, table = table_name.split('.', 1)
+        return f'"{schema}"."{table}"'
+    else:
+        return f'"{table_name}"'
+
+def extract_timestamp_from_filename(filename):
+    """Extract timestamp from filename patterns like datasets_2025-12-11.csv or datasets_20251211_174641.csv"""
+    import re
+    from datetime import datetime
+    
+    # Try YYYY-MM-DD pattern
+    match = re.search(r'(\d{4}-\d{2}-\d{2})', filename)
+    if match:
+        try:
+            return datetime.strptime(match.group(1), '%Y-%m-%d')
+        except:
+            pass
+    
+    # Try YYYYMMDD_HHMMSS pattern
+    match = re.search(r'(\d{8}_\d{6})', filename)
+    if match:
+        try:
+            return datetime.strptime(match.group(1), '%Y%m%d_%H%M%S')
+        except:
+            pass
+    
+    # Try YYYYMMDD pattern
+    match = re.search(r'(\d{8})', filename)
+    if match:
+        try:
+            return datetime.strptime(match.group(1), '%Y%m%d')
+        except:
+            pass
+    
+    # Default to current timestamp if no pattern matches
+    return datetime.now()
+
+def upload_csv_to_table(csv_file, table_name, conn, is_latest=False, capture_timestamp=None):
     """Upload CSV data to PostgreSQL table"""
     try:
         # Read CSV file
@@ -60,9 +100,16 @@ def upload_csv_to_table(csv_file, table_name, conn, is_latest=False):
         if is_latest:
             columns.append('upload_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP')
             columns.append('data_source TEXT DEFAULT \'soda_latest\'')
+        else:
+            # For historical data, add capture_timestamp to track when data was captured
+            columns.append('capture_timestamp TIMESTAMP')
+            columns.append('upload_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP')
+        
+        # Quote table name properly for PostgreSQL
+        quoted_table_name = quote_table_name(table_name)
         
         create_table_sql = f"""
-        CREATE TABLE IF NOT EXISTS {table_name} (
+        CREATE TABLE IF NOT EXISTS {quoted_table_name} (
             {', '.join(columns)}
         );
         """
@@ -72,16 +119,29 @@ def upload_csv_to_table(csv_file, table_name, conn, is_latest=False):
         
         # For latest tables, clear existing data and insert fresh
         if is_latest:
-            cursor.execute(f"DELETE FROM {table_name}")
+            cursor.execute(f"DELETE FROM {quoted_table_name}")
             conn.commit()
             print(f"🔄 Cleared existing data from {table_name}")
         
         # Insert data
-        for _, row in df.iterrows():
-            placeholders = ', '.join(['%s'] * len(row))
-            columns_str = ', '.join([f'"{col}"' for col in df.columns])
-            insert_sql = f"INSERT INTO {table_name} ({columns_str}) VALUES ({placeholders})"
-            cursor.execute(insert_sql, tuple(row))
+        if is_latest:
+            # Latest tables don't have capture_timestamp
+            for _, row in df.iterrows():
+                placeholders = ', '.join(['%s'] * len(row))
+                columns_str = ', '.join([f'"{col}"' for col in df.columns])
+                insert_sql = f"INSERT INTO {quoted_table_name} ({columns_str}) VALUES ({placeholders})"
+                cursor.execute(insert_sql, tuple(row))
+        else:
+            # Historical tables include capture_timestamp
+            if capture_timestamp is None:
+                capture_timestamp = extract_timestamp_from_filename(csv_file.name)
+            
+            for _, row in df.iterrows():
+                placeholders = ', '.join(['%s'] * (len(row) + 1))  # +1 for capture_timestamp
+                columns_str = ', '.join([f'"{col}"' for col in df.columns] + ['capture_timestamp'])
+                values = tuple(row) + (capture_timestamp,)
+                insert_sql = f"INSERT INTO {quoted_table_name} ({columns_str}) VALUES ({placeholders})"
+                cursor.execute(insert_sql, values)
         
         conn.commit()
         cursor.close()
@@ -184,14 +244,29 @@ def main():
         else:
             print(f"⚠️  {csv_file} not found, skipping...")
     
-    # Upload historical data to general tables
-    print("\n📤 Uploading historical data...")
+    # Upload historical data to aggregated tables
+    print("\n📤 Uploading historical data to aggregated tables...")
     historical_files = [f for f in soda_data_dir.glob("*.csv") if "latest" not in f.name and f.name != "analysis_summary.csv"]
     
-    for csv_file in historical_files:
-        table_name = f"soda.{csv_file.stem}"
-        print(f"\n📤 Uploading {csv_file.name} to table '{table_name}'...")
-        upload_csv_to_table(csv_file, table_name, conn, is_latest=False)
+    # Separate datasets and checks files
+    datasets_files = [f for f in historical_files if f.name.startswith("datasets_")]
+    checks_files = [f for f in historical_files if f.name.startswith("checks_")]
+    
+    # Upload historical datasets to aggregated table
+    if datasets_files:
+        print(f"\n📊 Aggregating {len(datasets_files)} historical datasets files into soda.datasets_historical...")
+        for csv_file in sorted(datasets_files):
+            capture_timestamp = extract_timestamp_from_filename(csv_file.name)
+            print(f"  📥 Adding data from {csv_file.name} (captured: {capture_timestamp})...")
+            upload_csv_to_table(csv_file, "soda.datasets_historical", conn, is_latest=False, capture_timestamp=capture_timestamp)
+    
+    # Upload historical checks to aggregated table
+    if checks_files:
+        print(f"\n✅ Aggregating {len(checks_files)} historical checks files into soda.checks_historical...")
+        for csv_file in sorted(checks_files):
+            capture_timestamp = extract_timestamp_from_filename(csv_file.name)
+            print(f"  📥 Adding data from {csv_file.name} (captured: {capture_timestamp})...")
+            upload_csv_to_table(csv_file, "soda.checks_historical", conn, is_latest=False, capture_timestamp=capture_timestamp)
     
     conn.close()
     
@@ -201,10 +276,11 @@ def main():
     
     print("\n🎉 All Soda dump data uploaded successfully!")
     print("\n📊 Database Tables Created:")
-    print("  - soda.datasets_latest  - Latest dataset information")
-    print("  - soda.checks_latest     - Latest check results")
-    print("  - soda.analysis_summary  - Analysis summary data")
-    print("  - soda.*_historical      - Historical data files")
+    print("  - soda.datasets_latest      - Latest dataset information (refreshed on each upload)")
+    print("  - soda.checks_latest       - Latest check results (refreshed on each upload)")
+    print("  - soda.analysis_summary    - Analysis summary data")
+    print("  - soda.datasets_historical - All historical dataset snapshots (with capture_timestamp)")
+    print("  - soda.checks_historical   - All historical check snapshots (with capture_timestamp)")
     print("\nNext steps:")
     print("1. Access Superset UI: http://localhost:8089")
     print("2. Go to Data > Databases and add your PostgreSQL connection")

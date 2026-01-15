@@ -12,15 +12,40 @@ help: ## Show this help message
 all: venv deps ## Setup environment
 
 venv: ## Create virtual environment
+	@if ! command -v $(PY) >/dev/null 2>&1; then \
+		echo "❌ Error: $(PY) not found. Please install Python 3.11 or set PY variable."; \
+		exit 1; \
+	fi
 	@if [ ! -d "$(VENV)" ]; then \
 		$(PY) -m venv $(VENV); \
-		echo "[OK] Virtual environment created"; \
+		echo "[OK] Virtual environment created with $(PY)"; \
 	else \
 		echo "[OK] Virtual environment exists"; \
 	fi
 
 deps: venv ## Install dependencies
-	@. $(VENV)/bin/activate && pip install -q --upgrade pip && pip install -q -r scripts/setup/requirements.txt && echo "[OK] Dependencies installed"
+	@echo "📦 Installing dependencies..."
+	@. $(VENV)/bin/activate && pip install -q --upgrade pip && \
+	echo "🧹 Removing conflicting soda-postgres if present..." && \
+	pip uninstall -q -y soda-postgres 2>/dev/null || true && \
+	echo "📌 Installing critical dependencies first to prevent downgrades..." && \
+	pip install -q "protobuf>=6.30.0,<6.31.0" "pydantic>=2.5.2,<3.0.0" "pyarrow>=15.0.0,<22.0.0" && \
+	echo "📦 Upgrading conflicting packages to support protobuf 6.x..." && \
+	pip install -q --upgrade "google-api-core>=2.23.0" "googleapis-common-protos>=1.66.0" "proto-plus>=1.26.0" || true && \
+	grep -v "^soda-snowflake\|^#.*soda" scripts/setup/requirements.txt > /tmp/requirements_no_soda.txt && \
+	pip install -q -r /tmp/requirements_no_soda.txt && \
+	echo "📦 Installing soda-snowflake from Soda Cloud PyPI..." && \
+	pip install -q --upgrade-strategy only-if-needed -i https://pypi.cloud.soda.io "soda-snowflake==1.12.24" && \
+	echo "🔧 Ensuring critical dependencies remain at correct versions..." && \
+	pip install -q --upgrade "protobuf>=6.30.0,<6.31.0" "pydantic>=2.5.2,<3.0.0" "pyarrow>=15.0.0,<22.0.0" && \
+	pip install -q --upgrade "google-api-core>=2.23.0" "googleapis-common-protos>=1.66.0" "proto-plus>=1.26.0" || true && \
+	rm -f /tmp/requirements_no_soda.txt && \
+	echo "[OK] Dependencies installed"
+	@echo "ℹ️  Note: This project uses Snowflake, not PostgreSQL for Soda checks."
+	@echo "   Removed soda-postgres to avoid version conflicts."
+	@echo "⚠️  Some dependency warnings may appear for transitive dependencies"
+	@echo "   (mlflow, anyscale, great-expectations, fastapi) but these are not"
+	@echo "   directly used and should not affect functionality."
 
 pipeline: venv ## Run standard pipeline (via Airflow)
 	@echo "Use Airflow DAGs for pipeline execution:"
@@ -95,9 +120,6 @@ superset-reset: ## Reset Superset database and restart
 	@sleep 45
 	@echo "[OK] Superset reset and restarted"
 
-
-	@echo "✅ Complete Soda data workflow finished!"
-
 dump-databases: ## Dump all databases (Superset, Airflow, Soda data)
 	@echo "🗄️  Dumping all databases..."
 	@./scripts/dump_databases.sh --all
@@ -158,11 +180,9 @@ soda-dump: ## Extract Soda Cloud data to CSV files
 	@./scripts/run_soda_dump.sh
 	@echo "[OK] Soda Cloud data extracted to CSV files"
 
-
 airflow-list: ## List available DAGs
 	@echo "📋 Listing available DAGs..."
 	@docker exec soda-airflow-webserver airflow dags list | grep soda
-
 
 docs: ## Open documentation
 	@echo "📚 Available Documentation:"
@@ -217,8 +237,6 @@ clean-all: clean clean-logs ## Deep clean: artifacts, logs, and cache
 # SODA DATA MANAGEMENT
 # =============================================================================
 
-	@echo "✅ Complete Soda data workflow finished!"
-
 organize-soda-data: ## Organize Soda dump data in user-friendly structure
 	@echo "📁 Organizing Soda dump data..."
 	@python3 scripts/organize_soda_data.py
@@ -252,81 +270,4 @@ superset-reset-schema: ## Reset only the soda schema (fixes table structure issu
 	@echo "🔄 Resetting soda schema..."
 	@cd superset && docker-compose exec superset-db psql -U superset -d superset -c "DROP SCHEMA IF EXISTS soda CASCADE;"
 	@echo "✅ Soda schema reset complete"
-
-# Soda Agent Infrastructure Commands
-soda-agent-bootstrap: ## Bootstrap Soda Agent infrastructure (one-time setup)
-	@if [ -z "$(ENV)" ]; then \
-		echo "❌ Error: ENV parameter required. Usage: make soda-agent-bootstrap ENV=dev"; \
-		exit 1; \
-	fi
-	@echo "🏗️  Bootstrapping Soda Agent infrastructure for $(ENV)..."
-	@cd soda/soda-agent && ./bootstrap.sh $(ENV) create
-	@echo "✅ Bootstrap completed for $(ENV) environment"
-
-soda-agent-bootstrap-destroy: ## Destroy Soda Agent bootstrap infrastructure (with automatic S3 cleanup)
-	@if [ -z "$(ENV)" ]; then \
-		echo "❌ Error: ENV parameter required. Usage: make soda-agent-bootstrap-destroy ENV=dev"; \
-		exit 1; \
-	fi
-	@echo "⚠️  Destroying Soda Agent bootstrap infrastructure for $(ENV)..."
-	@echo "This will permanently delete bootstrap resources (S3 bucket, DynamoDB table)."
-	@echo "✅ Enhanced with automatic S3 versioning cleanup to prevent hanging issues."
-	@echo "Continue? [y/N]"
-	@read -r confirm && [ "$$confirm" = "y" ] || exit 1
-	@cd soda/soda-agent && ./bootstrap.sh $(ENV) delete
-	@echo "✅ Bootstrap destruction completed for $(ENV) environment"
-
-soda-agent-bootstrap-status: ## Check Soda Agent bootstrap status
-	@if [ -z "$(ENV)" ]; then \
-		echo "❌ Error: ENV parameter required. Usage: make soda-agent-bootstrap-status ENV=dev"; \
-		exit 1; \
-	fi
-	@echo "🔍 Checking Soda Agent bootstrap status for $(ENV)..."
-	@cd soda/soda-agent && ./bootstrap.sh $(ENV) status
-	@echo "✅ Bootstrap status check completed for $(ENV) environment"
-
-soda-agent-bootstrap-unlock: ## Force unlock Soda Agent bootstrap state (if stuck)
-	@if [ -z "$(ENV)" ]; then \
-		echo "❌ Error: ENV parameter required. Usage: make soda-agent-bootstrap-unlock ENV=dev"; \
-		exit 1; \
-	fi
-	@echo "🔓 Force unlocking Soda Agent bootstrap state for $(ENV)..."
-	@echo "⚠️  This should only be used if bootstrap is stuck or locked."
-	@echo "Continue? [y/N]"
-	@read -r confirm && [ "$$confirm" = "y" ] || exit 1
-	@cd soda/soda-agent && ./bootstrap.sh $(ENV) unlock
-	@echo "✅ Bootstrap unlock completed for $(ENV) environment"
-
-soda-agent-deploy: ## Deploy Soda Agent infrastructure (auto-creates bootstrap if missing)
-	@if [ -z "$(ENV)" ]; then \
-		echo "❌ Error: ENV parameter required. Usage: make soda-agent-deploy ENV=dev"; \
-		exit 1; \
-	fi
-	@echo "🚀 Deploying Soda Agent infrastructure for $(ENV)..."
-	@echo "📋 Note: Bootstrap will be created automatically if missing"
-	@cd soda/soda-agent && ./deploy.sh $(ENV)
-	@echo "✅ Deployment completed for $(ENV) environment"
-
-soda-agent-destroy: ## Destroy Soda Agent infrastructure
-	@if [ -z "$(ENV)" ]; then \
-		echo "❌ Error: ENV parameter required. Usage: make soda-agent-destroy ENV=dev"; \
-		exit 1; \
-	fi
-	@echo "⚠️  Destroying Soda Agent infrastructure for $(ENV)..."
-	@echo "This will permanently delete all resources. Continue? [y/N]"
-	@read -r confirm && [ "$$confirm" = "y" ] || exit 1
-	@cd soda/soda-agent && ./destroy.sh $(ENV)
-	@echo "✅ Destruction completed for $(ENV) environment"
-
-soda-agent-destroy-all: ## Destroy Soda Agent infrastructure AND bootstrap
-	@if [ -z "$(ENV)" ]; then \
-		echo "❌ Error: ENV parameter required. Usage: make soda-agent-destroy-all ENV=dev"; \
-		exit 1; \
-	fi
-	@echo "⚠️  Destroying Soda Agent infrastructure AND bootstrap for $(ENV)..."
-	@echo "This will permanently delete ALL resources including bootstrap. Continue? [y/N]"
-	@read -r confirm && [ "$$confirm" = "y" ] || exit 1
-	@cd soda/soda-agent && ./destroy.sh $(ENV) --destroy-bootstrap
-	@echo "✅ Complete destruction completed for $(ENV) environment"
-
 

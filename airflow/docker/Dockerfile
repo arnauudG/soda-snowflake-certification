@@ -16,10 +16,29 @@ USER airflow
 COPY requirements.txt /tmp/requirements.txt
 
 # Install Python dependencies from requirements file
-# Install soda-snowflake from Soda Cloud PyPI index
-RUN pip install --no-cache-dir -i https://pypi.cloud.soda.io soda-snowflake
-# Install other dependencies from standard PyPI
-RUN pip install --no-cache-dir python-dotenv==1.0.1 pandas>=2.2.2 pyarrow setuptools Faker dbt-core==1.10.11 dbt-snowflake==1.10.2
+# Install critical dependencies first to establish correct versions
+RUN pip install --no-cache-dir \
+    "protobuf>=6.30.0,<6.31.0" \
+    "pydantic>=2.5.2,<3.0.0" \
+    "pyarrow>=15.0.0,<22.0.0" \
+    python-dotenv==1.0.1 \
+    "pandas>=2.2.2,<2.4" \
+    setuptools \
+    Faker \
+    dbt-core==1.10.11 \
+    dbt-snowflake==1.10.2
+# Upgrade conflicting packages to support protobuf 6.x
+RUN pip install --no-cache-dir --upgrade \
+    "google-api-core>=2.23.0" \
+    "googleapis-common-protos>=1.66.0" \
+    "proto-plus>=1.26.0" || true
+# Install soda-snowflake from Soda Cloud PyPI index with pinned version
+RUN pip install --no-cache-dir --upgrade-strategy only-if-needed -i https://pypi.cloud.soda.io "soda-snowflake==1.12.24"
+# Ensure critical dependencies remain at correct versions (dbt requires protobuf>=6.0,<7.0)
+RUN pip install --no-cache-dir --upgrade \
+    "protobuf>=6.30.0,<6.31.0" \
+    "pydantic>=2.5.2,<3.0.0" \
+    "pyarrow>=15.0.0,<22.0.0"
 
 # Set working directory
 WORKDIR /opt/airflow

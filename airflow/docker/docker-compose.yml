@@ -18,6 +18,16 @@ services:
       - AIRFLOW__API__AUTH_BACKENDS=airflow.api.auth.backend.basic_auth
       - AIRFLOW__WEBSERVER__EXPOSE_CONFIG=true
       - AIRFLOW__WEBSERVER__SECRET_KEY=your-secret-key-here
+      - AIRFLOW__WEBSERVER__BASE_URL=http://localhost:8080
+      - AIRFLOW__WEBSERVER__WEB_SERVER_HOST=0.0.0.0
+      - AIRFLOW__WEBSERVER__WEB_SERVER_PORT=8080
+      - AIRFLOW__LOGGING__REMOTE_LOGGING=False
+      - AIRFLOW__LOGGING__REMOTE_BASE_LOG_FOLDER=
+      - AIRFLOW__LOGGING__BASE_LOG_FOLDER=/opt/airflow/logs
+      - AIRFLOW__WEBSERVER__ENABLE_PROXY_FIX=True
+      # Configure log serving through webserver (not separate log server)
+      - AIRFLOW__LOGGING__REMOTE_LOG_CONN_ID=
+      - AIRFLOW__WEBSERVER__EXPOSE_STACKTRACE=True
       # Performance settings
       - AIRFLOW__CORE__PARALLELISM=4
       - AIRFLOW__CORE__MAX_ACTIVE_TASKS_PER_DAG=4
@@ -76,6 +86,14 @@ services:
       - AIRFLOW__API__AUTH_BACKENDS=airflow.api.auth.backend.basic_auth
       - AIRFLOW__WEBSERVER__EXPOSE_CONFIG=true
       - AIRFLOW__WEBSERVER__SECRET_KEY=your-secret-key-here
+      - AIRFLOW__WEBSERVER__BASE_URL=http://localhost:8080
+      - AIRFLOW__WEBSERVER__WEB_SERVER_HOST=0.0.0.0
+      - AIRFLOW__WEBSERVER__WEB_SERVER_PORT=8080
+      - AIRFLOW__LOGGING__REMOTE_LOGGING=False
+      - AIRFLOW__LOGGING__REMOTE_BASE_LOG_FOLDER=
+      - AIRFLOW__LOGGING__BASE_LOG_FOLDER=/opt/airflow/logs
+      # Configure log serving through webserver (not separate log server)
+      - AIRFLOW__LOGGING__REMOTE_LOG_CONN_ID=
       # Snowflake connection
       - SNOWFLAKE_ACCOUNT=${SNOWFLAKE_ACCOUNT}
       - SNOWFLAKE_USER=${SNOWFLAKE_USER}
@@ -124,6 +142,7 @@ services:
       - AIRFLOW__API__AUTH_BACKENDS=airflow.api.auth.backend.basic_auth
       - AIRFLOW__WEBSERVER__EXPOSE_CONFIG=true
       - AIRFLOW__WEBSERVER__SECRET_KEY=your-secret-key-here
+      - AIRFLOW__WEBSERVER__BASE_URL=http://localhost:8080
       - _AIRFLOW_DB_UPGRADE=true
       - _AIRFLOW_WWW_USER_CREATE=true
       - _AIRFLOW_WWW_USER_USERNAME=admin

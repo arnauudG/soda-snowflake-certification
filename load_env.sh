@@ -98,8 +98,6 @@ SENSITIVE_VARS=(
     "SNOWFLAKE_ROLE"
     "SODA_CLOUD_API_KEY_ID"
     "SODA_CLOUD_API_KEY_SECRET"
-    "SODA_AGENT_API_KEY_ID"
-    "SODA_AGENT_API_KEY_SECRET"
 )
 
 # Show all loaded variables
@@ -127,8 +125,7 @@ echo -e "${BLUE}💡 You can now run:${NC}"
 echo "   • make airflow-up"
 echo "   • make superset-up" 
 echo "   • make superset-upload-data"
-echo "   • make soda-agent-bootstrap ENV=dev"
-echo "   • make soda-agent-deploy ENV=dev"
+echo "   • make airflow-trigger-pipeline"
 echo ""
 echo -e "${YELLOW}Note: Environment variables are loaded in this shell session only.${NC}"
 echo -e "${YELLOW}To make them permanent, add 'source load_env.sh' to your ~/.bashrc or ~/.zshrc${NC}"

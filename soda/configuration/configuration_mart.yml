@@ -25,5 +25,3 @@ soda_cloud:
   host: ${SODA_CLOUD_HOST}
   api_key_id: ${SODA_CLOUD_API_KEY_ID}
   api_key_secret: ${SODA_CLOUD_API_KEY_SECRET}
-
-# Note: checks are defined in separate files under soda/checks/mart

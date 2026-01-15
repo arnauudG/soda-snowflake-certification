@@ -18,40 +18,7 @@ This directory contains the comprehensive Soda data quality monitoring configura
 - **STAGING Layer**: 4 tables with transformation validation
 - **MARTS Layer**: 2 business-ready tables with strict quality standards
 - **Total Checks**: 50+ data quality checks across all layers
-
-## 🏗️ Soda Agent AWS Infrastructure
-
-The project includes enhanced infrastructure as code for deploying Soda Agent on AWS using Terraform and Terragrunt:
-
-### **Infrastructure Components**
-- **VPC with private/public subnets** across 3 AZs
-- **VPC Endpoints** for SSM, ECR, STS, CloudWatch Logs, and S3
-- **EKS Cluster** with managed node groups
-- **Ops Infrastructure** (EC2 instance, security groups, IAM roles)
-- **Soda Agent** deployed via Helm on EKS
-
-### **Enhanced Bootstrap Management**
-- **Smart Detection** - Automatically checks if bootstrap exists before operations
-- **Auto-Creation** - Deploy script automatically creates bootstrap if missing
-- **Flexible Destruction** - Choose to destroy infrastructure only or everything including bootstrap
-- **Status Checking** - Comprehensive status reporting with resource details
-- **Safety Confirmations** - Multiple confirmation prompts for destructive operations
-
-### **Available Environments**
-- **Development** (`dev/eu-west-1/`) - For testing and development
-- **Production** (`prod/eu-west-1/`) - For production workloads
-
-### **Infrastructure Commands**
-```bash
-# Bootstrap infrastructure (one-time setup)
-make soda-agent-bootstrap ENV=dev
-
-# Deploy infrastructure
-make soda-agent-deploy ENV=dev
-
-# Destroy infrastructure
-make soda-agent-destroy ENV=dev
-```
+- **Data Quality Dimensions**: All checks properly categorized with standardized dimensions
 
 ## 📁 Directory Structure
 
@@ -62,13 +29,6 @@ soda/
 │   ├── configuration_staging.yml  # STAGING layer configuration
 │   ├── configuration_mart.yml     # MART layer configuration
 │   └── configuration_quality.yml  # QUALITY layer configuration
-├── soda-agent/              # Soda Agent AWS Infrastructure
-│   ├── module/              # Terraform modules
-│   ├── env/                 # Environment-specific configurations
-│   ├── bootstrap.sh         # Infrastructure bootstrap
-│   ├── deploy.sh           # Infrastructure deployment
-│   ├── destroy.sh          # Infrastructure destruction
-│   └── README.md           # Infrastructure documentation
 ├── checks/                 # Data quality checks organized by layer
 │   ├── raw/               # RAW layer checks (lenient thresholds)
 │   ├── staging/           # STAGING layer checks (stricter thresholds)
@@ -163,13 +123,93 @@ Each layer configuration includes:
 - **Performance settings** (timeouts, parallel execution)
 - **Soda Cloud integration** (API keys, monitoring)
 
+## 📐 Data Quality Dimensions
+
+All Soda checks are categorized using standardized data quality dimensions. Each check must include an `attributes` section with a `dimension` field.
+
+### Dimension Mapping
+
+| Check Type | Dimension | Description |
+|------------|-----------|-------------|
+| `schema` | **Accuracy** | Schema validation ensures table structure integrity |
+| `row_count` | **Accuracy** | Row count checks validate data volume correctness |
+| `missing_count` | **Completeness** | Missing value checks validate data completeness |
+| `duplicate_count` | **Uniqueness** | Duplicate checks ensure record uniqueness |
+| `invalid_count` | **Validity** | Format/constraint validation ensures data conforms to rules |
+| `freshness` | **Timeliness** | Freshness checks monitor data recency |
+| `min` / `max` / `avg` | **Accuracy** | Range and statistical checks validate data correctness |
+| `failed rows` | **Accuracy** | General data quality validation |
+| `invalid_count` (referential) | **Consistency** | Referential integrity checks ensure cross-table consistency |
+
+### Required Dimensions
+
+All checks must use one of these six dimensions:
+- ✅ **Accuracy**: Data correctness, schema validation, range checks, business rules
+- ✅ **Completeness**: Missing value detection and validation
+- ✅ **Consistency**: Referential integrity and cross-table consistency
+- ✅ **Uniqueness**: Duplicate detection and prevention
+- ✅ **Validity**: Format validation, constraint checking, data type validation
+- ✅ **Timeliness**: Data freshness and recency monitoring
+
+### Example Check with Dimension
+
+```yaml
+checks for TABLE_NAME:
+  # Completeness check
+  - missing_count(CUSTOMER_ID) = 0:
+      name: "No missing customer IDs"
+      attributes:
+        dimension: Completeness
+  
+  # Uniqueness check
+  - duplicate_count(CUSTOMER_ID) = 0:
+      name: "Customer IDs are unique"
+      attributes:
+        dimension: Uniqueness
+  
+  # Validity check
+  - invalid_count(EMAIL) < 100:
+      name: "Valid email formats"
+      valid regex: '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+      attributes:
+        dimension: Validity
+  
+  # Accuracy check (range validation)
+  - min(PRICE) >= 0:
+      name: "All prices are non-negative"
+      attributes:
+        dimension: Accuracy
+  
+  # Timeliness check
+  - freshness(CREATED_AT) < 1d:
+      name: "Data is fresh"
+      attributes:
+        dimension: Timeliness
+  
+  # Consistency check (referential integrity)
+  - invalid_count(CUSTOMER_ID) < 100:
+      name: "Valid customer references"
+      valid values: ['CUST_001', 'CUST_002', 'CUST_003']
+      attributes:
+        dimension: Consistency
+```
+
+### Verification
+
+All checks in this project have been verified to:
+- ✅ Include the `attributes` section with `dimension` field
+- ✅ Use one of the six required dimensions
+- ✅ Follow the standard dimension mapping based on check type
+
 ## 🛠️ Maintenance
 
 ### Adding New Checks
 1. Create check file in appropriate layer directory
 2. Follow naming convention: `{table_name}.yml`
 3. Use layer-appropriate thresholds
-4. Test with `soda scan` command
+4. **Always include `attributes` section with correct `dimension`**
+5. Follow the dimension mapping table above
+6. Test with `soda scan` command
 
 ### Troubleshooting
 1. Check connection with `soda test-connection`

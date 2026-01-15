@@ -64,6 +64,7 @@ Quality checks **gate** metadata synchronization. Metadata sync only happens aft
 - **`collibra_sync_mart`**: Collibra metadata sync for MART schema (governance phase, badge of trust)
 - **`soda_scan_quality`**: Quality monitoring
 - **`dbt_test`**: Execute dbt tests
+- **`collibra_sync_quality`**: Collibra metadata sync for QUALITY schema (only after quality passes)
 - **`cleanup_artifacts`**: Clean up temporary files
 
 **Integration Points**:
@@ -174,7 +175,8 @@ MART Layer:
     (Build → Validate → Govern, strictest standards)
     ↓
 QUALITY Layer:
-    quality_layer_start → [soda_scan_quality, dbt_test] → quality_layer_end
+    quality_layer_start → [soda_scan_quality, dbt_test] → collibra_sync_quality → quality_layer_end
+    (Quality monitoring → Metadata sync)
     ↓
 cleanup_artifacts → pipeline_end
 ```
@@ -264,12 +266,13 @@ make airflow-logs
 - **Solution**: Verify Collibra configuration and asset type IDs in configuration file
 
 #### Collibra Metadata Sync Issues
-- **Cause**: Schema asset IDs not resolving to connection IDs, or sync job failures
+- **Cause**: Schema asset IDs not resolving to connection IDs, or sync trigger failures
 - **Solution**: 
   - Verify schema asset IDs in `collibra/config.yml`
   - Check that schemas have been synchronized at least once in Collibra
-  - Review Collibra job status in Collibra UI
-  - Check Airflow task logs for detailed error messages
+  - Review Collibra job status in Collibra UI (syncs complete in background)
+  - Check Airflow task logs for sync trigger confirmation
+  - Verify Collibra credentials are correct
 
 ### Debug Commands
 ```bash
@@ -329,7 +332,7 @@ make airflow-validate-env
   - Metadata sync configured in `collibra/config.yml`
 - **Selective Sync**: Only datasets marked for sync are synchronized
 - **Automatic Resolution**: Schema asset IDs automatically resolved to schema connection IDs
-- **Job Monitoring**: Metadata sync jobs monitored with automatic wait-for-completion
+- **Background Completion**: Metadata syncs triggered and complete in Collibra background
 
 ### Snowflake Integration
 - **Connection**: Uses environment-based connection
@@ -348,11 +351,11 @@ make airflow-validate-env
 - **Performance**: Optimized execution and resource usage
 - **Maintainability**: Clean, modular DAG design
 - **Governance Integration**: Quality metrics automatically available in governance catalog
-- **Metadata Sync**: Automatic metadata synchronization after each pipeline layer
-- **Job Monitoring**: Automatic wait-for-completion with timeout handling
+- **Metadata Sync**: Automatic metadata synchronization after each pipeline layer (RAW, STAGING, MART, QUALITY)
+- **Background Sync**: Syncs triggered and complete in Collibra background
 
 ---
 
-**Last Updated**: December 2024  
+**Last Updated**: January 2025  
 **Version**: 2.0.0  
 **Airflow Version**: 2.8+

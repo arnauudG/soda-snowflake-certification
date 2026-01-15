@@ -320,5 +320,5 @@ filtered_datasets = datasets_df[datasets_df['datasource_name'].isin(soda_certifi
 
 ---
 
-**Last Updated**: December 2024  
+**Last Updated**: January 2025  
 **Version**: 2.0.0

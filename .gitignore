@@ -55,6 +55,7 @@ dbt/target/
 dbt/dbt_packages/
 dbt/compiled/
 dbt/run/
+dbt/.user.yml
 
 # Docker
 .dockerignore

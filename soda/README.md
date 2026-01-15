@@ -18,7 +18,8 @@ This directory contains the comprehensive Soda data quality monitoring configura
 ### Quality Coverage
 - **RAW Layer**: 4 tables with initial data quality assessment
 - **STAGING Layer**: 4 tables with transformation validation
-- **MARTS Layer**: 2 business-ready tables with strict quality standards
+- **MART Layer**: 2 business-ready tables with strict quality standards
+- **QUALITY Layer**: Quality monitoring and check results tracking
 - **Total Checks**: 50+ data quality checks across all layers
 - **Data Quality Dimensions**: All checks properly categorized with standardized dimensions
 
@@ -196,9 +197,10 @@ make airflow-trigger-pipeline
 **This executes:**
 1. **RAW Layer**: Data initialization + quality checks + profiling + sampling
 2. **STAGING Layer**: dbt transformations + quality checks + profiling + sampling
-3. **MARTS Layer**: dbt models + quality checks + profiling + sampling
-4. **Soda Cloud**: All results sent to cloud dashboard
-5. **Collibra**: Quality results automatically synchronized to governance catalog
+3. **MART Layer**: dbt models + quality checks + profiling + sampling
+4. **QUALITY Layer**: Quality monitoring + check results tracking
+5. **Soda Cloud**: All results sent to cloud dashboard
+6. **Collibra**: Quality results automatically synchronized to governance catalog
 
 ### Run Individual Layer Checks
 ```bash

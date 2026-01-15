@@ -233,6 +233,6 @@ The project includes lineage metadata configuration:
 
 ---
 
-**Last Updated**: December 2024  
+**Last Updated**: January 2025  
 **Version**: 2.0.0  
 **dbt Version**: 1.10.11

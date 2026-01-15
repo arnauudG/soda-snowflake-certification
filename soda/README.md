@@ -1,26 +1,26 @@
-# Soda Data Quality Monitoring - Complete Integration
+# Soda Data Quality Configuration
 
-This directory contains the comprehensive Soda data quality monitoring configuration for the Soda Certification project, featuring **complete Soda Cloud integration** with dataset discovery, column profiling, and sample data collection.
+This directory contains the comprehensive Soda data quality monitoring configuration, featuring complete integration with Soda Cloud and Collibra Data Intelligence Cloud for unified data governance and quality management.
 
-## ✅ **Complete Soda Cloud Integration**
+## Complete Integration
 
-### 🚀 **Advanced Features Implemented**
-- ✅ **Dataset Discovery**: Automatic table and column discovery across all layers
-- ✅ **Column Profiling**: Comprehensive statistical analysis with smart exclusions
-- ✅ **Sample Data Collection**: 100 sample rows per dataset for analysis
-- ✅ **Failed Row Sampling**: Detailed failure analysis with custom SQL queries
-- ✅ **Anomaly Detection**: Foundation for automated monitoring (2025)
-- ✅ **API Integration**: Automated metadata extraction for external reporting
-- ✅ **Uppercase Standardization**: Consistent naming across all layers
+### Advanced Features Implemented
+- **Dataset Discovery**: Automatic table and column discovery across all layers
+- **Column Profiling**: Comprehensive statistical analysis with smart exclusions
+- **Sample Data Collection**: 100 sample rows per dataset for analysis
+- **Failed Row Sampling**: Detailed failure analysis with custom SQL queries
+- **API Integration**: Automated metadata extraction for external reporting
+- **Collibra Integration**: Automatic synchronization of quality results to governance catalog
+- **Uppercase Standardization**: Consistent naming across all layers
 
-### 📊 **Quality Coverage**
+### Quality Coverage
 - **RAW Layer**: 4 tables with initial data quality assessment
 - **STAGING Layer**: 4 tables with transformation validation
 - **MARTS Layer**: 2 business-ready tables with strict quality standards
 - **Total Checks**: 50+ data quality checks across all layers
 - **Data Quality Dimensions**: All checks properly categorized with standardized dimensions
 
-## 📁 Directory Structure
+## Directory Structure
 
 ```
 soda/
@@ -34,19 +34,128 @@ soda/
 │   ├── staging/           # STAGING layer checks (stricter thresholds)
 │   ├── mart/              # MART layer checks (strictest thresholds)
 │   └── quality/           # QUALITY layer checks (monitoring)
+├── soda-collibra-integration-configuration/
+│   └── configuration-collibra.yml  # Collibra integration configuration
 └── README.md              # This file
 ```
 
-## 🎯 Complete Soda Cloud Configuration
+## Collibra Integration
 
-### **Dataset Discovery**
+### Overview
+
+The Collibra integration automatically synchronizes data quality results from Soda Cloud to Collibra Data Intelligence Cloud, creating a unified view where quality metrics are linked to data assets (tables and columns) in the governance catalog.
+
+### Integration Flow
+
+```
+Soda Quality Checks
+    ↓
+Soda Cloud (Results Storage)
+    ↓
+Collibra Integration (Automatic Sync)
+    ├──→ Quality Metrics → Table Assets
+    ├──→ Check Results → Column Assets
+    └──→ Quality Dimensions → Governance Framework
+    ↓
+Collibra Data Catalog (Unified View)
+```
+
+### Key Features
+
+**Automatic Asset Mapping**
+- Tables automatically mapped to Collibra Table assets
+- Columns automatically mapped to Collibra Column assets
+- Quality checks created as Data Quality Metric assets
+- Quality dimensions linked via governance relationships
+
+**Selective Synchronization**
+- Only datasets marked with `push_to_collibra_dic` attribute are synced
+- Configurable filtering to control which datasets appear in Collibra
+- Option to skip checks for datasets not in Collibra
+
+**Quality Metrics Synchronized**
+- Check evaluation status (pass/fail)
+- Last run and sync timestamps
+- Check definitions and configurations
+- Diagnostic metrics:
+  - Rows tested/loaded
+  - Rows passed
+  - Rows failed
+  - Passing fraction
+- Links to Soda Cloud for detailed analysis
+
+**Governance Relationships**
+- Table/Column to Check relationships
+- Check to Quality Dimension relationships
+- Ownership and responsibility tracking
+- Domain organization
+
+### Configuration
+
+The Collibra integration is configured in `soda-collibra-integration-configuration/configuration-collibra.yml`.
+
+**Soda Cloud Configuration**
+```yaml
+soda_cloud:
+  general:
+    filter_datasets_to_sync_to_collibra: true  # Only sync marked datasets
+    soda_no_collibra_dataset_skip_checks: true # Skip if not in Collibra
+  attributes:
+    soda_collibra_sync_dataset_attribute: "push_to_collibra_dic"
+    soda_dimension_attribute_name: "dimension"
+```
+
+**Collibra Configuration**
+```yaml
+collibra:
+  base_url: ${COLLIBRA_BASE_URL}
+  username: ${COLLIBRA_USERNAME}
+  password: ${COLLIBRA_PASSWORD}
+  asset_types:
+    table_asset_type: "..."  # Collibra Table asset type ID
+    column_asset_type: "..." # Collibra Column asset type ID
+    soda_check_asset_type: "..." # Data Quality Metric type ID
+    dimension_asset_type: "..."  # Data Quality Dimension type ID
+```
+
+### Marking Datasets for Collibra Sync
+
+To enable synchronization of a dataset to Collibra, add the sync attribute in your Soda check file:
+
+```yaml
+discover datasets:
+  datasets:
+    - include TABLE_NAME
+      attributes:
+        push_to_collibra_dic: true
+```
+
+### Domain Mapping
+
+Quality results can be organized by Collibra domains:
+- Configure domain mapping via `soda_collibra_domain_dataset_attribute_name`
+- Set default domain via `soda_collibra_default_domain`
+- Quality assets are created in appropriate governance domains
+
+### Required Environment Variables
+
+```bash
+# Collibra Configuration
+COLLIBRA_BASE_URL=https://your-instance.collibra.com
+COLLIBRA_USERNAME=your_username
+COLLIBRA_PASSWORD=your_password
+```
+
+## Complete Soda Cloud Configuration
+
+### Dataset Discovery
 ```yaml
 discover datasets:
   datasets:
     - include TABLE_NAME
 ```
 
-### **Column Profiling**
+### Column Profiling
 ```yaml
 profile columns:
   columns:
@@ -55,23 +164,24 @@ profile columns:
     - exclude TABLE_NAME.UPDATED_AT
 ```
 
-### **Sample Data Collection**
+### Sample Data Collection
 ```yaml
 sample datasets:
   datasets:
     - include TABLE_NAME
 ```
 
-### **Layer-Specific Quality Standards**
+### Layer-Specific Quality Standards
 - **RAW Layer**: Relaxed thresholds for initial assessment
 - **STAGING Layer**: Stricter validation after transformation
 - **MARTS Layer**: Business-ready data with strictest requirements
 - **Uppercase Naming**: All tables use consistent uppercase column names (CUSTOMER_ID, FIRST_NAME, etc.)
 
-## 🚀 Usage
+## Usage
 
-### **Complete Pipeline Execution**
-The pipeline runs with full Soda Cloud integration:
+### Complete Pipeline Execution
+
+The pipeline runs with full Soda Cloud and Collibra integration:
 
 ```bash
 # Trigger the complete pipeline with profiling and sampling
@@ -83,6 +193,7 @@ make airflow-trigger-pipeline
 2. **STAGING Layer**: dbt transformations + quality checks + profiling + sampling
 3. **MARTS Layer**: dbt models + quality checks + profiling + sampling
 4. **Soda Cloud**: All results sent to cloud dashboard
+5. **Collibra**: Quality results automatically synchronized to governance catalog
 
 ### Run Individual Layer Checks
 ```bash
@@ -108,7 +219,7 @@ soda scan -d soda_certification_raw -c soda/configuration/configuration_raw.yml 
 soda test-connection -d soda_certification_raw -c soda/configuration/configuration_raw.yml
 ```
 
-## ☁️ Soda Cloud Integration
+## Soda Cloud Integration
 
 All configuration files include Soda Cloud integration:
 - **Centralized Monitoring**: Results sent to Soda Cloud platform
@@ -116,14 +227,15 @@ All configuration files include Soda Cloud integration:
 - **Historical Trends**: Track data quality over time
 - **Team Collaboration**: Share insights with stakeholders
 
-## 🔧 Configuration
+## Configuration
 
 Each layer configuration includes:
 - **Data source connection** (database, schema, warehouse)
 - **Performance settings** (timeouts, parallel execution)
 - **Soda Cloud integration** (API keys, monitoring)
+- **Collibra integration** (governance synchronization)
 
-## 📐 Data Quality Dimensions
+## Data Quality Dimensions
 
 All Soda checks are categorized using standardized data quality dimensions. Each check must include an `attributes` section with a `dimension` field.
 
@@ -144,12 +256,12 @@ All Soda checks are categorized using standardized data quality dimensions. Each
 ### Required Dimensions
 
 All checks must use one of these six dimensions:
-- ✅ **Accuracy**: Data correctness, schema validation, range checks, business rules
-- ✅ **Completeness**: Missing value detection and validation
-- ✅ **Consistency**: Referential integrity and cross-table consistency
-- ✅ **Uniqueness**: Duplicate detection and prevention
-- ✅ **Validity**: Format validation, constraint checking, data type validation
-- ✅ **Timeliness**: Data freshness and recency monitoring
+- **Accuracy**: Data correctness, schema validation, range checks, business rules
+- **Completeness**: Missing value detection and validation
+- **Consistency**: Referential integrity and cross-table consistency
+- **Uniqueness**: Duplicate detection and prevention
+- **Validity**: Format validation, constraint checking, data type validation
+- **Timeliness**: Data freshness and recency monitoring
 
 ### Example Check with Dimension
 
@@ -197,11 +309,11 @@ checks for TABLE_NAME:
 ### Verification
 
 All checks in this project have been verified to:
-- ✅ Include the `attributes` section with `dimension` field
-- ✅ Use one of the six required dimensions
-- ✅ Follow the standard dimension mapping based on check type
+- Include the `attributes` section with `dimension` field
+- Use one of the six required dimensions
+- Follow the standard dimension mapping based on check type
 
-## 🛠️ Maintenance
+## Maintenance
 
 ### Adding New Checks
 1. Create check file in appropriate layer directory
@@ -209,7 +321,8 @@ All checks in this project have been verified to:
 3. Use layer-appropriate thresholds
 4. **Always include `attributes` section with correct `dimension`**
 5. Follow the dimension mapping table above
-6. Test with `soda scan` command
+6. **Add `push_to_collibra_dic: true` attribute if you want to sync to Collibra**
+7. Test with `soda scan` command
 
 ### Troubleshooting
 1. Check connection with `soda test-connection`
@@ -217,13 +330,16 @@ All checks in this project have been verified to:
 3. Review check logic and thresholds
 4. Check Snowflake permissions
 5. Monitor Soda Cloud connectivity
+6. Verify Collibra credentials and asset type IDs
+7. Check that datasets are marked for Collibra sync if needed
 
-## 📚 Best Practices
+## Best Practices
 
 1. **Layer Progression**: Start with RAW, progress to MART
 2. **Threshold Strategy**: Lenient → Stricter → Strictest
 3. **Check Organization**: Group by table and layer
 4. **Performance**: Use appropriate warehouse sizes
 5. **Monitoring**: Set up automated alerts in Soda Cloud
-6. **Documentation**: Keep checks well-documented
-7. **Testing**: Validate changes before deployment
+6. **Governance**: Mark important datasets for Collibra sync
+7. **Documentation**: Keep checks well-documented
+8. **Testing**: Validate changes before deployment

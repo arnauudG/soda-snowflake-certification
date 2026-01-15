@@ -1,8 +1,8 @@
-# dbt Project - Soda Certification
+# dbt Project - Data Transformations
 
-This directory contains the dbt project configuration for the Soda Certification data pipeline, featuring clean schema management and lineage support.
+This directory contains the dbt project configuration for the integrated data pipeline, featuring clean schema management and lineage support.
 
-## 🏗️ Project Structure
+## Project Structure
 
 ```
 dbt/
@@ -27,37 +27,37 @@ dbt/
 └── README.md                   # This file
 ```
 
-## 🎯 Schema Configuration
+## Schema Configuration
 
-### **Clean Schema Management**
+### Clean Schema Management
 The project uses a custom schema macro to prevent schema concatenation issues:
 
 - **Staging models**: Created in `STAGING` schema
 - **Mart models**: Created in `MART` schema
 - **No schema duplication**: Prevents `STAGING_STAGING` or `MART_MART` issues
 
-### **Custom Schema Macro**
+### Custom Schema Macro
 The `macros/get_custom_schema.sql` macro overrides dbt's default schema behavior:
 - Uses project-level schema when specified (`STAGING`, `MART`)
 - Falls back to profile schema (`PUBLIC`) only when no custom schema is set
 - Prevents unwanted schema concatenation
 
-## 📊 Data Models
+## Data Models
 
-### **Staging Layer (Silver)**
+### Staging Layer (Silver)
 - **`stg_customers`**: Cleaned customer data with quality flags
 - **`stg_orders`**: Validated order transactions with business logic
 - **`stg_order_items`**: Processed order line items with calculations
 - **`stg_products`**: Standardized product information with hierarchy
 
-### **Mart Layer (Gold)**
+### Mart Layer (Gold)
 - **`dim_customers`**: Customer dimension with segmentation and RFM analysis
 - **`dim_products`**: Product dimension with categorization
 - **`fact_orders`**: Order fact table with business metrics and analysis
 
-## 🔧 Configuration
+## Configuration
 
-### **Project Configuration (`dbt_project.yml`)**
+### Project Configuration (`dbt_project.yml`)
 ```yaml
 models:
   soda_certification:
@@ -77,7 +77,7 @@ models:
         layer: "mart"
 ```
 
-### **Profile Configuration (`profiles.yml`)**
+### Profile Configuration (`profiles.yml`)
 ```yaml
 soda_certification:
   target: dev
@@ -90,57 +90,57 @@ soda_certification:
       quote_identifiers: true
 ```
 
-## 🚀 Usage
+## Usage
 
-### **Run Staging Models**
+### Run Staging Models
 ```bash
 dbt run --select staging --target dev --profiles-dir .
 ```
 
-### **Run Mart Models**
+### Run Mart Models
 ```bash
 dbt run --select mart --target dev --profiles-dir .
 ```
 
-### **Run All Models**
+### Run All Models
 ```bash
 dbt run --target dev --profiles-dir .
 ```
 
-### **Run Tests**
+### Run Tests
 ```bash
 dbt test --target dev --profiles-dir .
 ```
 
-### **Generate Documentation**
+### Generate Documentation
 ```bash
 dbt docs generate --target dev --profiles-dir .
 dbt docs serve
 ```
 
-## 📈 Data Quality Features
+## Data Quality Features
 
-### **Staging Models**
+### Staging Models
 - **Data Cleaning**: Standardized formats, trimmed whitespace
 - **Quality Flags**: Missing data indicators, validation flags
 - **Deduplication**: Removes duplicates based on business rules
 - **Data Enrichment**: Adds derived fields and calculations
 
-### **Mart Models**
+### Mart Models
 - **Business Logic**: Customer segmentation, RFM analysis
 - **Data Aggregation**: Order metrics, customer lifetime value
 - **Quality Scoring**: Data quality assessment and scoring
 - **Business Metrics**: Key performance indicators and KPIs
 
-## 🔍 Testing
+## Testing
 
-### **Data Quality Tests**
+### Data Quality Tests
 - **Uniqueness**: Primary key constraints
 - **Referential Integrity**: Foreign key relationships
 - **Completeness**: Required field validation
 - **Business Rules**: Domain-specific validations
 
-### **Test Execution**
+### Test Execution
 ```bash
 # Run all tests
 dbt test --target dev --profiles-dir .
@@ -149,37 +149,49 @@ dbt test --target dev --profiles-dir .
 dbt test --select test_data_quality --target dev --profiles-dir .
 ```
 
-## 📚 Best Practices
+## Integration with Quality and Governance
 
-### **Model Development**
+### Quality Integration
+- **Quality Checks**: Models are validated by Soda quality checks after transformation
+- **Layer-Specific Standards**: Quality requirements increase from STAGING to MART
+- **Quality Dimensions**: Models support quality dimension tracking
+
+### Governance Integration
+- **Metadata**: Model metadata can be synchronized to Collibra
+- **Lineage**: Data lineage tracked for governance purposes
+- **Asset Mapping**: Models can be mapped to governance assets
+
+## Best Practices
+
+### Model Development
 1. **Naming Convention**: Use descriptive, consistent names
 2. **Documentation**: Document all models and columns
 3. **Testing**: Include appropriate tests for each model
 4. **Performance**: Use appropriate materialization strategies
 
-### **Schema Management**
+### Schema Management
 1. **Layer Separation**: Keep staging and mart models separate
 2. **Schema Configuration**: Use project-level schema settings
 3. **Custom Macros**: Leverage custom macros for complex logic
 4. **Lineage**: Maintain clear data lineage documentation
 
-## 🛠️ Troubleshooting
+## Troubleshooting
 
-### **Common Issues**
+### Common Issues
 
-#### **Schema Concatenation**
+#### Schema Concatenation
 - **Issue**: Models created in `STAGING_STAGING` or `MART_MART`
 - **Solution**: Ensure custom schema macro is in place and project config is correct
 
-#### **Connection Issues**
+#### Connection Issues
 - **Issue**: Cannot connect to Snowflake
 - **Solution**: Verify environment variables and profile configuration
 
-#### **Model Dependencies**
+#### Model Dependencies
 - **Issue**: Models can't find referenced tables
 - **Solution**: Ensure staging models run before mart models
 
-### **Debug Commands**
+### Debug Commands
 ```bash
 # Parse project
 dbt parse --target dev --profiles-dir .
@@ -191,32 +203,33 @@ dbt debug --target dev --profiles-dir .
 dbt compile --select stg_customers --target dev --profiles-dir .
 ```
 
-## 📊 Lineage Support
+## Lineage Support
 
-### **Metadata Configuration**
+### Metadata Configuration
 The project includes lineage metadata configuration:
 - **Model Metadata**: Owner, layer, and business context
 - **Column Documentation**: Detailed column descriptions
 - **Data Lineage**: Visual representation of data flow
 
-### **Lineage Visualization**
+### Lineage Visualization
 - **dbt Docs**: Built-in lineage visualization
 - **Custom Schema Macro**: Ensures clean schema names in lineage
 - **Metadata Tables**: Creates lineage metadata in Snowflake
 
-## 🎯 Success Metrics
+## Success Metrics
 
-✅ **Clean Schema Management**: No schema concatenation issues  
-✅ **Layer Separation**: Clear staging and mart model separation  
-✅ **Data Quality**: Comprehensive data cleaning and validation  
-✅ **Business Logic**: Rich business metrics and segmentation  
-✅ **Testing**: Comprehensive data quality tests  
-✅ **Documentation**: Complete model and column documentation  
-✅ **Lineage Support**: Visual data lineage and metadata tracking  
-✅ **Performance**: Optimized materialization strategies  
+- **Clean Schema Management**: No schema concatenation issues
+- **Layer Separation**: Clear staging and mart model separation
+- **Data Quality**: Comprehensive data cleaning and validation
+- **Business Logic**: Rich business metrics and segmentation
+- **Testing**: Comprehensive data quality tests
+- **Documentation**: Complete model and column documentation
+- **Lineage Support**: Visual data lineage and metadata tracking
+- **Performance**: Optimized materialization strategies
+- **Integration**: Seamless integration with quality and governance systems
 
 ---
 
 **Last Updated**: December 2024  
-**Version**: 1.0.0  
+**Version**: 2.0.0  
 **dbt Version**: 1.10.11

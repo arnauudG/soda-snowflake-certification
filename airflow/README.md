@@ -1,8 +1,8 @@
-# Apache Airflow - Soda Certification
+# Apache Airflow - Data Pipeline Orchestration
 
-This directory contains the Apache Airflow configuration and DAGs for orchestrating the Soda Certification data quality pipeline.
+This directory contains the Apache Airflow configuration and DAGs for orchestrating the integrated data engineering, governance, and quality pipeline.
 
-## 🏗️ Directory Structure
+## Directory Structure
 
 ```
 airflow/
@@ -18,9 +18,9 @@ airflow/
 └── README.md                   # This file
 ```
 
-## 🎯 DAGs Overview
+## DAGs Overview
 
-### **1. Soda Initialization DAG (`soda_initialization.py`)**
+### 1. Soda Initialization DAG (`soda_initialization.py`)
 
 **Purpose**: One-time setup and initialization of the data pipeline
 
@@ -29,14 +29,14 @@ airflow/
 - **`setup_snowflake`**: Create database, schemas, tables, and sample data
 
 **When to Use**:
-- ✅ First-time setup
-- ✅ Fresh start with clean data
-- ✅ Testing and demonstration
-- ❌ Regular pipeline runs
+- First-time setup
+- Fresh start with clean data
+- Testing and demonstration
+- Not for regular pipeline runs
 
-### **2. Soda Pipeline Run DAG (`soda_pipeline_run.py`)**
+### 2. Soda Pipeline Run DAG (`soda_pipeline_run.py`)
 
-**Purpose**: Regular data quality monitoring and processing
+**Purpose**: Regular data quality monitoring and processing with integrated governance synchronization
 
 **Layered Approach**:
 1. **RAW Layer**: Data quality checks on source data
@@ -54,19 +54,24 @@ airflow/
 - **`dbt_test`**: Execute dbt tests
 - **`cleanup_artifacts`**: Clean up temporary files
 
-## 🚀 Usage
+**Integration Points**:
+- Quality results automatically synchronized to Soda Cloud
+- Quality metrics automatically pushed to Collibra (if configured)
+- Governance assets updated with latest quality information
 
-### **Start Airflow**
+## Usage
+
+### Start Airflow
 ```bash
 make airflow-up
 ```
 
-### **Access Airflow UI**
+### Access Airflow UI
 - URL: http://localhost:8080
 - Username: admin
 - Password: admin
 
-### **Trigger DAGs**
+### Trigger DAGs
 ```bash
 # Initialize data (one-time)
 make airflow-trigger-init
@@ -75,19 +80,19 @@ make airflow-trigger-init
 make airflow-trigger-pipeline
 ```
 
-### **Check Status**
+### Check Status
 ```bash
 make airflow-status
 ```
 
-### **View Logs**
+### View Logs
 ```bash
 make airflow-logs
 ```
 
-## 🔧 Configuration
+## Configuration
 
-### **Environment Variables**
+### Environment Variables
 Airflow automatically loads environment variables from `.env` file:
 
 ```bash
@@ -103,22 +108,27 @@ SNOWFLAKE_SCHEMA=RAW
 SODA_CLOUD_HOST=https://cloud.soda.io
 SODA_CLOUD_API_KEY_ID=your_api_key_id
 SODA_CLOUD_API_KEY_SECRET=your_api_key_secret
+
+# Collibra Configuration (for governance integration)
+COLLIBRA_BASE_URL=https://your-instance.collibra.com
+COLLIBRA_USERNAME=your_username
+COLLIBRA_PASSWORD=your_password
 ```
 
-### **Docker Configuration**
+### Docker Configuration
 - **Multi-container setup**: Airflow webserver, scheduler, worker, and PostgreSQL
 - **Custom image**: Includes dbt, Soda, and project dependencies
 - **Volume mounts**: Persistent logs and configuration
 - **Environment validation**: Automatic environment variable checking
 
-## 📊 Pipeline Flow
+## Pipeline Flow
 
-### **Initialization Flow**
+### Initialization Flow
 ```
 init_start → reset_snowflake → setup_snowflake → init_end
 ```
 
-### **Main Pipeline Flow**
+### Main Pipeline Flow
 ```
 pipeline_start
     ↓
@@ -133,43 +143,48 @@ quality_layer_start → [soda_scan_quality, dbt_test] → quality_layer_end
 cleanup_artifacts → pipeline_end
 ```
 
-## 🎯 Data Quality Layers
+**Integration Flow**:
+- Quality results → Soda Cloud (automatic)
+- Quality metrics → Collibra (automatic, if configured)
+- Governance assets updated with quality information
 
-### **RAW Layer**
+## Data Quality Layers
+
+### RAW Layer
 - **Purpose**: Initial data quality assessment
 - **Thresholds**: Relaxed for source data
 - **Checks**: Schema validation, completeness, basic quality
 
-### **STAGING Layer**
+### STAGING Layer
 - **Purpose**: Validation after transformation
 - **Thresholds**: Stricter than RAW
 - **Checks**: Data cleaning validation, business rules
 
-### **MART Layer**
+### MART Layer
 - **Purpose**: Business-ready data validation
 - **Thresholds**: Strictest requirements
 - **Checks**: Business logic, referential integrity
 
-### **QUALITY Layer**
+### QUALITY Layer
 - **Purpose**: Overall quality monitoring
 - **Thresholds**: Monitoring and alerting
 - **Checks**: Cross-layer validation, trend analysis
 
-## 🔍 Monitoring & Observability
+## Monitoring & Observability
 
-### **Airflow UI Features**
+### Airflow UI Features
 - **DAG Execution**: Visual pipeline execution monitoring
 - **Task Logs**: Detailed task-level logging and debugging
 - **Performance Metrics**: Execution time and resource usage
 - **Error Tracking**: Failed task identification and retry logic
 
-### **Log Locations**
+### Log Locations
 - **Airflow logs**: `airflow/docker/airflow-logs/`
 - **DAG logs**: Available in Airflow UI
 - **Task logs**: Individual task execution logs
 - **Soda logs**: Integrated with Airflow task logs
 
-### **Monitoring Commands**
+### Monitoring Commands
 ```bash
 # Check service status
 make airflow-status
@@ -181,27 +196,31 @@ make airflow-logs
 # Access Airflow UI → DAGs → Select DAG → View logs
 ```
 
-## 🛠️ Troubleshooting
+## Troubleshooting
 
-### **Common Issues**
+### Common Issues
 
-#### **DAG Not Appearing**
+#### DAG Not Appearing
 - **Cause**: DAG parsing errors or missing dependencies
 - **Solution**: Check Airflow logs for parsing errors
 
-#### **Task Failures**
+#### Task Failures
 - **Cause**: Environment variables, connection issues, or logic errors
 - **Solution**: Check task logs in Airflow UI
 
-#### **Connection Issues**
+#### Connection Issues
 - **Cause**: Incorrect Snowflake credentials or network issues
 - **Solution**: Verify environment variables and network connectivity
 
-#### **dbt Failures**
+#### dbt Failures
 - **Cause**: Schema issues, model errors, or dependency problems
 - **Solution**: Check dbt logs and model configurations
 
-### **Debug Commands**
+#### Collibra Integration Issues
+- **Cause**: Incorrect Collibra credentials or asset type IDs
+- **Solution**: Verify Collibra configuration and asset type IDs in configuration file
+
+### Debug Commands
 ```bash
 # Check Airflow status
 make airflow-status
@@ -216,59 +235,66 @@ make airflow-down && make airflow-up
 make airflow-validate-env
 ```
 
-## 📚 Best Practices
+## Best Practices
 
-### **DAG Development**
+### DAG Development
 1. **Idempotency**: Ensure tasks can be safely re-run
 2. **Error Handling**: Include proper retry logic and error handling
 3. **Documentation**: Document DAGs and tasks clearly
 4. **Testing**: Test DAGs in development before production
 
-### **Task Design**
+### Task Design
 1. **Atomicity**: Each task should perform one specific function
 2. **Dependencies**: Define clear task dependencies
 3. **Resource Management**: Use appropriate resource allocation
 4. **Monitoring**: Include proper logging and monitoring
 
-### **Environment Management**
+### Environment Management
 1. **Configuration**: Use environment variables for configuration
 2. **Secrets**: Store sensitive data securely
 3. **Validation**: Validate environment before execution
 4. **Documentation**: Document all configuration requirements
 
-## 🔄 Integration Points
+## Integration Points
 
-### **dbt Integration**
+### dbt Integration
 - **Staging Models**: Executed in STAGING layer
 - **Mart Models**: Executed in MART layer
 - **Tests**: Executed in QUALITY layer
 - **Schema Management**: Uses custom schema configuration
 
-### **Soda Integration**
+### Soda Integration
 - **Quality Checks**: Executed at each layer
 - **Configuration**: Layer-specific Soda configurations
 - **Cloud Integration**: Results sent to Soda Cloud
 - **Monitoring**: Integrated with Airflow monitoring
 
-### **Snowflake Integration**
+### Collibra Integration
+- **Governance Sync**: Quality results automatically synchronized to Collibra
+- **Asset Mapping**: Quality metrics linked to data assets
+- **Configuration**: Collibra integration configured in Soda configuration files
+- **Selective Sync**: Only datasets marked for sync are synchronized
+
+### Snowflake Integration
 - **Connection**: Uses environment-based connection
 - **Schema Management**: Clean schema separation
 - **Performance**: Optimized warehouse usage
 - **Security**: Secure credential management
 
-## 🎯 Success Metrics
+## Success Metrics
 
-✅ **Reliable Orchestration**: Consistent pipeline execution  
-✅ **Layer Separation**: Clear data quality layer progression  
-✅ **Error Handling**: Robust error handling and retry logic  
-✅ **Monitoring**: Comprehensive logging and observability  
-✅ **Integration**: Seamless dbt and Soda integration  
-✅ **Documentation**: Clear DAG and task documentation  
-✅ **Performance**: Optimized execution and resource usage  
-✅ **Maintainability**: Clean, modular DAG design  
+- **Reliable Orchestration**: Consistent pipeline execution
+- **Layer Separation**: Clear data quality layer progression
+- **Error Handling**: Robust error handling and retry logic
+- **Monitoring**: Comprehensive logging and observability
+- **Integration**: Seamless dbt, Soda, and Collibra integration
+- **Documentation**: Clear DAG and task documentation
+- **Performance**: Optimized execution and resource usage
+- **Maintainability**: Clean, modular DAG design
+- **Governance Integration**: Quality metrics automatically available in governance catalog
 
 ---
 
 **Last Updated**: December 2024  
-**Version**: 1.0.0  
+**Version**: 2.0.0  
 **Airflow Version**: 2.8+

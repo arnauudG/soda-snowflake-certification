@@ -1,117 +1,170 @@
-# Soda Data Quality Certification Project
+# Data Engineering, Governance, and Quality Integration Platform
 
-A comprehensive demonstration of enterprise-grade data quality monitoring using Soda Library, showcasing best practices for data quality management across a complete data pipeline.
+A comprehensive platform demonstrating the integration of data engineering, data governance, and data quality management. This project showcases how to bridge the gap between technical data pipelines, governance frameworks, and quality monitoring to create a unified data management ecosystem.
 
-## 🎯 What This Project Demonstrates
+## Project Overview
 
-This project is a **complete data quality certification framework** that demonstrates how to:
+This platform demonstrates a complete integration framework that connects:
 
-- **Monitor data quality** across multiple layers of a data pipeline (RAW → STAGING → MARTS)
-- **Standardize quality dimensions** using industry-standard data quality metrics
-- **Automate quality checks** with comprehensive validation rules
-- **Visualize quality metrics** through dashboards and reporting
-- **Integrate quality monitoring** into existing data pipelines
+- **Data Engineering**: Automated data pipelines with transformations and orchestration
+- **Data Governance**: Centralized catalog and metadata management with Collibra
+- **Data Quality**: Automated quality monitoring with standardized dimensions and reporting
 
-### Core Value Proposition
+### Core Integration Value
 
-**Data Quality Dimensions**: All quality checks are categorized using six standardized dimensions:
-- **Accuracy**: Data correctness, schema validation, and business rule compliance
-- **Completeness**: Missing value detection and data coverage
-- **Consistency**: Referential integrity and cross-table validation
-- **Uniqueness**: Duplicate detection and prevention
-- **Validity**: Format validation and constraint checking
-- **Timeliness**: Data freshness and recency monitoring
+**Unified Data Management**: Quality results are automatically synchronized with governance catalogs, creating a single source of truth where:
+- Data quality metrics are linked to data assets (tables, columns)
+- Governance metadata is enriched with quality insights
+- Engineering pipelines trigger quality checks and governance updates
+- All stakeholders access quality and governance information in one place
 
-## 📊 Data Quality Approach
+## Integration Architecture
 
-### Multi-Layer Quality Monitoring
-
-The project implements a **layered quality strategy** where data quality standards become progressively stricter as data moves through the pipeline:
+### Three-Pillar Integration
 
 ```
-RAW Layer (Source Data)
-  ↓ Quality Checks: Relaxed thresholds for initial assessment
-  ↓ Focus: Identify data issues at source
-  
-STAGING Layer (Transformed Data)
-  ↓ Quality Checks: Stricter validation after transformation
-  ↓ Focus: Validate data cleaning and business rules
-  
-MARTS Layer (Business-Ready Data)
-  ↓ Quality Checks: Strictest requirements for production use
-  ↓ Focus: Ensure business-ready data quality
+Data Engineering (dbt + Airflow)
+         ↓
+    Data Pipeline
+         ↓
+Data Quality (Soda) ────→ Data Governance (Collibra)
+         ↓                        ↓
+    Quality Checks          Asset Mapping
+         ↓                        ↓
+    Quality Results ───────→ Governance Catalog
+         ↓                        ↓
+    Visualization (Superset) ────→ Unified View
 ```
 
-### Quality Check Coverage
-
-**50+ automated quality checks** across all layers covering:
-- Schema validation and structure integrity
-- Completeness and missing value detection
-- Uniqueness and duplicate prevention
-- Format and constraint validation
-- Referential integrity checks
-- Business rule validation
-- Data freshness monitoring
-
-### Quality Metrics by Layer
-
-| Layer | Tables | Quality Focus | Threshold Strategy |
-|-------|--------|---------------|-------------------|
-| **RAW** | 4 tables | Initial assessment | Relaxed (tolerate some issues) |
-| **STAGING** | 4 tables | Transformation validation | Stricter (validate cleaning) |
-| **MARTS** | 2 tables | Business readiness | Strictest (production quality) |
-
-## 🏗️ Architecture Overview
-
-### Data Pipeline Flow
+### Complete Data Flow
 
 ```
-RAW Layer (Snowflake) → STAGING Layer (dbt) → MARTS Layer (dbt)
-     ↓                        ↓                      ↓
-Soda Quality Checks    Soda Quality Checks    Soda Quality Checks
-     ↓                        ↓                      ↓
-Soda Cloud Dashboard   Soda Cloud Dashboard   Soda Cloud Dashboard
-     ↓                        ↓                      ↓
-Superset Visualization  Superset Visualization  Superset Visualization
+RAW Layer (Snowflake)
+    ↓
+dbt Transformations (STAGING)
+    ↓
+dbt Models (MARTS)
+    ↓
+Soda Quality Checks (All Layers)
+    ↓
+Soda Cloud Dashboard
+    ↓
+Collibra Integration
+    ├──→ Quality Metrics → Data Assets (Tables)
+    ├──→ Check Results → Column Assets
+    └──→ Quality Dimensions → Governance Framework
+    ↓
+Superset Visualization
 ```
 
-### Technology Stack
+## Key Integrations
 
-- **Data Quality**: Soda Library 1.0.5 with Soda Cloud integration
-- **Orchestration**: Apache Airflow 2.8+ for workflow management
-- **Transformations**: dbt Core 1.10.11 for data modeling
+### Data Engineering Integration
+
+**Pipeline Orchestration**
+- Apache Airflow for workflow management
+- Automated data transformations with dbt
+- Multi-layer data pipeline (RAW → STAGING → MARTS)
+- Integrated quality checks at each layer
+
+**Transformation Framework**
+- dbt Core for data modeling and transformations
+- Layer-specific quality standards
+- Automated schema management
+- Data lineage tracking
+
+### Data Governance Integration (Collibra)
+
+**Quality-to-Governance Synchronization**
+- Automatic mapping of quality checks to Collibra data assets
+- Quality metrics linked to tables and columns in Collibra catalog
+- Quality dimensions integrated into governance framework
+- Real-time synchronization of quality results
+
+**Asset Mapping**
+- Tables mapped to Collibra Table assets
+- Columns mapped to Collibra Column assets
+- Quality checks created as Data Quality Metric assets
+- Quality dimensions linked via governance relationships
+
+**Configuration**
+- Selective synchronization: Only datasets marked with `push_to_collibra_dic` attribute are synced
+- Domain mapping: Quality results organized by governance domains
+- Relationship management: Automatic creation of relationships between assets and quality metrics
+- Ownership tracking: Quality metrics linked to asset owners
+
+**Quality Metrics in Collibra**
+- Check evaluation status (pass/fail)
+- Last run and sync timestamps
+- Check definitions and configurations
+- Diagnostic metrics (rows tested, passed, failed, passing fraction)
+- Links to Soda Cloud for detailed analysis
+
+### Data Quality Integration (Soda)
+
+**Standardized Quality Framework**
+- Six data quality dimensions: Accuracy, Completeness, Consistency, Uniqueness, Validity, Timeliness
+- 50+ automated quality checks across all layers
+- Layer-specific quality standards (relaxed → stricter → strictest)
+- Failed row sampling for detailed analysis
+
+**Soda Cloud Integration**
+- Centralized quality monitoring dashboard
+- Dataset discovery and column profiling
+- Sample data collection
+- API integration for metadata extraction
+
+**Quality Dimensions**
+All quality checks are categorized using standardized dimensions:
+- **Accuracy**: Data correctness, schema validation, range checks
+- **Completeness**: Missing value detection
+- **Consistency**: Referential integrity, cross-table validation
+- **Uniqueness**: Duplicate detection
+- **Validity**: Format and constraint validation
+- **Timeliness**: Data freshness monitoring
+
+## Technology Stack
+
+- **Data Engineering**: Apache Airflow 2.8+, dbt Core 1.10.11
 - **Data Warehouse**: Snowflake
-- **Visualization**: Apache Superset for dashboards
-- **Containerization**: Docker & Docker Compose
+- **Data Quality**: Soda Library 1.0.5 with Soda Cloud
+- **Data Governance**: Collibra Data Intelligence Cloud
+- **Visualization**: Apache Superset
+- **Orchestration**: Docker & Docker Compose
+- **Language**: Python 3.11
 
-## 📈 Key Features
+## Project Structure
 
-### Comprehensive Quality Monitoring
-- **Standardized Dimensions**: All checks use six data quality dimensions
-- **Layer-Specific Standards**: Progressive quality requirements by layer
-- **Automated Validation**: 50+ checks across schema, completeness, uniqueness, validity, consistency, and timeliness
-- **Failed Row Sampling**: Detailed analysis of quality issues
+```
+├── soda/                             # Data quality configuration
+│   ├── checks/                      # Quality checks by layer
+│   │   ├── raw/                     # RAW layer checks
+│   │   ├── staging/                 # STAGING layer checks
+│   │   ├── mart/                    # MART layer checks
+│   │   └── quality/                 # Quality monitoring
+│   ├── configuration/               # Soda connection configs
+│   └── soda-collibra-integration-configuration/
+│       └── configuration-collibra.yml  # Collibra integration config
+├── dbt/                              # Data transformations
+│   ├── models/
+│   │   ├── raw/                      # Raw data sources
+│   │   ├── staging/                  # Staging transformations
+│   │   └── mart/                     # Business-ready models
+├── airflow/                          # Workflow orchestration
+│   └── dags/                        # Pipeline DAGs
+├── superset/                         # Visualization
+│   └── data/                        # Soda Cloud data exports
+└── scripts/                          # Utility scripts
+```
 
-### Soda Cloud Integration
-- **Dataset Discovery**: Automatic table and column discovery
-- **Column Profiling**: Comprehensive statistical analysis
-- **Sample Data Collection**: 100 sample rows per dataset
-- **Centralized Monitoring**: All results in Soda Cloud dashboard
-- **API Integration**: Automated metadata extraction for reporting
-
-### Visualization & Reporting
-- **Superset Dashboards**: Interactive visualization of quality metrics
-- **Historical Tracking**: Trend analysis over time
-- **Custom Reports**: Flexible data extraction and analysis
-- **Real-time Monitoring**: Live quality metrics and alerts
-
-## 🚀 Quick Start
+## Quick Start
 
 ### Prerequisites
-- **Docker & Docker Compose** (latest version)
-- **Snowflake account** with appropriate permissions
-- **Soda Cloud account** (required for data extraction and visualization)
-- **Python 3.11+** (for local script execution)
+- Docker & Docker Compose (latest version)
+- Snowflake account with appropriate permissions
+- Soda Cloud account (required for quality monitoring)
+- Collibra Data Intelligence Cloud account (required for governance integration)
+- Python 3.11+ (for local script execution)
 
 ### 1. Environment Setup
 
@@ -140,6 +193,11 @@ SODA_CLOUD_HOST=https://cloud.soda.io
 SODA_CLOUD_API_KEY_ID=your_api_key_id
 SODA_CLOUD_API_KEY_SECRET=your_api_key_secret
 SODA_CLOUD_ORGANIZATION_ID=your_org_id
+
+# Collibra Configuration
+COLLIBRA_BASE_URL=https://your-instance.collibra.com
+COLLIBRA_USERNAME=your_username
+COLLIBRA_PASSWORD=your_password
 ```
 
 ### 2. Start Services
@@ -159,7 +217,7 @@ make superset-status
 # Initialize data (creates tables and loads sample data)
 make airflow-trigger-init
 
-# Run complete data quality pipeline
+# Run complete pipeline (engineering + quality + governance sync)
 make airflow-trigger-pipeline
 
 # Extract and visualize Soda Cloud data
@@ -171,30 +229,59 @@ make superset-upload-data
 - **Airflow UI**: http://localhost:8080 (admin/admin) - Monitor pipeline execution
 - **Superset UI**: http://localhost:8089 (admin/admin) - View quality dashboards
 - **Soda Cloud**: Your organization dashboard - Centralized quality monitoring
+- **Collibra**: Your Collibra instance - Governance catalog with quality metrics
 
-## 📁 Project Structure
+## Collibra Integration Configuration
 
+### Setup
+
+The Collibra integration is configured in `soda/soda-collibra-integration-configuration/configuration-collibra.yml`.
+
+**Key Configuration Options:**
+
+**Dataset Selection**
+- `filter_datasets_to_sync_to_collibra: true` - Only sync datasets marked for sync
+- `soda_collibra_sync_dataset_attribute: "push_to_collibra_dic"` - Attribute to mark datasets
+- `soda_no_collibra_dataset_skip_checks: true` - Skip checks if dataset not in Collibra
+
+**Asset Mapping**
+- Tables → Collibra Table assets
+- Columns → Collibra Column assets
+- Quality checks → Data Quality Metric assets
+- Quality dimensions → Data Quality Dimension assets
+
+**Relationships**
+- Table/Column to Check relationships
+- Check to Quality Dimension relationships
+- Ownership and responsibility tracking
+
+**Quality Metrics Synchronized**
+- Check evaluation status (pass/fail)
+- Last run and sync timestamps
+- Check definitions
+- Diagnostic metrics (rows tested, passed, failed, passing fraction)
+- Links to Soda Cloud
+
+### Marking Datasets for Collibra Sync
+
+To sync a dataset to Collibra, add the sync attribute in your Soda check file:
+
+```yaml
+discover datasets:
+  datasets:
+    - include TABLE_NAME
+      attributes:
+        push_to_collibra_dic: true
 ```
-├── soda/                             # Soda data quality configuration
-│   ├── checks/                      # Quality checks by layer
-│   │   ├── raw/                     # RAW layer checks
-│   │   ├── staging/                 # STAGING layer checks
-│   │   ├── mart/                    # MART layer checks
-│   │   └── quality/                 # Quality monitoring
-│   └── configuration/               # Soda connection configs
-├── dbt/                              # Data transformations
-│   ├── models/
-│   │   ├── raw/                      # Raw data sources
-│   │   ├── staging/                  # Staging transformations
-│   │   └── mart/                     # Business-ready models
-├── airflow/                          # Workflow orchestration
-│   └── dags/                        # Pipeline DAGs
-├── superset/                         # Visualization
-│   └── data/                        # Soda Cloud data exports
-└── scripts/                          # Utility scripts
-```
 
-## 📊 Data Quality Dimensions
+### Domain Mapping
+
+Quality results can be organized by Collibra domains:
+- Configure domain mapping via `soda_collibra_domain_dataset_attribute_name`
+- Set default domain via `soda_collibra_default_domain`
+- Quality assets are created in appropriate governance domains
+
+## Data Quality Dimensions
 
 All Soda checks are standardized with six data quality dimensions:
 
@@ -207,9 +294,9 @@ All Soda checks are standardized with six data quality dimensions:
 | **Validity** | Format and constraint validation | `invalid_count()` with regex/values |
 | **Timeliness** | Data freshness monitoring | `freshness()` |
 
-All checks include an `attributes` section with the appropriate `dimension` field for proper categorization in Soda Cloud and reporting tools.
+All checks include an `attributes` section with the appropriate `dimension` field for proper categorization in Soda Cloud, Collibra, and reporting tools.
 
-## 🔍 Quality Checks by Layer
+## Quality Checks by Layer
 
 ### RAW Layer (4 tables)
 - **CUSTOMERS**: 10,000+ customer records
@@ -233,7 +320,7 @@ All checks include an `attributes` section with the appropriate `dimension` fiel
 
 **Quality Focus**: Business-ready data with strictest quality requirements.
 
-## 🛠️ Available Commands
+## Available Commands
 
 ### Service Management
 ```bash
@@ -249,7 +336,7 @@ make superset-status        # Check Superset status
 ### Pipeline Execution
 ```bash
 make airflow-trigger-init   # Initialize data
-make airflow-trigger-pipeline # Run quality pipeline
+make airflow-trigger-pipeline # Run complete pipeline
 ```
 
 ### Data Quality Management
@@ -266,26 +353,48 @@ make superset-logs          # View Superset logs
 make clean                  # Clean up artifacts
 ```
 
-## 📚 Documentation
+## Documentation
 
-- **[Soda Configuration](soda/README.md)** - Detailed Soda setup and quality checks
+- **[Soda Configuration](soda/README.md)** - Detailed Soda setup, quality checks, and Collibra integration
 - **[Airflow Setup](airflow/README.md)** - Workflow orchestration details
 - **[dbt Configuration](dbt/README.md)** - Data transformation setup
 - **[Superset Setup](superset/README.md)** - Visualization configuration
 - **[Scripts Documentation](scripts/README.md)** - Utility scripts guide
 
-## 🎯 Use Cases
+## Use Cases
 
-This project demonstrates:
+This platform demonstrates:
 
-1. **Enterprise Data Quality Framework**: Standardized approach to data quality monitoring
-2. **Multi-Layer Quality Strategy**: Progressive quality standards across data pipeline
-3. **Automated Quality Checks**: Comprehensive validation rules and monitoring
-4. **Quality Dimension Standardization**: Industry-standard quality metrics
-5. **Integration Best Practices**: Seamless integration with existing data tools
-6. **Visualization & Reporting**: Quality metrics dashboards and analysis
+1. **Integrated Data Management**: Seamless connection between engineering, governance, and quality
+2. **Governance-Enabled Quality**: Quality metrics automatically linked to governance assets
+3. **Quality-Informed Governance**: Governance decisions supported by real-time quality data
+4. **Automated Synchronization**: Quality results automatically pushed to governance catalog
+5. **Unified Visibility**: Single view of data assets, quality metrics, and governance metadata
+6. **End-to-End Traceability**: Complete lineage from source to consumption with quality and governance context
 
-## 🚨 Troubleshooting
+## Integration Benefits
+
+**For Data Engineers**
+- Quality checks integrated into data pipelines
+- Automated quality validation at each transformation stage
+- Quality results inform pipeline improvements
+
+**For Data Governance Teams**
+- Quality metrics automatically available in governance catalog
+- Quality dimensions integrated into governance framework
+- Real-time visibility into data asset quality
+
+**For Data Consumers**
+- Quality information accessible alongside data assets
+- Trust indicators directly in governance catalog
+- Quality trends and history for informed decision-making
+
+**For Data Quality Teams**
+- Standardized quality dimensions across all checks
+- Automated synchronization with governance systems
+- Centralized monitoring with distributed visibility
+
+## Troubleshooting
 
 ### Common Issues
 
@@ -293,6 +402,12 @@ This project demonstrates:
 - Verify API credentials in `.env`
 - Check `SODA_CLOUD_HOST` is correct
 - Ensure network connectivity
+
+**Collibra Integration**
+- Verify Collibra credentials in `.env`
+- Check `COLLIBRA_BASE_URL` is correct
+- Ensure datasets are marked with `push_to_collibra_dic` attribute
+- Verify Collibra asset type IDs match your instance configuration
 
 **Snowflake Connection**
 - Verify credentials in `.env`
@@ -304,17 +419,18 @@ This project demonstrates:
 - Verify Docker is running
 - Check service status: `make airflow-status`
 
-## 🎉 Success Metrics
+## Success Metrics
 
-✅ **Complete Quality Framework**: Standardized dimensions across all checks  
-✅ **Multi-Layer Monitoring**: Quality checks at RAW, STAGING, and MARTS layers  
-✅ **Automated Validation**: 50+ automated quality checks  
-✅ **Cloud Integration**: Soda Cloud for centralized monitoring  
-✅ **Visualization**: Superset dashboards for quality metrics  
-✅ **Production Ready**: Enterprise-grade quality monitoring framework  
+- **Complete Integration**: Seamless connection between engineering, governance, and quality
+- **Automated Synchronization**: Quality results automatically pushed to Collibra
+- **Standardized Framework**: Six quality dimensions across all checks
+- **Multi-Layer Monitoring**: Quality checks at RAW, STAGING, and MARTS layers
+- **Governance Integration**: Quality metrics linked to data assets in Collibra
+- **Unified Visibility**: Single view across all data management domains
+- **Production Ready**: Enterprise-grade integration platform
 
 ---
 
-**Project Status**: ✅ Production Ready  
+**Project Status**: Production Ready  
 **Last Updated**: December 2024  
-**Version**: 1.3.0
+**Version**: 2.0.0

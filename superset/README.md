@@ -1,10 +1,10 @@
-# Superset Integration for Soda Certification
+# Superset Integration for Data Quality Visualization
 
-This directory contains the Apache Superset configuration and dashboard templates for the Soda certification project.
+This directory contains the Apache Superset configuration and dashboard templates for visualizing data quality metrics and governance information.
 
 ## Overview
 
-Apache Superset provides powerful data visualization capabilities for your data quality insights. It integrates seamlessly with your existing Airflow and PostgreSQL setup.
+Apache Superset provides powerful data visualization capabilities for your integrated data engineering, governance, and quality insights. It integrates seamlessly with your existing Airflow and PostgreSQL setup, enabling visualization of quality metrics alongside governance information.
 
 ## Quick Start
 
@@ -49,6 +49,7 @@ Superset automatically loads and validates environment variables when started wi
 
 **Optional Variables:**
 - `SODA_CLOUD_HOST`, `SODA_CLOUD_REGION`
+- `COLLIBRA_BASE_URL`, `COLLIBRA_USERNAME`, `COLLIBRA_PASSWORD` (for governance integration)
 
 For complete setup instructions, see the main project README.
 
@@ -82,14 +83,34 @@ Create your own dashboards in Superset using the uploaded Soda data:
 - **Failed Checks by Table** - Identify tables with most quality issues
 - **Check Results Distribution** - Overview of pass/fail rates
 - **Quality Issues by Severity** - Categorize issues by severity level
+- **Quality by Dimension** - Analyze quality across Accuracy, Completeness, Consistency, Uniqueness, Validity, Timeliness
+- **Layer Comparison** - Compare quality metrics across RAW, STAGING, and MART layers
 
-## Integration with Soda
+## Integration with Data Quality and Governance
 
 Superset can visualize data from:
 - Soda Cloud check results
 - Airflow DAG execution logs
 - Custom data quality metrics
 - Snowflake data warehouse tables
+- Collibra governance metadata (if integrated)
+
+### Quality Metrics Visualization
+
+The uploaded Soda data includes:
+- Dataset health status and quality metrics
+- Check evaluation results (pass/fail)
+- Quality dimensions (Accuracy, Completeness, Consistency, Uniqueness, Validity, Timeliness)
+- Diagnostic metrics (rows tested, passed, failed, passing fraction)
+- Historical trends and patterns
+
+### Governance Integration
+
+If Collibra integration is configured, you can visualize:
+- Quality metrics linked to data assets
+- Governance metadata alongside quality metrics
+- Asset ownership and responsibility
+- Domain-based quality analysis
 
 ## Troubleshooting
 
@@ -121,3 +142,9 @@ make superset-status
 2. **Create Dashboards**: Use the templates in `dashboards/` as starting points
 3. **Set Up Alerts**: Configure notifications for data quality issues
 4. **Schedule Reports**: Automate dashboard generation and sharing
+5. **Integrate Governance Views**: Create dashboards that combine quality and governance information
+
+---
+
+**Last Updated**: December 2024  
+**Version**: 2.0.0

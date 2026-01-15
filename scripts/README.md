@@ -1,8 +1,8 @@
-# Scripts Directory - Soda Certification Project
+# Scripts Directory - Utility Scripts
 
-This directory contains utility scripts for environment setup, data management, and Soda Cloud API integration.
+This directory contains utility scripts for environment setup, data management, Soda Cloud API integration, and data quality visualization.
 
-## 📁 Directory Structure
+## Directory Structure
 
 ```
 scripts/
@@ -18,15 +18,15 @@ scripts/
 └── README.md                      # This file
 ```
 
-## 🚀 Soda Cloud API Integration
+## Soda Cloud API Integration
 
-### **Automated Metadata Extraction**
+### Automated Metadata Extraction
 
 The Soda Cloud API integration provides automated extraction of dataset and check metadata for external reporting and dashboard creation. The enhanced environment loader now supports dynamic loading of all variables from your .env file.
 
-## 📊 Data Organization & Upload
+## Data Organization & Upload
 
-### **Data Organization Script**
+### Data Organization Script
 - **`organize_soda_data.py`**: Validates and updates Soda dump data in `superset/data/`
 - **Features**: 
   - Validates that required files exist in `superset/data/`
@@ -35,8 +35,9 @@ The Soda Cloud API integration provides automated extraction of dataset and chec
   - Falls back to finding latest files in `superset/data/` itself
   - Cleans up temporary `soda_dump_output/` folder automatically
   - Updates `analysis_summary.csv` if available
+  - Removes old timestamped files, keeping only latest files
 
-### **Data Upload Script**
+### Data Upload Script
 - **`upload_soda_data_docker.py`**: Uploads organized Soda data to Superset PostgreSQL database
 - **Features**:
   - Creates dedicated `soda` schema in PostgreSQL
@@ -44,7 +45,7 @@ The Soda Cloud API integration provides automated extraction of dataset and chec
   - Handles historical data upload
   - Cleans up temporary files after successful upload
 
-### **Usage**
+### Usage
 ```bash
 # Complete workflow (recommended)
 make superset-upload-data
@@ -61,14 +62,15 @@ make dump-airflow       # Dump Airflow database only
 make dump-soda          # Dump Soda data only
 ```
 
-#### **Features:**
-- ✅ **Dataset Metadata**: Extract table information, health status, and statistics
-- ✅ **Check Results**: Retrieve check outcomes, pass/fail rates, and detailed results
-- ✅ **CSV Export**: Structured data export for external tools
-- ✅ **Sigma Dashboard**: Ready-to-use data for Sigma dashboard creation
-- ✅ **API Rate Limiting**: Optimized for efficient data extraction
+### Features:
+- **Dataset Metadata**: Extract table information, health status, and statistics
+- **Check Results**: Retrieve check outcomes, pass/fail rates, and detailed results
+- **CSV Export**: Structured data export for external tools
+- **Visualization Ready**: Ready-to-use data for dashboard creation
+- **API Rate Limiting**: Optimized for efficient data extraction
+- **Automatic Cleanup**: Removes old timestamped files, keeps only latest
 
-#### **Usage:**
+### Usage:
 ```bash
 # Extract Soda Cloud metadata
 make soda-dump
@@ -77,18 +79,16 @@ make soda-dump
 ./scripts/run_soda_dump.sh
 ```
 
-#### **Output Files:**
+### Output Files:
 - `superset/data/datasets_latest.csv` - Latest dataset metadata
 - `superset/data/checks_latest.csv` - Latest check results metadata
-- `superset/data/datasets_YYYY-MM-DD.csv` - Daily dataset snapshots
-- `superset/data/checks_YYYY-MM-DD.csv` - Daily check snapshots
-- `superset/data/datasets_YYYYMMDD_HHMMSS.csv` - Timestamped dataset files
-- `superset/data/checks_YYYYMMDD_HHMMSS.csv` - Timestamped check files
-- `superset/data/summary_report_YYYYMMDD_HHMMSS.txt` - Summary reports
+- `superset/data/analysis_summary.csv` - Analysis summary data
 
-## 🛠️ Environment Setup Scripts
+**Note**: Old timestamped files are automatically cleaned up. Only the latest files are kept.
 
-### **Snowflake Setup (`setup_snowflake.py`)**
+## Environment Setup Scripts
+
+### Snowflake Setup (`setup_snowflake.py`)
 
 Creates the complete Snowflake infrastructure with:
 - **Database**: `SODA_CERTIFICATION`
@@ -96,7 +96,7 @@ Creates the complete Snowflake infrastructure with:
 - **Tables**: 4 RAW tables with uppercase column names
 - **Sample Data**: 10,000+ customers, 1,000+ products, 20,000+ orders, 50,000+ order items
 
-#### **Table Schema (Uppercase Standardization):**
+#### Table Schema (Uppercase Standardization):
 ```sql
 -- CUSTOMERS table
 CUSTOMER_ID VARCHAR(50) PRIMARY KEY,
@@ -125,16 +125,16 @@ PRODUCT_ID VARCHAR(50),
 -- ... other columns
 ```
 
-### **Snowflake Reset (`reset_snowflake.py`)**
+### Snowflake Reset (`reset_snowflake.py`)
 
 Cleans up the Snowflake environment:
 - Drops all tables and schemas
 - Removes sample data
 - Resets to clean state
 
-## 🔧 Configuration
+## Configuration
 
-### **Environment Variables**
+### Environment Variables
 
 Required environment variables in `.env`:
 ```bash
@@ -148,13 +148,18 @@ SNOWFLAKE_SCHEMA=RAW
 
 # Soda Cloud Configuration
 SODA_CLOUD_HOST=https://cloud.soda.io
-SODA_CLOUD_API_KEY=your_api_key
-SODA_CLOUD_API_SECRET=your_api_secret
+SODA_CLOUD_API_KEY_ID=your_api_key_id
+SODA_CLOUD_API_KEY_SECRET=your_api_key_secret
+
+# Collibra Configuration (for governance integration)
+COLLIBRA_BASE_URL=https://your-instance.collibra.com
+COLLIBRA_USERNAME=your_username
+COLLIBRA_PASSWORD=your_password
 ```
 
-### **Dependencies**
+### Dependencies
 
-#### **Setup Dependencies (`setup/requirements.txt`):**
+#### Setup Dependencies (`setup/requirements.txt`):
 ```
 snowflake-connector-python
 faker
@@ -163,16 +168,16 @@ pandas
 numpy
 ```
 
-#### **API Dependencies (`requirements_dump.txt`):**
+#### API Dependencies (`requirements_dump.txt`):
 ```
 pandas
 requests
-snowflake-connector-python
+python-dotenv
 ```
 
-## 🚀 Usage Examples
+## Usage Examples
 
-### **Complete Environment Setup**
+### Complete Environment Setup
 ```bash
 # 1. Start Airflow services
 make airflow-up
@@ -187,7 +192,7 @@ make airflow-trigger-pipeline
 make soda-dump
 ```
 
-### **Manual Script Execution**
+### Manual Script Execution
 ```bash
 # Setup Snowflake manually
 python3 scripts/setup/setup_snowflake.py
@@ -199,23 +204,23 @@ python3 scripts/setup/reset_snowflake.py
 python3 scripts/soda_dump_api.py
 ```
 
-## 📊 Data Quality Features
+## Data Quality Features
 
-### **Sample Data Generation**
+### Sample Data Generation
 - **Realistic Data**: Faker-generated realistic customer and product data
 - **Quality Issues**: Intentionally introduced data quality problems for testing
 - **Volume**: Production-scale data volumes (10K+ customers, 50K+ order items)
 - **Relationships**: Proper foreign key relationships between tables
 
-### **Data Quality Issues Introduced**
+### Data Quality Issues Introduced
 - **Missing Values**: 10% of records have missing email/phone
 - **Invalid Formats**: Invalid email formats and negative prices
 - **Duplicate Data**: Intentional duplicates for uniqueness testing
 - **Future Dates**: Invalid future timestamps for freshness testing
 
-## 🔍 Troubleshooting
+## Troubleshooting
 
-### **Common Issues**
+### Common Issues
 
 1. **Snowflake Connection**
    - Verify credentials in `.env`
@@ -232,36 +237,37 @@ python3 scripts/soda_dump_api.py
    - Check for memory issues with large datasets
    - Verify table creation permissions
 
-### **Log Locations**
+### Log Locations
 - Setup logs: Available in Airflow UI
 - API logs: Console output and CSV files
 - Error logs: Check Airflow task logs
 
-## 📚 Best Practices
+## Best Practices
 
 1. **Environment Setup**: Always use the initialization DAG for consistent setup
 2. **Data Reset**: Use reset script for clean environment testing
 3. **API Usage**: Monitor rate limits and implement appropriate delays
 4. **Error Handling**: Check logs for detailed error information
 5. **Testing**: Validate setup before running full pipeline
+6. **Data Management**: Use the automated cleanup to keep only latest files
 
-## 🔄 Dynamic File Finding & Smart Filtering
+## Dynamic File Finding & Smart Filtering
 
-The `soda_dump_api.py` script fetches ALL data from Soda Cloud, and the `soda_dump_analysis.ipynb` notebook provides intelligent filtering:
+The `soda_dump_api.py` script fetches ALL data from Soda Cloud, and provides intelligent filtering:
 
-### **API Script Features:**
+### API Script Features:
 - **Complete Data Fetch**: Retrieves ALL datasets and checks from Soda Cloud
-- **Multiple File Formats**: Creates timestamped, daily, and `_latest.csv` files
-- **Smart Timestamp Sorting**: Uses filename timestamps for accurate latest file detection
+- **Latest Files Only**: Creates only `_latest.csv` files (no timestamped files)
+- **Automatic Cleanup**: Removes old timestamped files automatically
 - **Enhanced Logging**: Better error messages and progress tracking
 
-### **Notebook Filtering Features:**
+### Notebook Filtering Features:
 - **Dynamic File Discovery**: Automatically finds latest files without hardcoding
 - **Smart Data Source Filtering**: Filters for `soda_certification_*` data sources
 - **Flexible Analysis**: Can analyze different subsets by changing filter criteria
 - **Enhanced Error Handling**: Clear messages when files are missing
 
-### **Usage Example:**
+### Usage Example:
 ```python
 import sys
 sys.path.append('scripts')
@@ -286,31 +292,33 @@ soda_certification_sources = [
 filtered_datasets = datasets_df[datasets_df['datasource_name'].isin(soda_certification_sources)]
 ```
 
-### **Benefits:**
-- ✅ **Complete Data Access**: All Soda Cloud data available for analysis
-- ✅ **Smart Filtering**: Notebook automatically filters for your project
-- ✅ **Flexible Analysis**: Can analyze different data sources by changing filters
-- ✅ **No Hardcoded Timestamps**: Always finds the most recent data
-- ✅ **Production Ready**: Perfect for notebooks and automated scripts
-- ✅ **Error Handling**: Gracefully handles missing files
+### Benefits:
+- **Complete Data Access**: All Soda Cloud data available for analysis
+- **Smart Filtering**: Notebook automatically filters for your project
+- **Flexible Analysis**: Can analyze different data sources by changing filters
+- **No Hardcoded Timestamps**: Always finds the most recent data
+- **Production Ready**: Perfect for notebooks and automated scripts
+- **Error Handling**: Gracefully handles missing files
+- **Clean Data Directory**: Only latest files kept, old files automatically removed
 
-### **Available Methods:**
+### Available Methods:
 - `SodaCloudDump.get_latest_datasets_file(output_dir='superset/data')` - Find latest datasets CSV
 - `SodaCloudDump.get_latest_checks_file(output_dir='superset/data')` - Find latest checks CSV
 - `SodaCloudDump.find_latest_file(pattern, output_dir='superset/data')` - Find latest file by pattern
 
-## 🎯 Success Metrics
+## Success Metrics
 
-✅ **Complete Environment**: Snowflake database with all tables and data  
-✅ **Uppercase Standardization**: Consistent naming across all layers  
-✅ **API Integration**: Successful metadata extraction from Soda Cloud  
-✅ **Complete Data Access**: All Soda Cloud data available for analysis  
-✅ **Smart Filtering**: Intelligent filtering for project-specific data  
-✅ **Dynamic File Finding**: No hardcoded timestamps, always finds latest data  
-✅ **Data Quality**: Comprehensive test data with quality issues  
-✅ **Automation**: One-command setup and execution  
+- **Complete Environment**: Snowflake database with all tables and data
+- **Uppercase Standardization**: Consistent naming across all layers
+- **API Integration**: Successful metadata extraction from Soda Cloud
+- **Complete Data Access**: All Soda Cloud data available for analysis
+- **Smart Filtering**: Intelligent filtering for project-specific data
+- **Dynamic File Finding**: No hardcoded timestamps, always finds latest data
+- **Data Quality**: Comprehensive test data with quality issues
+- **Automation**: One-command setup and execution
+- **Clean Data Management**: Automatic cleanup of old files
 
 ---
 
 **Last Updated**: December 2024  
-**Version**: 1.4.0
+**Version**: 2.0.0

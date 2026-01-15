@@ -10,7 +10,7 @@ from pathlib import Path
 from datetime import datetime
 
 def organize_soda_data():
-    """Simple pass-through: data is already in the right place"""
+    """Organize Soda data and clean up old files, keeping only latest files."""
     
     # Define paths
     soda_dump_dir = Path("superset/data")
@@ -20,7 +20,13 @@ def organize_soda_data():
         print("Please run 'make soda-dump' first to generate the data.")
         return False
     
-    # Data is already in the right place, just verify files exist
+    # Update latest files if needed
+    update_latest_data(soda_dump_dir)
+    
+    # Clean up old timestamped files
+    cleanup_old_files(soda_dump_dir)
+    
+    # Verify required files exist
     required_files = ["datasets_latest.csv", "checks_latest.csv"]
     missing_files = []
     
@@ -34,6 +40,7 @@ def organize_soda_data():
     
     print("✅ Data ready for Superset upload!")
     print(f"📁 Data location: {soda_dump_dir}")
+    print("📋 Keeping only: datasets_latest.csv, checks_latest.csv, analysis_summary.csv")
     
     return True
 
@@ -102,17 +109,15 @@ def update_latest_data(soda_dump_dir):
         else:
             print(f"✅ analysis_summary.csv is already the latest")
 
-def cleanup_original_files(soda_dump_dir):
-    """Remove original files after organizing to reduce noise"""
+def cleanup_old_files(soda_dump_dir):
+    """Remove old timestamped and date-based files, keeping only latest files."""
     
-    # Files to keep (latest versions and essential files)
-    files_to_keep = [
+    # Files to keep (only latest versions)
+    files_to_keep = {
         "datasets_latest.csv",
         "checks_latest.csv", 
-        "analysis_summary.csv",
-        "README.md",
-        "connection_guide.md"
-    ]
+        "analysis_summary.csv"
+    }
     
     # Get all files in the directory
     all_files = list(soda_dump_dir.glob("*"))
@@ -120,17 +125,28 @@ def cleanup_original_files(soda_dump_dir):
     removed_count = 0
     for file_path in all_files:
         if file_path.is_file() and file_path.name not in files_to_keep:
-            try:
-                file_path.unlink()  # Remove the file
-                print(f"🗑️  Removed {file_path.name}")
-                removed_count += 1
-            except Exception as e:
-                print(f"⚠️  Could not remove {file_path.name}: {e}")
+            # Remove timestamped files (datasets_YYYYMMDD_HHMMSS.csv, checks_YYYY-MM-DD.csv, etc.)
+            # Remove summary reports (summary_report_*.txt)
+            filename = file_path.name
+            should_remove = (
+                filename.startswith("datasets_") and filename != "datasets_latest.csv" or
+                filename.startswith("checks_") and filename != "checks_latest.csv" or
+                filename.startswith("summary_report_") or
+                (filename.startswith("analysis_summary_") and filename != "analysis_summary.csv")
+            )
+            
+            if should_remove:
+                try:
+                    file_path.unlink()  # Remove the file
+                    print(f"🗑️  Removed old file: {filename}")
+                    removed_count += 1
+                except Exception as e:
+                    print(f"⚠️  Could not remove {filename}: {e}")
     
     if removed_count > 0:
-        print(f"✅ Cleaned up {removed_count} original files")
+        print(f"✅ Cleaned up {removed_count} old files")
     else:
-        print("✅ No files to clean up")
+        print("✅ No old files to clean up")
 
 def create_summary_files(organized_dir):
     """Create summary and overview files"""

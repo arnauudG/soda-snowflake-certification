@@ -253,30 +253,17 @@ class SodaCloudDump:
         return None
         
     def save_to_csv(self):
-        """Save datasets and checks data to CSV files with enhanced timestamping."""
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        date_str = datetime.now().strftime("%Y-%m-%d")
-        
-        logger.info(f"Saving all data with timestamp: {timestamp}")
+        """Save datasets and checks data to CSV files. Only keeps latest files."""
+        logger.info("Saving data to latest CSV files...")
         
         # Save datasets
         if self.datasets:
             df_datasets = pd.DataFrame(self.datasets)
             
-            # Create timestamped file with better naming
-            datasets_file = f"{self.output_dir}/datasets_{timestamp}.csv"
-            df_datasets.to_csv(datasets_file, index=False)
-            logger.info(f"✅ Saved {len(self.datasets)} datasets to {datasets_file}")
-            
-            # Also save latest version without timestamp (for easy access)
+            # Only save latest version (overwrite existing)
             latest_datasets_file = f"{self.output_dir}/datasets_latest.csv"
             df_datasets.to_csv(latest_datasets_file, index=False)
-            logger.info(f"✅ Saved latest datasets to {latest_datasets_file}")
-            
-            # Create a date-based file for daily tracking
-            daily_datasets_file = f"{self.output_dir}/datasets_{date_str}.csv"
-            df_datasets.to_csv(daily_datasets_file, index=False)
-            logger.info(f"✅ Saved daily datasets to {daily_datasets_file}")
+            logger.info(f"✅ Saved {len(self.datasets)} datasets to {latest_datasets_file}")
             
             # Display sample data
             logger.info("📊 Sample datasets data:")
@@ -290,20 +277,10 @@ class SodaCloudDump:
         if self.checks:
             df_checks = pd.DataFrame(self.checks)
             
-            # Create timestamped file with better naming
-            checks_file = f"{self.output_dir}/checks_{timestamp}.csv"
-            df_checks.to_csv(checks_file, index=False)
-            logger.info(f"✅ Saved {len(self.checks)} checks to {checks_file}")
-            
-            # Also save latest version without timestamp (for easy access)
+            # Only save latest version (overwrite existing)
             latest_checks_file = f"{self.output_dir}/checks_latest.csv"
             df_checks.to_csv(latest_checks_file, index=False)
-            logger.info(f"✅ Saved latest checks to {latest_checks_file}")
-            
-            # Create a date-based file for daily tracking
-            daily_checks_file = f"{self.output_dir}/checks_{date_str}.csv"
-            df_checks.to_csv(daily_checks_file, index=False)
-            logger.info(f"✅ Saved daily checks to {daily_checks_file}")
+            logger.info(f"✅ Saved {len(self.checks)} checks to {latest_checks_file}")
             
             # Display sample data
             logger.info("🔍 Sample checks data:")
@@ -313,50 +290,89 @@ class SodaCloudDump:
         else:
             logger.warning("⚠️ No checks data to save")
             
-    def generate_summary_report(self):
-        """Generate a summary report of the extracted data."""
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        report_file = f"{self.output_dir}/summary_report_{timestamp}.txt"
+        # Clean up old timestamped files
+        self._cleanup_old_files()
+            
+    def _cleanup_old_files(self):
+        """Remove old timestamped and date-based files, keeping only latest files."""
+        logger.info("Cleaning up old timestamped files...")
         
-        with open(report_file, 'w') as f:
-            f.write("Soda Cloud API Data Dump Summary Report\n")
-            f.write("Soda Certification Project - Specific Data Sources\n")
-            f.write("=" * 60 + "\n")
-            f.write(f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
-            f.write(f"Soda Cloud URL: {self.soda_cloud_url}\n")
-            f.write("Data Sources: soda_certification_raw, soda_certification_staging, soda_certification_mart, soda_certification_quality\n\n")
+        # Files to keep
+        files_to_keep = {
+            'datasets_latest.csv',
+            'checks_latest.csv',
+            'analysis_summary.csv'
+        }
+        
+        # Patterns for files to remove
+        patterns_to_remove = [
+            'datasets_*.csv',  # All timestamped datasets files
+            'checks_*.csv',    # All timestamped checks files
+            'summary_report_*.txt',  # All summary reports
+        ]
+        
+        removed_count = 0
+        if os.path.exists(self.output_dir):
+            for pattern in patterns_to_remove:
+                files = glob.glob(os.path.join(self.output_dir, pattern))
+                for file_path in files:
+                    filename = os.path.basename(file_path)
+                    # Skip files we want to keep
+                    if filename not in files_to_keep:
+                        try:
+                            os.remove(file_path)
+                            logger.info(f"🗑️  Removed old file: {filename}")
+                            removed_count += 1
+                        except Exception as e:
+                            logger.warning(f"⚠️  Could not remove {filename}: {e}")
+        
+        if removed_count > 0:
+            logger.info(f"✅ Cleaned up {removed_count} old files")
+        else:
+            logger.info("✅ No old files to clean up")
+    
+    def generate_summary_report(self):
+        """Generate a summary report of the extracted data (optional, not saved)."""
+        # Generate summary but don't save it - just log it
+        logger.info("=" * 60)
+        logger.info("Soda Cloud API Data Dump Summary")
+        logger.info("=" * 60)
+        logger.info(f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        logger.info(f"Soda Cloud URL: {self.soda_cloud_url}")
+        logger.info("")
+        
+        logger.info("DATASETS SUMMARY:")
+        logger.info("-" * 20)
+        logger.info(f"Total datasets: {len(self.datasets)}")
+        
+        if self.datasets:
+            df_datasets = pd.DataFrame(self.datasets)
+            logger.info(f"Dataset columns: {', '.join(df_datasets.columns)}")
             
-            f.write("DATASETS SUMMARY:\n")
-            f.write("-" * 20 + "\n")
-            f.write(f"Total datasets: {len(self.datasets)}\n")
+            # Health status summary
+            if 'health' in df_datasets.columns:
+                health_counts = df_datasets['health'].value_counts()
+                logger.info("Health status distribution:")
+                for status, count in health_counts.items():
+                    logger.info(f"  {status}: {count}")
+                    
+        logger.info("")
+        logger.info("CHECKS SUMMARY:")
+        logger.info("-" * 20)
+        logger.info(f"Total checks: {len(self.checks)}")
+        
+        if self.checks:
+            df_checks = pd.DataFrame(self.checks)
+            logger.info(f"Check columns: {', '.join(df_checks.columns)}")
             
-            if self.datasets:
-                df_datasets = pd.DataFrame(self.datasets)
-                f.write(f"Dataset columns: {', '.join(df_datasets.columns)}\n")
-                
-                # Health status summary
-                if 'health' in df_datasets.columns:
-                    health_counts = df_datasets['health'].value_counts()
-                    f.write(f"Health status distribution:\n")
-                    for status, count in health_counts.items():
-                        f.write(f"  {status}: {count}\n")
-                        
-            f.write("\nCHECKS SUMMARY:\n")
-            f.write("-" * 20 + "\n")
-            f.write(f"Total checks: {len(self.checks)}\n")
-            
-            if self.checks:
-                df_checks = pd.DataFrame(self.checks)
-                f.write(f"Check columns: {', '.join(df_checks.columns)}\n")
-                
-                # Check result summary
-                if 'result' in df_checks.columns:
-                    result_counts = df_checks['result'].value_counts()
-                    f.write(f"Check result distribution:\n")
-                    for result, count in result_counts.items():
-                        f.write(f"  {result}: {count}\n")
-                        
-        logger.info(f"Summary report saved to {report_file}")
+            # Check result summary
+            if 'result' in df_checks.columns:
+                result_counts = df_checks['result'].value_counts()
+                logger.info("Check result distribution:")
+                for result, count in result_counts.items():
+                    logger.info(f"  {result}: {count}")
+        
+        logger.info("=" * 60)
         
     def run(self):
         """Run the complete Soda Cloud data dump process."""

@@ -49,11 +49,16 @@ The Soda Cloud API integration provides automated extraction of dataset and chec
 ```bash
 # Complete workflow (recommended)
 make superset-upload-data
+# This automatically:
+# 1. Updates Soda data source names to match SNOWFLAKE_DATABASE
+# 2. Extracts data from Soda Cloud
+# 3. Organizes data (keeps only latest files)
+# 4. Uploads to Superset
 
 # Individual steps
 make soda-dump           # Extract from Soda Cloud
 make organize-soda-data  # Organize data
-make superset-upload-data # Upload to Superset
+make superset-upload-data # Upload to Superset (includes data source name update)
 
 # Database Management
 make dump-databases      # Dump all databases (Superset, Airflow, Soda data)
@@ -80,11 +85,14 @@ make soda-dump
 ```
 
 ### Output Files:
-- `superset/data/datasets_latest.csv` - Latest dataset metadata
-- `superset/data/checks_latest.csv` - Latest check results metadata
+- `superset/data/datasets_latest.csv` - Latest dataset metadata (all data sources from Soda Cloud)
+- `superset/data/checks_latest.csv` - Latest check results metadata (all data sources from Soda Cloud)
 - `superset/data/analysis_summary.csv` - Analysis summary data
 
-**Note**: Old timestamped files are automatically cleaned up. Only the latest files are kept.
+**Note**: 
+- Old timestamped files are automatically cleaned up. Only the latest files are kept.
+- The script fetches ALL data from Soda Cloud API. When creating Superset dashboards, filter by your configured data source names (derived from `SNOWFLAKE_DATABASE`) to focus on your project data.
+- Data source names in Soda configuration files are automatically updated before extraction to match your `SNOWFLAKE_DATABASE` environment variable.
 
 ## Environment Setup Scripts
 
@@ -263,7 +271,7 @@ The `soda_dump_api.py` script fetches ALL data from Soda Cloud, and provides int
 
 ### Notebook Filtering Features:
 - **Dynamic File Discovery**: Automatically finds latest files without hardcoding
-- **Smart Data Source Filtering**: Filters for `soda_certification_*` data sources
+- **Smart Data Source Filtering**: Filters for your configured data sources (derived from `SNOWFLAKE_DATABASE`)
 - **Flexible Analysis**: Can analyze different subsets by changing filter criteria
 - **Enhanced Error Handling**: Clear messages when files are missing
 
@@ -282,14 +290,16 @@ checks_file = SodaCloudDump.get_latest_checks_file('superset/data')
 datasets_df = pd.read_csv(datasets_file)
 checks_df = pd.read_csv(checks_file)
 
-# Filter for your project (example)
-data_governance_platform_sources = [
-    'data_governance_platform_raw',
-    'data_governance_platform_staging', 
-    'data_governance_platform_mart',
-    'data_governance_platform_quality'
-]
-filtered_datasets = datasets_df[datasets_df['datasource_name'].isin(data_governance_platform_sources)]
+# Filter for your project (data source names derived from SNOWFLAKE_DATABASE)
+# Example: If SNOWFLAKE_DATABASE=DATA_GOVERNANCE_PLATFORM, data sources are:
+from soda.helpers import get_all_data_source_names
+
+# Get data source names dynamically from your database name
+data_source_names = get_all_data_source_names()
+# Returns: {'raw': 'data_governance_platform_raw', 'staging': 'data_governance_platform_staging', ...}
+
+# Filter datasets for your configured data sources
+filtered_datasets = datasets_df[datasets_df['datasource'].isin(data_source_names.values())]
 ```
 
 ### Benefits:

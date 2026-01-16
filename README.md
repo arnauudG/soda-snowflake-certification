@@ -230,6 +230,13 @@ The `.env` file is automatically loaded and mounted into Docker containers.
 
 **Note**: The database name is parameterized via `SNOWFLAKE_DATABASE`. If not set, it defaults to `DATA_GOVERNANCE_PLATFORM`. All components (dbt, Soda, setup scripts) use this environment variable consistently.
 
+**Automatic Data Source Name Updates**: Soda configuration files are automatically updated to match your `SNOWFLAKE_DATABASE` when you run:
+- `make setup`, `make airflow-up`, `make all-up` - Before starting services
+- `make airflow-trigger-init`, `make airflow-trigger-pipeline` - Before triggering DAGs
+- `make superset-upload-data` - Before uploading data to Superset
+
+This ensures data source names (e.g., `data_governance_platform_raw`) always match your database configuration. See [Soda Configuration](soda/README.md#data-source-name-parameterization) for details.
+
 **Required Environment Variables:**
 ```bash
 # Snowflake Configuration
@@ -445,9 +452,10 @@ make airflow-trigger-pipeline # Run complete pipeline
 
 ### Data Quality Management
 ```bash
-make superset-upload-data   # Extract + organize + upload to Superset
+make superset-upload-data   # Update data sources + extract + organize + upload to Superset
 make soda-dump              # Extract from Soda Cloud
-make organize-soda-data       # Organize data structure
+make organize-soda-data      # Organize data structure
+make soda-update-datasources # Manually update Soda data source names (automatic in other commands)
 ```
 
 ### Development

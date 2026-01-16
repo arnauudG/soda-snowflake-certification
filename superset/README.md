@@ -35,7 +35,7 @@ make all-up
 - `make superset-clean-restart` - Clean restart Superset (removes all data)
 - `make superset-reset-data` - Reset only Superset data (keep containers)
 - `make superset-reset-schema` - Reset only soda schema (fixes table structure issues)
-- `make superset-upload-data` - Complete Soda workflow: dump + organize + upload to Superset
+- `make superset-upload-data` - Complete Soda workflow: updates data source names + dump + organize + upload to Superset
 
 ## Configuration
 
@@ -56,9 +56,13 @@ For complete setup instructions, see the main project README.
 ### Database Connection
 Superset uses its own PostgreSQL database. The Soda data is automatically uploaded to the following tables:
 
-- **soda.datasets_latest** - Latest dataset information from Soda Cloud
-- **soda.checks_latest** - Latest check results from Soda Cloud  
+- **soda.datasets_latest** - Latest dataset information from Soda Cloud (filtered for your configured data sources)
+- **soda.checks_latest** - Latest check results from Soda Cloud (filtered for your configured data sources)
 - **soda.analysis_summary** - Analysis summary data
+
+**Important**: The Superset upload workflow automatically ensures your Soda configuration files are synchronized with your database name before extracting data. Only the latest data for your configured data sources (derived from `SNOWFLAKE_DATABASE`) is relevant for visualization.
+
+**Data Source Filtering**: When creating dashboards in Superset, filter the data by your data source names (e.g., `data_governance_platform_raw`, `data_governance_platform_staging`, etc.) to focus on your specific project data.
 
 To connect to additional data sources:
 
@@ -106,12 +110,14 @@ This ensures Superset visualizations reflect validated, committed data that has 
 
 ### Quality Metrics Visualization
 
-The uploaded Soda data includes:
-- Dataset health status and quality metrics
-- Check evaluation results (pass/fail)
+The uploaded Soda data includes (filtered for your configured data sources):
+- Dataset health status and quality metrics for your database layers
+- Check evaluation results (pass/fail) for your data sources
 - Quality dimensions (Accuracy, Completeness, Consistency, Uniqueness, Validity, Timeliness)
 - Diagnostic metrics (rows tested, passed, failed, passing fraction)
-- Historical trends and patterns
+- Latest data only - historical timestamped files are automatically cleaned up
+
+**Data Source Configuration**: Data source names are automatically derived from your `SNOWFLAKE_DATABASE` environment variable. The update script runs automatically before data extraction to ensure consistency.
 
 ### Governance Integration
 

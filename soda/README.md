@@ -68,10 +68,19 @@ The Airflow DAG automatically derives data source names from the database name u
 
 ### Updating Configuration Files
 
-If you change the `SNOWFLAKE_DATABASE` environment variable, you need to update the YAML configuration files:
+**Automatic Updates**: The YAML configuration files are automatically updated when you run:
+- `make setup` - During initial setup
+- `make airflow-up` - Before starting Airflow
+- `make all-up` - Before starting all services
+- `make airflow-trigger-init` - Before triggering initialization
+- `make airflow-trigger-pipeline` - Before triggering pipeline
+- `make superset-upload-data` - Before uploading data to Superset
 
+**Manual Update** (if needed):
 ```bash
 # Update all configuration files with new data source names
+make soda-update-datasources
+# or
 python3 soda/update_data_source_names.py
 ```
 
@@ -80,7 +89,7 @@ This script will:
 - Generate the appropriate data source names
 - Update all configuration files automatically
 
-**Note**: The Airflow DAG uses dynamic data source names, so it will work automatically. You only need to update the YAML files if you want to use them directly with `soda scan` commands.
+**Note**: The Airflow DAG uses dynamic data source names, so it will work automatically. The YAML files are kept in sync automatically via Makefile targets.
 
 ## Collibra Integration
 

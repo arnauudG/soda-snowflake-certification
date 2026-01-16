@@ -47,7 +47,7 @@ class SnowflakeSetup:
 
             account  = _normalize_account(os.getenv('SNOWFLAKE_ACCOUNT'))
             user     = os.getenv('SNOWFLAKE_USER')
-            password = os.getenv('SNOWFLAKE_PASSWORD')   # <-- PAT here
+            password = os.getenv('SNOWFLAKE_PASSWORD')  # Personal Access Token (PAT)
             warehouse = os.getenv('SNOWFLAKE_WAREHOUSE', 'COMPUTE_WH')
             database  = os.getenv('SNOWFLAKE_DATABASE')
             schema    = os.getenv('SNOWFLAKE_SCHEMA')
@@ -59,13 +59,13 @@ class SnowflakeSetup:
             self.conn = snowflake.connector.connect(
                 account=account,
                 user=user,
-                password=password,   # PAT used here
+                password=password,  # Personal Access Token (PAT)
                 warehouse=warehouse,
                 database=database,
                 schema=schema,
                 role=role,
-                # Handle certificate validation issues
-                insecure_mode=True,  # Disable SSL certificate validation for internal stages
+                # Disable SSL certificate validation for internal stages
+                insecure_mode=True,
             )
             self.cursor = self.conn.cursor()
             logger.info("Successfully connected to Snowflake")

@@ -1,4 +1,11 @@
-# Superset configuration for Soda Certification Project
+#!/usr/bin/env python3
+"""
+Superset Configuration
+
+Configuration settings for Apache Superset integration with the Soda Certification project.
+Includes database connections, security settings, and feature flags.
+"""
+
 import os
 
 # Database configuration

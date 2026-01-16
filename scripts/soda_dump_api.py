@@ -82,7 +82,8 @@ class SodaCloudDump:
             elif response.status_code == 429:
                 logger.warning("API Rate Limit reached. Pausing for 5 seconds...")
                 time.sleep(5)
-                return self._make_api_request(url, description)  # Retry
+                # Retry the request after rate limit pause
+                return self._make_api_request(url, description)
             else:
                 logger.error(f"Error {description}. Status code: {response.status_code}")
                 return None

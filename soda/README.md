@@ -205,25 +205,25 @@ make airflow-trigger-pipeline
 ### Run Individual Layer Checks
 ```bash
 # RAW layer
-soda scan -d soda_certification_raw -c soda/configuration/configuration_raw.yml soda/checks/raw/
+soda scan -d data_governance_platform_raw -c soda/configuration/configuration_raw.yml soda/checks/raw/
 
 # STAGING layer
-soda scan -d soda_certification_staging -c soda/configuration/configuration_staging.yml soda/checks/staging/
+soda scan -d data_governance_platform_staging -c soda/configuration/configuration_staging.yml soda/checks/staging/
 
-# MARTS layer
-soda scan -d soda_certification_mart -c soda/configuration/configuration_mart.yml soda/checks/mart/
+# MART layer
+soda scan -d data_governance_platform_mart -c soda/configuration/configuration_mart.yml soda/checks/mart/
 
 # QUALITY layer
-soda scan -d soda_certification_quality -c soda/configuration/configuration_quality.yml soda/checks/quality/
+soda scan -d data_governance_platform_quality -c soda/configuration/configuration_quality.yml soda/checks/quality/
 ```
 
 ### Test Individual Tables
 ```bash
 # Test specific table
-soda scan -d soda_certification_raw -c soda/configuration/configuration_raw.yml soda/checks/raw/customers.yml
+soda scan -d data_governance_platform_raw -c soda/configuration/configuration_raw.yml soda/checks/raw/customers.yml
 
 # Test connection
-soda test-connection -d soda_certification_raw -c soda/configuration/configuration_raw.yml
+soda test-connection -d data_governance_platform_raw -c soda/configuration/configuration_raw.yml
 ```
 
 ## Soda Cloud Integration

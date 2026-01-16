@@ -60,7 +60,7 @@ The `macros/get_custom_schema.sql` macro overrides dbt's default schema behavior
 ### Project Configuration (`dbt_project.yml`)
 ```yaml
 models:
-  soda_certification:
+  data_governance_platform:
     staging:
       +materialized: table
       +schema: "STAGING"
@@ -79,12 +79,12 @@ models:
 
 ### Profile Configuration (`profiles.yml`)
 ```yaml
-soda_certification:
+data_governance_platform:
   target: dev
   outputs:
     dev:
       type: snowflake
-      database: "SODA_CERTIFICATION"
+      database: "{{ env_var('SNOWFLAKE_DATABASE', 'DATA_GOVERNANCE_PLATFORM') }}"
       warehouse: "COMPUTE_WH"
       schema: "PUBLIC"
       quote_identifiers: true

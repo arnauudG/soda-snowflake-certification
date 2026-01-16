@@ -1,6 +1,6 @@
 {{ config(severity='warn') }}
 
--- Data quality tests for the Soda Certification project (single statement)
+-- Data quality tests for the Data Governance Platform project (single statement)
 -- Returns rows only when an issue is found. Any returned rows cause the test to fail.
 
 with duplicate_customers as (

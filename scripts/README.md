@@ -91,7 +91,7 @@ make soda-dump
 ### Snowflake Setup (`setup_snowflake.py`)
 
 Creates the complete Snowflake infrastructure with:
-- **Database**: `SODA_CERTIFICATION`
+- **Database**: Configured via `SNOWFLAKE_DATABASE` environment variable (default: `DATA_GOVERNANCE_PLATFORM`)
 - **Schemas**: `RAW`, `STAGING`, `MART`, `QUALITY`
 - **Tables**: 4 RAW tables with uppercase column names
 - **Sample Data**: 10,000+ customers, 1,000+ products, 20,000+ orders, 50,000+ order items
@@ -143,7 +143,7 @@ SNOWFLAKE_ACCOUNT=your_account
 SNOWFLAKE_USER=your_user
 SNOWFLAKE_PASSWORD=your_password
 SNOWFLAKE_WAREHOUSE=COMPUTE_WH
-SNOWFLAKE_DATABASE=SODA_CERTIFICATION
+SNOWFLAKE_DATABASE=DATA_GOVERNANCE_PLATFORM  # Database name (default: DATA_GOVERNANCE_PLATFORM if not set)
 SNOWFLAKE_SCHEMA=RAW
 
 # Soda Cloud Configuration
@@ -283,13 +283,13 @@ datasets_df = pd.read_csv(datasets_file)
 checks_df = pd.read_csv(checks_file)
 
 # Filter for your project (example)
-soda_certification_sources = [
-    'soda_certification_raw',
-    'soda_certification_staging', 
-    'soda_certification_mart',
-    'soda_certification_quality'
+data_governance_platform_sources = [
+    'data_governance_platform_raw',
+    'data_governance_platform_staging', 
+    'data_governance_platform_mart',
+    'data_governance_platform_quality'
 ]
-filtered_datasets = datasets_df[datasets_df['datasource_name'].isin(soda_certification_sources)]
+filtered_datasets = datasets_df[datasets_df['datasource_name'].isin(data_governance_platform_sources)]
 ```
 
 ### Benefits:

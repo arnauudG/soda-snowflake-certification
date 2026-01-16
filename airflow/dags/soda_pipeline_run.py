@@ -142,7 +142,7 @@ with DAG(
 
     soda_scan_raw = BashOperator(
         task_id="soda_scan_raw",
-        bash_command=BASH_PREFIX + "soda scan -d soda_certification_raw -c soda/configuration/configuration_raw.yml -T soda/checks/templates/data_quality_templates.yml soda/checks/raw || true",
+        bash_command=BASH_PREFIX + "soda scan -d data_governance_platform_raw -c soda/configuration/configuration_raw.yml -T soda/checks/templates/data_quality_templates.yml soda/checks/raw || true",
         doc_md="""
         **RAW Layer Quality Checks - Quality Gate**
         
@@ -205,7 +205,7 @@ with DAG(
 
     soda_scan_staging = BashOperator(
         task_id="soda_scan_staging",
-        bash_command=BASH_PREFIX + "soda scan -d soda_certification_staging -c soda/configuration/configuration_staging.yml -T soda/checks/templates/data_quality_templates.yml soda/checks/staging || true",
+        bash_command=BASH_PREFIX + "soda scan -d data_governance_platform_staging -c soda/configuration/configuration_staging.yml -T soda/checks/templates/data_quality_templates.yml soda/checks/staging || true",
         doc_md="""
         **STAGING Layer Quality Checks - Validation Phase**
         
@@ -270,7 +270,7 @@ with DAG(
 
     soda_scan_mart = BashOperator(
         task_id="soda_scan_mart",
-        bash_command=BASH_PREFIX + "soda scan -d soda_certification_mart -c soda/configuration/configuration_mart.yml -T soda/checks/templates/data_quality_templates.yml soda/checks/mart || true",
+        bash_command=BASH_PREFIX + "soda scan -d data_governance_platform_mart -c soda/configuration/configuration_mart.yml -T soda/checks/templates/data_quality_templates.yml soda/checks/mart || true",
         doc_md="""
         **MART Layer Quality Checks - Validation Phase**
         
@@ -318,7 +318,7 @@ with DAG(
 
     soda_scan_quality = BashOperator(
         task_id="soda_scan_quality",
-        bash_command=BASH_PREFIX + "soda scan -d soda_certification_quality -c soda/configuration/configuration_quality.yml -T soda/checks/templates/data_quality_templates.yml soda/checks/quality || true",
+        bash_command=BASH_PREFIX + "soda scan -d data_governance_platform_quality -c soda/configuration/configuration_quality.yml -T soda/checks/templates/data_quality_templates.yml soda/checks/quality || true",
         doc_md="""
         **QUALITY Layer Monitoring**
         

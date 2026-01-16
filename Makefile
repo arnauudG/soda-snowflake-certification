@@ -1,11 +1,11 @@
-# Soda Certification Project Makefile
+# Data Governance Platform Project Makefile
 PY?=python3.11
 VENV=.venv
 
 .PHONY: help all venv deps pipeline fresh smooth airflow-up airflow-down airflow-status airflow-trigger clean clean-logs clean-all
 
 help: ## Show this help message
-	@echo "Soda Certification Project - Available Commands:"
+	@echo "Data Governance Platform Project - Available Commands:"
 	@echo ""
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2}'
 

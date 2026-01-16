@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Snowflake Setup Script for Soda Certification
+Snowflake Setup Script for Data Governance Platform
 This script sets up the complete Snowflake infrastructure and populates it with sample data
 """
 
@@ -77,12 +77,15 @@ class SnowflakeSetup:
         """Set up database, schemas, warehouse, and tables"""
         logger.info("Setting up Snowflake infrastructure...")
         
+        # Get database name from environment variable
+        database_name = os.getenv('SNOWFLAKE_DATABASE', 'DATA_GOVERNANCE_PLATFORM')
+        
         setup_queries = [
             # Create database
-            "CREATE DATABASE IF NOT EXISTS SODA_CERTIFICATION",
+            f"CREATE DATABASE IF NOT EXISTS {database_name}",
             
             # Use the database
-            "USE DATABASE SODA_CERTIFICATION",
+            f"USE DATABASE {database_name}",
             
             # Create schemas
             "CREATE SCHEMA IF NOT EXISTS RAW",
@@ -205,11 +208,13 @@ class SnowflakeSetup:
 
     def reset_database(self):
         """Drop and recreate the project database."""
-        logger.info("Resetting Snowflake database SODA_CERTIFICATION (drop & create)...")
+        # Get database name from environment variable
+        database_name = os.getenv('SNOWFLAKE_DATABASE', 'DATA_GOVERNANCE_PLATFORM')
+        logger.info(f"Resetting Snowflake database {database_name} (drop & create)...")
         cur = self.conn.cursor()
         try:
-            cur.execute("DROP DATABASE IF EXISTS SODA_CERTIFICATION CASCADE")
-            cur.execute("CREATE DATABASE SODA_CERTIFICATION")
+            cur.execute(f"DROP DATABASE IF EXISTS {database_name} CASCADE")
+            cur.execute(f"CREATE DATABASE {database_name}")
             logger.info("Database reset complete")
         finally:
             cur.close()
@@ -462,10 +467,10 @@ class SnowflakeSetup:
 
 def main():
     """Main setup function"""
-    print("Snowflake Setup for Soda Certification")
+    print("Snowflake Setup for Data Governance Platform")
     print("=" * 50)
     parser = argparse.ArgumentParser()
-    parser.add_argument("--reset", action="store_true", help="Drop and recreate SODA_CERTIFICATION before setup")
+    parser.add_argument("--reset", action="store_true", help="Drop and recreate DATA_GOVERNANCE_PLATFORM before setup")
     args = parser.parse_args()
     
     # Check if environment variables are set

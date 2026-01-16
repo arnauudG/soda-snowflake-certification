@@ -1,4 +1,4 @@
-soda_certification:
+data_governance_platform:
   target: dev
   outputs:
     dev:
@@ -8,7 +8,7 @@ soda_certification:
       authenticator: snowflake
       password: "{{ env_var('SNOWFLAKE_PASSWORD') }}"
       role: "{{ env_var('SNOWFLAKE_ROLE', 'ACCOUNTADMIN') }}"
-      database: "SODA_CERTIFICATION"
+      database: "{{ env_var('SNOWFLAKE_DATABASE', 'DATA_GOVERNANCE_PLATFORM') }}"
       warehouse: "COMPUTE_WH"
       schema: "PUBLIC"
       threads: 4

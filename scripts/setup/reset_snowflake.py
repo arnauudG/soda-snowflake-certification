@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-Reset Snowflake environment for Soda Certification project.
+Reset Snowflake environment for Data Governance Platform project.
 
-Drops and recreates the SODA_CERTIFICATION database to start from a clean state.
+Drops and recreates the database (from SNOWFLAKE_DATABASE env var, default: DATA_GOVERNANCE_PLATFORM) to start from a clean state.
 
 Usage:
   python3 scripts/setup/reset_snowflake.py [--force]
@@ -55,12 +55,14 @@ def connect_snowflake():
 
 
 def reset_database(conn):
+    # Get database name from environment variable
+    database_name = os.getenv("SNOWFLAKE_DATABASE", "DATA_GOVERNANCE_PLATFORM")
     cur = conn.cursor()
     try:
-        logger.info("Dropping database SODA_CERTIFICATION if exists (cascade)...")
-        cur.execute("DROP DATABASE IF EXISTS SODA_CERTIFICATION CASCADE")
-        logger.info("Creating database SODA_CERTIFICATION...")
-        cur.execute("CREATE DATABASE SODA_CERTIFICATION")
+        logger.info(f"Dropping database {database_name} if exists (cascade)...")
+        cur.execute(f"DROP DATABASE IF EXISTS {database_name} CASCADE")
+        logger.info(f"Creating database {database_name}...")
+        cur.execute(f"CREATE DATABASE {database_name}")
         logger.info("Reset complete.")
     finally:
         cur.close()
@@ -71,8 +73,9 @@ def main():
     parser.add_argument("--force", action="store_true", help="Do not prompt for confirmation")
     args = parser.parse_args()
 
+    database_name = os.getenv("SNOWFLAKE_DATABASE", "DATA_GOVERNANCE_PLATFORM")
     if not args.force:
-        reply = input("This will DROP the SODA_CERTIFICATION database. Continue? [y/N]: ").strip().lower()
+        reply = input(f"This will DROP the {database_name} database. Continue? [y/N]: ").strip().lower()
         if reply not in ("y", "yes"):
             print("Aborted.")
             sys.exit(0)

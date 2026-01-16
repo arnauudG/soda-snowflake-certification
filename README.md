@@ -228,6 +228,8 @@ cp .env.example .env
 
 The `.env` file is automatically loaded and mounted into Docker containers.
 
+**Note**: The database name is parameterized via `SNOWFLAKE_DATABASE`. If not set, it defaults to `DATA_GOVERNANCE_PLATFORM`. All components (dbt, Soda, setup scripts) use this environment variable consistently.
+
 **Required Environment Variables:**
 ```bash
 # Snowflake Configuration
@@ -235,7 +237,7 @@ SNOWFLAKE_ACCOUNT=your_account
 SNOWFLAKE_USER=your_user
 SNOWFLAKE_PASSWORD=your_password
 SNOWFLAKE_WAREHOUSE=COMPUTE_WH
-SNOWFLAKE_DATABASE=SODA_CERTIFICATION
+SNOWFLAKE_DATABASE=DATA_GOVERNANCE_PLATFORM  # Database name (default: DATA_GOVERNANCE_PLATFORM if not set)
 SNOWFLAKE_SCHEMA=RAW
 
 # Soda Cloud Configuration

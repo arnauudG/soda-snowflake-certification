@@ -32,7 +32,7 @@ with DAG(
     doc_md="""
     # Soda Initialization DAG
     
-    This DAG handles the **initial setup** of the Soda Certification project.
+    This DAG handles the **initial setup** of the Data Governance Platform project.
     Run this DAG **ONCE** when setting up the project for the first time or when you need a fresh start.
     
     ## What This DAG Does
@@ -63,7 +63,7 @@ with DAG(
     
     init_start = DummyOperator(
         task_id="init_start",
-        doc_md="🚀 Starting Soda Certification initialization process"
+        doc_md="🚀 Starting Data Governance Platform initialization process"
     )
     
     reset_snowflake = BashOperator(

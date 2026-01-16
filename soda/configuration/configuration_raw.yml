@@ -1,8 +1,8 @@
 # Soda Configuration for RAW Layer
-# Database: SODA_CERTIFICATION, Schema: RAW
+# Database: ${SNOWFLAKE_DATABASE} (default: DATA_GOVERNANCE_PLATFORM), Schema: RAW
 # Purpose: Data quality monitoring for raw, unprocessed data
 
-data_source soda_certification_raw:
+data_source data_governance_platform_raw:
   type: snowflake
   connection:
     account: ${SNOWFLAKE_ACCOUNT}

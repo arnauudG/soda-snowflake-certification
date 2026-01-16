@@ -2,7 +2,7 @@
 """
 Superset Configuration
 
-Configuration settings for Apache Superset integration with the Soda Certification project.
+Configuration settings for Apache Superset integration with the Data Governance Platform project.
 Includes database connections, security settings, and feature flags.
 """
 

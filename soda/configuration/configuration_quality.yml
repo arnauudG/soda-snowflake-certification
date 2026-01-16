@@ -1,8 +1,8 @@
 # Soda Configuration for QUALITY Layer
-# Database: SODA_CERTIFICATION, Schema: QUALITY
+# Database: ${SNOWFLAKE_DATABASE} (default: DATA_GOVERNANCE_PLATFORM), Schema: QUALITY
 # Purpose: Data quality monitoring for quality check results
 
-data_source soda_certification_quality:
+data_source data_governance_platform_quality:
   type: snowflake
   connection:
     account: ${SNOWFLAKE_ACCOUNT}

@@ -6,7 +6,7 @@
 
 # Database Asset ID in Collibra
 # This is the UUID of the Database asset that contains your schemas
-database_id: "0199e6fb-06b2-7bc1-9c5c-de9744076851"
+database_id: "0019bc69e-0ead-79e5-853a-f26ef350f9e1"
 
 # Optional: Database Connection ID
 # If provided, this will be used directly instead of resolving from database asset
@@ -21,20 +21,20 @@ database_id: "0199e6fb-06b2-7bc1-9c5c-de9744076851"
 # RAW Layer Schema Asset ID(s)
 raw:
   schema_connection_ids:  # Note: This field name is kept for compatibility, but contains asset IDs
-    - "0199e6fd-3eae-7ce5-9acf-b3daddbb07f1"
+    - "019bc69f-309c-7d0b-83df-94fbb87048e9"
 
 # STAGING Layer Schema Asset ID(s)
 staging:
   schema_connection_ids:  # Note: This field name is kept for compatibility, but contains asset IDs
-    - "0199e6fd-4b67-7c6f-a25d-c958461f9f01"
+    - "019bc69f-284d-7b0e-970c-5db326907273"
 
 # MART Layer Schema Asset ID(s)
 mart:
   schema_connection_ids:  # Note: This field name is kept for compatibility, but contains asset IDs
-    - "0199e6fc-d638-77ba-8378-8e32281b74c0"
+    - "019bc69f-0c8c-7ea0-b02e-588ee920ded2"
 
 # Optional: QUALITY Layer Schema Asset ID(s)
 quality:
   schema_connection_ids:  # Note: This field name is kept for compatibility, but contains asset IDs
-    - "0199e6fc-d58b-709a-ab7c-002a7afd7dc7"
+    - "019bc69f-2847-757d-a4de-58dc33b01737"
 

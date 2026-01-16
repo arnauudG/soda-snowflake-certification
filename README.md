@@ -61,15 +61,19 @@ Soda Quality Checks (QUALITY) + dbt Tests [VALIDATION PHASE]
     ↓
 Collibra Metadata Sync (QUALITY Schema) [GOVERNANCE PHASE - GATED BY QUALITY]
     ↓
-Soda Cloud Dashboard
+Cleanup Artifacts [CLEANUP PHASE]
     ↓
-Collibra Integration
+Superset Upload [VISUALIZATION PHASE]
+    ├──→ Updates data source names
+    ├──→ Extracts data from Soda Cloud API
+    ├──→ Organizes data (latest files only)
+    └──→ Uploads to Superset PostgreSQL database
+    ↓
+Soda Cloud Dashboard + Superset Visualization + Collibra Integration
     ├──→ Quality Metrics → Data Assets (Tables)
     ├──→ Check Results → Column Assets
     ├──→ Quality Dimensions → Governance Framework
     └──→ Metadata Sync → Schema & Table Updates (Only Validated Data)
-    ↓
-Superset Visualization
 ```
 
 **Orchestration Philosophy: Quality Gates Metadata Sync**
@@ -447,12 +451,14 @@ make superset-status        # Check Superset status
 ### Pipeline Execution
 ```bash
 make airflow-trigger-init   # Initialize data
-make airflow-trigger-pipeline # Run complete pipeline
+make airflow-trigger-pipeline # Run complete pipeline (includes automatic Superset upload)
 ```
+
+**Note**: The pipeline automatically uploads data to Superset after completion. Ensure Superset is running (`make superset-up`) before triggering the pipeline.
 
 ### Data Quality Management
 ```bash
-make superset-upload-data   # Update data sources + extract + organize + upload to Superset
+make superset-upload-data   # Manual upload: Update data sources + extract + organize + upload to Superset
 make soda-dump              # Extract from Soda Cloud
 make organize-soda-data      # Organize data structure
 make soda-update-datasources # Manually update Soda data source names (automatic in other commands)

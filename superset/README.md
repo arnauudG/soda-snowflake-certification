@@ -99,12 +99,32 @@ Superset can visualize data from:
 - Snowflake data warehouse tables
 - Collibra governance metadata (if integrated)
 
+### Automatic Pipeline Integration
+
+**Superset upload is automatically integrated into the Airflow pipeline** as the final step. After all data quality checks and governance syncs complete, the pipeline automatically:
+
+1. **Checks Superset availability** (container and database health)
+2. **Updates Soda data source names** to match your database configuration
+3. **Extracts latest data** from Soda Cloud API
+4. **Organizes data** (keeps only latest files, removes old timestamped files)
+5. **Uploads to Superset** PostgreSQL database
+
+**Pipeline Flow**: `RAW → STAGING → MART → QUALITY → Cleanup → Superset Upload`
+
+**Requirements**: Superset must be running before the pipeline completes. The task performs health checks and provides clear error messages if Superset is not available.
+
+**Manual Upload**: You can also upload data manually at any time:
+```bash
+make superset-upload-data
+```
+
 ### Quality-Gated Metadata Sync
 
 The pipeline implements quality-gated metadata synchronization:
 - **Build Phase**: dbt models materialize data in Snowflake
 - **Validation Phase**: Soda quality checks validate the data
 - **Governance Phase**: Collibra metadata sync (only after quality validation)
+- **Visualization Phase**: Superset upload (after all validation completes)
 
 This ensures Superset visualizations reflect validated, committed data that has passed quality gates, not just data that exists in Snowflake.
 

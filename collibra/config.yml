@@ -6,7 +6,7 @@
 
 # Database Asset ID in Collibra
 # This is the UUID of the Database asset that contains your schemas
-database_id: "0019bc69e-0ead-79e5-853a-f26ef350f9e1"
+database_id: "019bc69e-0ead-79e5-853a-f26ef350f9e1"
 
 # Optional: Database Connection ID
 # If provided, this will be used directly instead of resolving from database asset

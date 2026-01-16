@@ -15,6 +15,16 @@ sys.path.insert(0, str(PROJECT_ROOT))
 # Absolute project root (Docker container path)
 PROJECT_ROOT = "/opt/airflow"
 
+# Load environment variables before importing helpers
+# This ensures SNOWFLAKE_DATABASE is available when computing data source names
+from dotenv import load_dotenv
+env_file = Path("/opt/airflow/.env")
+if env_file.exists():
+    load_dotenv(env_file, override=True)
+
+# Import Soda helpers to get data source names dynamically
+from soda.helpers import get_data_source_name
+
 # Common bash prefix to run in project, load env
 BASH_PREFIX = "cd '/opt/airflow' && source .env && "
 
@@ -140,9 +150,15 @@ with DAG(
         doc_md="Starting RAW layer processing"
     )
 
+    # Get data source names dynamically from database name
+    data_source_raw = get_data_source_name('raw')
+    data_source_staging = get_data_source_name('staging')
+    data_source_mart = get_data_source_name('mart')
+    data_source_quality = get_data_source_name('quality')
+    
     soda_scan_raw = BashOperator(
         task_id="soda_scan_raw",
-        bash_command=BASH_PREFIX + "soda scan -d data_governance_platform_raw -c soda/configuration/configuration_raw.yml -T soda/checks/templates/data_quality_templates.yml soda/checks/raw || true",
+        bash_command=BASH_PREFIX + f"soda scan -d {data_source_raw} -c soda/configuration/configuration_raw.yml -T soda/checks/templates/data_quality_templates.yml soda/checks/raw || true",
         doc_md="""
         **RAW Layer Quality Checks - Quality Gate**
         
@@ -205,7 +221,7 @@ with DAG(
 
     soda_scan_staging = BashOperator(
         task_id="soda_scan_staging",
-        bash_command=BASH_PREFIX + "soda scan -d data_governance_platform_staging -c soda/configuration/configuration_staging.yml -T soda/checks/templates/data_quality_templates.yml soda/checks/staging || true",
+        bash_command=BASH_PREFIX + f"soda scan -d {data_source_staging} -c soda/configuration/configuration_staging.yml -T soda/checks/templates/data_quality_templates.yml soda/checks/staging || true",
         doc_md="""
         **STAGING Layer Quality Checks - Validation Phase**
         
@@ -270,7 +286,7 @@ with DAG(
 
     soda_scan_mart = BashOperator(
         task_id="soda_scan_mart",
-        bash_command=BASH_PREFIX + "soda scan -d data_governance_platform_mart -c soda/configuration/configuration_mart.yml -T soda/checks/templates/data_quality_templates.yml soda/checks/mart || true",
+        bash_command=BASH_PREFIX + f"soda scan -d {data_source_mart} -c soda/configuration/configuration_mart.yml -T soda/checks/templates/data_quality_templates.yml soda/checks/mart || true",
         doc_md="""
         **MART Layer Quality Checks - Validation Phase**
         
@@ -318,7 +334,7 @@ with DAG(
 
     soda_scan_quality = BashOperator(
         task_id="soda_scan_quality",
-        bash_command=BASH_PREFIX + "soda scan -d data_governance_platform_quality -c soda/configuration/configuration_quality.yml -T soda/checks/templates/data_quality_templates.yml soda/checks/quality || true",
+        bash_command=BASH_PREFIX + f"soda scan -d {data_source_quality} -c soda/configuration/configuration_quality.yml -T soda/checks/templates/data_quality_templates.yml soda/checks/quality || true",
         doc_md="""
         **QUALITY Layer Monitoring**
         

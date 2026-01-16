@@ -54,6 +54,8 @@ pipeline: venv ## Run standard pipeline (via Airflow)
 
 airflow-up: ## Start Airflow services with Docker
 	@echo "🚀 Starting Airflow services..."
+	@echo "🔄 Updating Soda data source names to match database configuration..."
+	@bash -c "source load_env.sh && python3 soda/update_data_source_names.py" || echo "⚠️  Warning: Could not update data source names (this is OK if running in Docker)"
 	@echo "📥 Loading environment variables and starting Docker containers..."
 	@bash -c "source load_env.sh && cd airflow/docker && docker-compose up -d"
 	@echo "⏳ Waiting for services to be ready..."
@@ -77,6 +79,8 @@ superset-up: ## Start Superset visualization service (separate setup)
 
 all-up: ## Start all services (Airflow + Superset)
 	@echo "🚀 Starting all services..."
+	@echo "🔄 Updating Soda data source names to match database configuration..."
+	@bash -c "source load_env.sh && python3 soda/update_data_source_names.py" || echo "⚠️  Warning: Could not update data source names (this is OK if running in Docker)"
 	@echo "📥 Loading environment variables and starting Docker containers..."
 	@bash -c "source load_env.sh && cd airflow/docker && docker-compose up -d && cd ../../superset && docker-compose up -d"
 	@echo "⏳ Waiting for services to be ready..."
@@ -158,14 +162,20 @@ airflow-rebuild: ## Rebuild Airflow containers
 	@echo "[OK] Airflow containers rebuilt and started"
 
 airflow-trigger-init: ## Trigger initialization DAG (fresh setup only)
+	@echo "🔄 Ensuring Soda data source names are up to date..."
+	@bash -c "source load_env.sh && python3 soda/update_data_source_names.py" || echo "⚠️  Warning: Could not update data source names"
 	@echo "🚀 Triggering initialization DAG..."
 	@docker exec soda-airflow-webserver airflow dags trigger soda_initialization
 	@echo "[OK] Initialization DAG triggered"
+	@echo "[INFO] Check progress at: http://localhost:8080"
 
 airflow-trigger-pipeline: ## Trigger layered pipeline DAG (layer-by-layer processing)
+	@echo "🔄 Ensuring Soda data source names are up to date..."
+	@bash -c "source load_env.sh && python3 soda/update_data_source_names.py" || echo "⚠️  Warning: Could not update data source names"
 	@echo "🔄 Triggering layered pipeline DAG..."
 	@docker exec soda-airflow-webserver airflow dags trigger soda_pipeline_run
 	@echo "[OK] Layered pipeline DAG triggered"
+	@echo "[INFO] Check progress at: http://localhost:8080"
 
 soda-dump: ## Extract Soda Cloud data to CSV files
 	@echo "📊 Extracting Soda Cloud data..."
@@ -204,6 +214,8 @@ setup: venv deps ## Complete environment setup
 	else \
 		echo "✅ .env file found"; \
 	fi
+	@echo "🔄 Updating Soda data source names to match database configuration..."
+	@bash -c "source load_env.sh && python3 soda/update_data_source_names.py" || echo "⚠️  Warning: Could not update data source names"
 	@echo "[OK] Environment setup completed"
 	@echo "[INFO] Next steps:"
 	@echo "  1. Ensure .env file has all required credentials"
@@ -227,6 +239,11 @@ clean-all: clean clean-logs ## Deep clean: artifacts, logs, and cache
 	@echo "🧹 Deep cleaning project..."
 	@find . -name "*.pyc" -delete 2>/dev/null || true
 	@find . -name ".DS_Store" -delete 2>/dev/null || true
+
+soda-update-datasources: ## Update Soda data source names in config files based on SNOWFLAKE_DATABASE
+	@echo "🔄 Updating Soda data source names..."
+	@bash -c "source load_env.sh && python3 soda/update_data_source_names.py"
+	@echo "[OK] Data source names updated"
 	@echo "[OK] Deep clean completed"
 
 # =============================================================================

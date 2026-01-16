@@ -39,8 +39,48 @@ soda/
 │   └── quality/           # QUALITY layer checks (monitoring)
 ├── soda-collibra-integration-configuration/
 │   └── configuration-collibra.yml  # Collibra integration configuration
+├── helpers.py              # Helper functions for data source name derivation
+├── update_data_source_names.py  # Script to update config files when DB name changes
 └── README.md              # This file
 ```
+
+## Data Source Name Parameterization
+
+**Data source names are derived from the database name** to ensure consistency across the platform.
+
+### Naming Convention
+
+Data source names follow the pattern: `<database_name_lowercase>_<layer>`
+
+- Database name: `DATA_GOVERNANCE_PLATFORM` (from `SNOWFLAKE_DATABASE` env var)
+- Data source names:
+  - `data_governance_platform_raw`
+  - `data_governance_platform_staging`
+  - `data_governance_platform_mart`
+  - `data_governance_platform_quality`
+
+### Automatic Derivation
+
+The Airflow DAG automatically derives data source names from the database name using `soda/helpers.py`. This means:
+- ✅ **No manual updates needed** in the DAG when database name changes
+- ✅ **Consistent naming** across all layers
+- ✅ **Single source of truth** (SNOWFLAKE_DATABASE environment variable)
+
+### Updating Configuration Files
+
+If you change the `SNOWFLAKE_DATABASE` environment variable, you need to update the YAML configuration files:
+
+```bash
+# Update all configuration files with new data source names
+python3 soda/update_data_source_names.py
+```
+
+This script will:
+- Read the `SNOWFLAKE_DATABASE` environment variable
+- Generate the appropriate data source names
+- Update all configuration files automatically
+
+**Note**: The Airflow DAG uses dynamic data source names, so it will work automatically. You only need to update the YAML files if you want to use them directly with `soda scan` commands.
 
 ## Collibra Integration
 
@@ -203,6 +243,16 @@ make airflow-trigger-pipeline
 6. **Collibra**: Quality results automatically synchronized to governance catalog
 
 ### Run Individual Layer Checks
+
+**Note**: Data source names are derived from `SNOWFLAKE_DATABASE`. Use `soda/helpers.py` to get the correct names:
+
+```bash
+# Get data source names for your database
+python3 -c "from soda.helpers import get_all_data_source_names; import json; print(json.dumps(get_all_data_source_names(), indent=2))"
+```
+
+Or use the default names (if `SNOWFLAKE_DATABASE=DATA_GOVERNANCE_PLATFORM`):
+
 ```bash
 # RAW layer
 soda scan -d data_governance_platform_raw -c soda/configuration/configuration_raw.yml soda/checks/raw/
@@ -219,7 +269,7 @@ soda scan -d data_governance_platform_quality -c soda/configuration/configuratio
 
 ### Test Individual Tables
 ```bash
-# Test specific table
+# Test specific table (replace data source name if using different database)
 soda scan -d data_governance_platform_raw -c soda/configuration/configuration_raw.yml soda/checks/raw/customers.yml
 
 # Test connection

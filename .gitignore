@@ -63,6 +63,7 @@ dbt/.user.yml
 # Soda
 soda/check_results/
 soda/scan_results/
+soda/soda-collibra-integration-configuration/
 
 # Temporary files
 *.tmp

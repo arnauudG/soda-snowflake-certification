@@ -34,10 +34,11 @@ def upload_to_superset(**context):
     Upload Soda data to Superset database.
     
     This function orchestrates the complete Superset upload workflow:
-    1. Updates Soda data source names to match SNOWFLAKE_DATABASE
-    2. Extracts data from Soda Cloud API
-    3. Organizes the data (keeps only latest files)
-    4. Uploads to Superset PostgreSQL database
+    1. Checks if Superset is running and accessible
+    2. Updates Soda data source names to match SNOWFLAKE_DATABASE
+    3. Extracts data from Soda Cloud API
+    4. Organizes the data (keeps only latest files)
+    5. Uploads to Superset PostgreSQL database
     
     Returns:
         None (raises exception on failure)
@@ -49,6 +50,72 @@ def upload_to_superset(**context):
     project_root = Path("/opt/airflow")
     
     print("🔄 Starting Superset upload workflow...")
+    
+    # Step 0: Check if Superset is running
+    print("\n0️⃣  Checking Superset availability...")
+    superset_available = False
+    
+    # Check 1: Verify Superset container is running
+    try:
+        check_container = subprocess.run(
+            ["docker", "ps", "--filter", "name=superset-app", "--format", "{{.Names}}"],
+            capture_output=True,
+            text=True,
+            check=False
+        )
+        if check_container.returncode == 0 and "superset-app" in check_container.stdout:
+            print("✅ Superset container is running")
+            superset_available = True
+        else:
+            print("⚠️  Superset container 'superset-app' not found in running containers")
+    except Exception as e:
+        print(f"⚠️  Could not check container status: {e}")
+    
+    # Check 2: Verify Superset database is accessible
+    if not superset_available:
+        try:
+            import psycopg2
+            db_config = {
+                'host': 'superset-db',
+                'port': 5432,
+                'database': 'superset',
+                'user': 'superset',
+                'password': 'superset'
+            }
+            # Try alternative hostnames
+            for host in ['superset-db', 'superset-postgres', 'localhost']:
+                try:
+                    test_config = db_config.copy()
+                    test_config['host'] = host
+                    conn = psycopg2.connect(**test_config)
+                    conn.close()
+                    print(f"✅ Superset database is accessible at {host}")
+                    superset_available = True
+                    break
+                except psycopg2.Error:
+                    continue
+        except ImportError:
+            print("⚠️  psycopg2 not available, skipping database check")
+        except Exception as e:
+            print(f"⚠️  Could not check database: {e}")
+    
+    if not superset_available:
+        error_msg = """
+❌ Superset is not available
+
+Superset must be running before uploading data. Please:
+   1. Start Superset: make superset-up
+   2. Wait for Superset to be ready (about 45 seconds)
+   3. Verify status: make superset-status
+   4. Then re-run the pipeline
+
+Alternatively, you can skip this task or run the upload manually:
+   make superset-upload-data
+"""
+        print(error_msg)
+        raise Exception("Superset is not available. Start Superset with 'make superset-up' before running the pipeline.")
+    
+    print("✅ Superset is available and ready for upload")
     
     # Step 1: Update data source names
     print("\n1️⃣  Updating Soda data source names...")

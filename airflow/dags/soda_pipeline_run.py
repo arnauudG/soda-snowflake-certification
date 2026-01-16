@@ -55,23 +55,28 @@ def upload_to_superset(**context):
     print("\n0️⃣  Checking Superset availability...")
     superset_available = False
     
-    # Check 1: Verify Superset container is running
+    # Check 1: Verify Superset HTTP endpoint is accessible (most reliable)
     try:
-        check_container = subprocess.run(
-            ["docker", "ps", "--filter", "name=superset-app", "--format", "{{.Names}}"],
-            capture_output=True,
-            text=True,
-            check=False
-        )
-        if check_container.returncode == 0 and "superset-app" in check_container.stdout:
-            print("✅ Superset container is running")
-            superset_available = True
-        else:
-            print("⚠️  Superset container 'superset-app' not found in running containers")
+        import urllib.request
+        import urllib.error
+        # Try connecting to Superset health endpoint via container name (same network)
+        for url in ['http://superset-app:8088/health', 'http://localhost:8089/health']:
+            try:
+                req = urllib.request.Request(url, method='GET')
+                req.add_header('User-Agent', 'Airflow-Superset-Check')
+                with urllib.request.urlopen(req, timeout=5) as response:
+                    if response.status == 200:
+                        print(f"✅ Superset HTTP endpoint is accessible at {url}")
+                        superset_available = True
+                        break
+            except (urllib.error.URLError, urllib.error.HTTPError, OSError) as e:
+                continue
+        if not superset_available:
+            print("⚠️  Superset HTTP endpoint not accessible")
     except Exception as e:
-        print(f"⚠️  Could not check container status: {e}")
+        print(f"⚠️  Could not check HTTP endpoint: {e}")
     
-    # Check 2: Verify Superset database is accessible
+    # Check 2: Verify Superset database is accessible (fallback)
     if not superset_available:
         try:
             import psycopg2
@@ -80,10 +85,11 @@ def upload_to_superset(**context):
                 'port': 5432,
                 'database': 'superset',
                 'user': 'superset',
-                'password': 'superset'
+                'password': 'superset',
+                'connect_timeout': 5
             }
             # Try alternative hostnames
-            for host in ['superset-db', 'superset-postgres', 'localhost']:
+            for host in ['superset-db', 'superset-postgres']:
                 try:
                     test_config = db_config.copy()
                     test_config['host'] = host
@@ -98,6 +104,24 @@ def upload_to_superset(**context):
             print("⚠️  psycopg2 not available, skipping database check")
         except Exception as e:
             print(f"⚠️  Could not check database: {e}")
+    
+    # Check 3: Verify Superset container is running (last resort, may not work from inside container)
+    if not superset_available:
+        try:
+            check_container = subprocess.run(
+                ["docker", "ps", "--filter", "name=superset-app", "--format", "{{.Names}}"],
+                capture_output=True,
+                text=True,
+                check=False,
+                timeout=5
+            )
+            if check_container.returncode == 0 and "superset-app" in check_container.stdout:
+                print("✅ Superset container is running (but endpoint not accessible)")
+                # Don't set superset_available = True here, as we can't actually connect
+            else:
+                print("⚠️  Superset container 'superset-app' not found in running containers")
+        except Exception as e:
+            print(f"⚠️  Could not check container status: {e}")
     
     if not superset_available:
         error_msg = """
@@ -137,38 +161,72 @@ Alternatively, you can skip this task or run the upload manually:
     
     # Step 2: Extract data from Soda Cloud
     print("\n2️⃣  Extracting data from Soda Cloud...")
+    print("⏳ This may take a few minutes depending on data volume...")
+    print("📡 Fetching data from Soda Cloud API (this will show progress as it runs)...")
     try:
         dump_script = project_root / "scripts" / "soda_dump_api.py"
-        result = subprocess.run(
+        # Use Popen to stream output in real-time instead of capturing it
+        import sys as sys_module
+        process = subprocess.Popen(
             [sys.executable, str(dump_script)],
             cwd=str(project_root),
-            capture_output=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
             text=True,
-            check=True
+            bufsize=1,  # Line buffered
+            universal_newlines=True
         )
+        
+        # Stream output line by line
+        for line in process.stdout:
+            print(line.rstrip())
+            sys.stdout.flush()  # Ensure immediate output
+        
+        # Wait for process to complete and get return code
+        return_code = process.wait()
+        
+        if return_code != 0:
+            raise subprocess.CalledProcessError(return_code, str(dump_script))
+        
         print("✅ Data extracted from Soda Cloud")
-        if result.stdout:
-            print(result.stdout)
     except subprocess.CalledProcessError as e:
-        print(f"❌ Error extracting data from Soda Cloud: {e.stderr}")
+        print(f"❌ Error extracting data from Soda Cloud (exit code: {e.returncode})")
+        raise
+    except Exception as e:
+        print(f"❌ Unexpected error during Soda Cloud extraction: {e}")
         raise
     
     # Step 3: Organize data
     print("\n3️⃣  Organizing data...")
     try:
         organize_script = project_root / "scripts" / "organize_soda_data.py"
-        result = subprocess.run(
+        # Stream output in real-time
+        process = subprocess.Popen(
             [sys.executable, str(organize_script)],
             cwd=str(project_root),
-            capture_output=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
             text=True,
-            check=True
+            bufsize=1,
+            universal_newlines=True
         )
+        
+        # Stream output line by line
+        for line in process.stdout:
+            print(line.rstrip())
+            sys.stdout.flush()
+        
+        return_code = process.wait()
+        
+        if return_code != 0:
+            raise subprocess.CalledProcessError(return_code, str(organize_script))
+        
         print("✅ Data organized successfully")
-        if result.stdout:
-            print(result.stdout)
     except subprocess.CalledProcessError as e:
-        print(f"❌ Error organizing data: {e.stderr}")
+        print(f"❌ Error organizing data (exit code: {e.returncode})")
+        raise
+    except Exception as e:
+        print(f"❌ Unexpected error during data organization: {e}")
         raise
     
     # Step 4: Upload to Superset
@@ -233,7 +291,9 @@ Alternatively, you can skip this task or run the upload manually:
                             # Update the script's DB config and run
                             import upload_soda_data_docker as upload_module
                             upload_module.DB_CONFIG['host'] = host
-                            upload_main()
+                            # Use Airflow container path for data directory
+                            data_dir = str(project_root / "superset" / "data")
+                            upload_main(data_dir=data_dir)
                             print("✅ Data uploaded to Superset successfully (direct connection)")
                             break
                         except psycopg2.Error:
@@ -242,10 +302,11 @@ Alternatively, you can skip this task or run the upload manually:
                         raise Exception("Could not connect to Superset database from any host")
                         
                 except ImportError:
-                    # If import fails, try running as subprocess
+                    # If import fails, try running as subprocess with data directory argument
                     upload_script = project_root / "scripts" / "upload_soda_data_docker.py"
+                    data_dir = str(project_root / "superset" / "data")
                     result2 = subprocess.run(
-                        [sys.executable, str(upload_script)],
+                        [sys.executable, str(upload_script), "--data-dir", data_dir],
                         cwd=str(project_root),
                         capture_output=True,
                         text=True,

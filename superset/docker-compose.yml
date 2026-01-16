@@ -13,6 +13,8 @@ services:
       interval: 5s
       retries: 5
     restart: always
+    networks:
+      - data-governance-network
 
   superset-redis:
     image: redis:7-alpine
@@ -23,6 +25,8 @@ services:
       timeout: 3s
       retries: 5
     restart: always
+    networks:
+      - data-governance-network
 
   superset:
     image: apache/superset:latest-dev
@@ -58,8 +62,15 @@ services:
         condition: service_healthy
       superset-redis:
         condition: service_healthy
+    networks:
+      - data-governance-network
 
 volumes:
   superset-postgres-data:
   superset-data:
   superset-logs:
+
+networks:
+  data-governance-network:
+    name: data-governance-network
+    external: true

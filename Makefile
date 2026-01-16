@@ -54,6 +54,8 @@ pipeline: venv ## Run standard pipeline (via Airflow)
 
 airflow-up: ## Start Airflow services with Docker
 	@echo "🚀 Starting Airflow services..."
+	@echo "🌐 Ensuring shared Docker network exists..."
+	@docker network create data-governance-network 2>/dev/null || echo "Network already exists"
 	@echo "🔄 Updating Soda data source names to match database configuration..."
 	@bash -c "source load_env.sh && python3 soda/update_data_source_names.py" || echo "⚠️  Warning: Could not update data source names (this is OK if running in Docker)"
 	@echo "📥 Loading environment variables and starting Docker containers..."
@@ -70,6 +72,8 @@ airflow-up: ## Start Airflow services with Docker
 
 superset-up: ## Start Superset visualization service (separate setup)
 	@echo "📊 Starting Superset services..."
+	@echo "🌐 Ensuring shared Docker network exists..."
+	@docker network create data-governance-network 2>/dev/null || echo "Network already exists"
 	@echo "📥 Loading environment variables and starting Docker containers..."
 	@bash -c "source load_env.sh && cd superset && docker-compose up -d"
 	@echo "⏳ Waiting for Superset to be ready..."
@@ -79,6 +83,8 @@ superset-up: ## Start Superset visualization service (separate setup)
 
 all-up: ## Start all services (Airflow + Superset)
 	@echo "🚀 Starting all services..."
+	@echo "🌐 Ensuring shared Docker network exists..."
+	@docker network create data-governance-network 2>/dev/null || echo "Network already exists"
 	@echo "🔄 Updating Soda data source names to match database configuration..."
 	@bash -c "source load_env.sh && python3 soda/update_data_source_names.py" || echo "⚠️  Warning: Could not update data source names (this is OK if running in Docker)"
 	@echo "📥 Loading environment variables and starting Docker containers..."
@@ -91,6 +97,14 @@ all-up: ## Start all services (Airflow + Superset)
 	@echo "[OK] All services started with Docker"
 	@echo "[INFO] Airflow UI: http://localhost:8080 (admin/admin)"
 	@echo "[INFO] Superset UI: http://localhost:8089 (admin/admin)"
+
+all-down: ## Stop all services (Airflow + Superset)
+	@echo "🛑 Stopping all services..."
+	@echo "🔄 Stopping Airflow services..."
+	@cd airflow/docker && docker-compose down
+	@echo "🔄 Stopping Superset services..."
+	@cd superset && docker-compose down
+	@echo "[OK] All services stopped"
 
 airflow-down: ## Stop Airflow services
 	@cd airflow/docker && docker-compose down
@@ -142,6 +156,28 @@ airflow-status: ## Check Airflow services status
 
 airflow-logs: ## View Airflow logs
 	@cd airflow/docker && docker-compose logs -f
+
+airflow-task-logs: ## View logs for a specific task (usage: make airflow-task-logs TASK=superset_upload_data DAG=soda_pipeline_run)
+	@if [ -z "$(TASK)" ] || [ -z "$(DAG)" ]; then \
+		echo "Usage: make airflow-task-logs TASK=<task_id> DAG=<dag_id>"; \
+		echo "Example: make airflow-task-logs TASK=superset_upload_data DAG=soda_pipeline_run"; \
+		echo ""; \
+		echo "Finding latest task logs..."; \
+		docker exec soda-airflow-scheduler find /opt/airflow/logs -name "*.log" -type f -path "*superset_upload_data*" -exec ls -lt {} + 2>/dev/null | head -5 || \
+		docker exec soda-airflow-scheduler find /opt/airflow/logs -name "*.log" -type f | head -10; \
+	else \
+		echo "📋 Finding latest logs for task $(TASK) in DAG $(DAG)..."; \
+		LATEST_LOG=$$(docker exec soda-airflow-scheduler find /opt/airflow/logs -path "*dag_id=$(DAG)*" -path "*task_id=$(TASK)*" -name "*.log" -type f -exec ls -t {} + 2>/dev/null | head -1); \
+		if [ -n "$$LATEST_LOG" ]; then \
+			echo "📄 Viewing: $$LATEST_LOG"; \
+			echo "---"; \
+			docker exec soda-airflow-scheduler tail -f "$$LATEST_LOG" 2>/dev/null || docker exec soda-airflow-scheduler cat "$$LATEST_LOG"; \
+		else \
+			echo "❌ No logs found for task $(TASK) in DAG $(DAG)"; \
+			echo "Available logs:"; \
+			docker exec soda-airflow-scheduler find /opt/airflow/logs -name "*.log" -type f | head -10; \
+		fi; \
+	fi
 
 airflow-unpause-all: ## Unpause all Soda DAGs
 	@echo "▶️  Unpausing all Soda DAGs..."

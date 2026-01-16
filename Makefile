@@ -257,6 +257,8 @@ organize-soda-data: ## Organize Soda dump data in user-friendly structure
 
 superset-upload-data: ## Complete Soda workflow: dump + organize + upload to Superset
 	@echo "📤 Complete Soda data workflow..."
+	@echo "🔄 Ensuring Soda data source names are up to date..."
+	@bash -c "source load_env.sh && python3 soda/update_data_source_names.py" || echo "⚠️  Warning: Could not update data source names"
 	@echo "1. Extracting data from Soda Cloud..."
 	@make soda-dump
 	@echo "2. Organizing data..."
